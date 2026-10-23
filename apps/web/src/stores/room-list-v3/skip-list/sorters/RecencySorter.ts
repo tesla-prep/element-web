@@ -7,7 +7,6 @@ Please see LICENSE files in the repository root for full details.
 
 import type { Room } from "matrix-js-sdk/src/matrix";
 import { type Sorter, SortingAlgorithm } from ".";
-import { RoomNotificationStateStore } from "../../../notifications/RoomNotificationStateStore";
 import { BaseRecencySorter } from "./BaseRecencySorter";
 import { DefaultTagID } from "../tag";
 
@@ -17,24 +16,15 @@ export class RecencySorter extends BaseRecencySorter implements Sorter {
     }
 
     /**
-     * This sorter mostly sorts rooms by recency but there are two exceptions:
-     * 1. Muted rooms are sorted to the bottom of the list.
-     * 2. Low priority rooms are sorted to the bottom of the list but before muted rooms.
+     * This sorter sorts rooms by recency, with low priority rooms at the bottom of the list.
+     * CIRQLE: muted chats keep their place by recency, as on WhatsApp.
      *
-     * The following method provides a numerical value that takes care of this
-     * exceptional ordering. For two rooms A and B, it works as follows:
+     * For two rooms A and B:
      * - If getScore(A) - getScore(B) > 0, A should come after B
      * - If getScore(A) - getScore(B) < 0, A should come before B
      * - If getScore(A) - getScore(B) = 0, no special ordering needed, just use recency
      */
     protected getScore(room: Room): number {
-        const isLowPriority = !!room.tags[DefaultTagID.LowPriority];
-        const isMuted = RoomNotificationStateStore.instance.getRoomState(room).muted;
-        // These constants are chosen so that the following order is maintained:
-        // Low priority rooms -> Low priority and muted rooms -> Muted rooms
-        if (isMuted && isLowPriority) return 5;
-        else if (isMuted) return 10;
-        else if (isLowPriority) return 2;
-        else return 0;
+        return room.tags[DefaultTagID.LowPriority] ? 2 : 0;
     }
 }

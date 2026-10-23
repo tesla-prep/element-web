@@ -33,6 +33,7 @@ export const CIRQLE_FORCED_SETTINGS: Record<string, unknown> = {
     "RoomList.showMessagePreview": true,
     "RoomList.showSections": false,
     "Spaces.allRoomsInHome": true,
+    "RoomList.preferredSorting": "Recency",
 };
 
 /** The one theme the CIRQLE look is drawn on. */

@@ -22,10 +22,10 @@ import { useMatrixClientContext } from "../contexts/MatrixClientContext";
 import { UPDATE_EVENT } from "../stores/AsyncStore";
 import { useEventEmitterState } from "../hooks/useEventEmitter";
 import { RoomListItemViewModel } from "../viewmodels/room-list/RoomListItemViewModel";
-import { getLastTimestamp } from "../stores/room-list-v3/skip-list/sorters/utils/getLastTimestamp";
 import { formatTime } from "../DateUtils";
 import RoomAvatar from "../components/views/avatars/RoomAvatar";
 import { CirqleNumberPicker } from "./CirqleNumberPicker";
+import { cirqleLastTimestamp } from "./CirqleActivity";
 import { ChannelIcon, GroupIcon, KebabIcon, PencilIcon, PlusIcon, SearchIcon, SettingsIcon } from "./CirqleIcons";
 import { type Inbox, numberLine, stripNetworkSuffix } from "./CirqleInboxes";
 import { CirqleUiStore, type CirqleSection } from "./CirqleUiStore";
@@ -78,7 +78,7 @@ function ChatRow({ room, inboxes, selected }: { room: Room; inboxes: Inbox[]; se
                 <span className="cirqle_ChatRow_top">
                     <span className="cirqle_ChatRow_name">{stripNetworkSuffix(item.name)}</span>
                     <span className={classNames("cirqle_ChatRow_time", { cirqle_ChatRow_time_unread: unread })}>
-                        {chatTime(getLastTimestamp(room, client.getSafeUserId()))}
+                        {chatTime(cirqleLastTimestamp(room))}
                     </span>
                 </span>
                 <span className="cirqle_ChatRow_middle">
