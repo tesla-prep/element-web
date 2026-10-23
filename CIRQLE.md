@@ -16,7 +16,7 @@ Everything lives in two places; upstream files only get one-line hooks marked
 
 | Where | What |
 |---|---|
-| `apps/web/src/cirqle/` | rail, chat list and its order, number picker, New chat, Group info, Contact info, member card, header, empty side, composer buttons, timeline sides, forced settings |
+| `apps/web/src/cirqle/` | rail, chat list and its order, number picker, New chat, New group, Group info, Contact info, member card, header, empty side, composer buttons, timeline sides, forced settings |
 | `apps/web/res/themes/light/css/cirqle/` | the look, imported unlayered at the end of `light.pcss` so it wins over Element's layered CSS |
 | `apps/web/res/fonts/Source_Serif_4/`, `apps/web/res/img/cirqle/` | heading font (OFL) and the shield logo |
 | `cirqle/` | `config.json`, `deploy.sh`, `nginx-next.conf` |

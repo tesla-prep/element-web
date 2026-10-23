@@ -27,7 +27,7 @@ import RoomAvatar from "../components/views/avatars/RoomAvatar";
 import { CirqleNumberPicker } from "./CirqleNumberPicker";
 import { cirqleLastTimestamp } from "./CirqleActivity";
 import { chatPreview } from "./CirqlePreview";
-import { ChannelIcon, GroupIcon, KebabIcon, PencilIcon, PlusIcon, SearchIcon, SettingsIcon } from "./CirqleIcons";
+import { GroupIcon, KebabIcon, PencilIcon, PlusIcon, SearchIcon, SettingsIcon } from "./CirqleIcons";
 import { contactPhone, type Inbox, numberLine, repeatedNames, stripNetworkSuffix } from "./CirqleInboxes";
 import { CirqleUiStore, type CirqleSection } from "./CirqleUiStore";
 import { type CirqleChip, isUnreadChat, pickedInbox, useCirqleInboxes, useCirqleRooms } from "./useCirqleChats";
@@ -45,15 +45,6 @@ export function chatTime(ts: number): string {
     if (ts >= startOfToday - day) return "Yesterday";
     if (ts >= startOfToday - 6 * day) return date.toLocaleDateString("en-US", { weekday: "short" });
     return date.toLocaleDateString("en-US", { month: "numeric", day: "numeric", year: "2-digit" });
-}
-
-export function createGroup(): void {
-    dis.dispatch({ action: Action.CreateRoom });
-}
-
-export function createChannel(): void {
-    // A public room is a WhatsApp channel: the relay bot creates it (createRoom, public, no contacts)
-    dis.dispatch({ action: Action.CreateRoom, public: true });
 }
 
 function ChatRow({
@@ -146,13 +137,15 @@ export function CirqleChatList({ section }: { section: CirqleSection }): JSX.Ele
             <div className="cirqle_ChatList_header">
                 <h1 className="cirqle_ChatList_title">{title}</h1>
                 <CirqleNumberPicker inboxes={inboxes} section={section} />
-                <button
-                    className="cirqle_iconButton cirqle_iconButton_green"
-                    aria-label={section === "channels" ? "New channel" : "New chat"}
-                    onClick={() => (section === "channels" ? createChannel() : CirqleUiStore.openNewChat())}
-                >
-                    <PencilIcon />
-                </button>
+                {section === "chats" && (
+                    <button
+                        className="cirqle_iconButton cirqle_iconButton_green"
+                        aria-label="New chat"
+                        onClick={() => CirqleUiStore.openNewChat()}
+                    >
+                        <PencilIcon />
+                    </button>
+                )}
                 <Menu
                     open={menuOpen}
                     onOpenChange={setMenuOpen}
@@ -165,8 +158,7 @@ export function CirqleChatList({ section }: { section: CirqleSection }): JSX.Ele
                         </button>
                     }
                 >
-                    <MenuItem Icon={GroupIcon} label="New group" onSelect={createGroup} />
-                    <MenuItem Icon={ChannelIcon} label="New channel" onSelect={createChannel} />
+                    <MenuItem Icon={GroupIcon} label="New group" onSelect={() => CirqleUiStore.openNewGroup()} />
                     <MenuItem Icon={SettingsIcon} label="Settings" onSelect={() => dis.fire(Action.ViewUserSettings)} />
                 </Menu>
             </div>
@@ -229,14 +221,16 @@ export function CirqleChatList({ section }: { section: CirqleSection }): JSX.Ele
                     </p>
                 )}
             </div>
-            <button
-                className="cirqle_ChatList_fab"
-                aria-label={section === "channels" ? "New channel" : "New chat, group or channel"}
-                onClick={() => (section === "channels" ? createChannel() : CirqleUiStore.openNewChat())}
-            >
-                <PlusIcon />
-                New
-            </button>
+            {section === "chats" && (
+                <button
+                    className="cirqle_ChatList_fab"
+                    aria-label="New chat or group"
+                    onClick={() => CirqleUiStore.openNewChat()}
+                >
+                    <PlusIcon />
+                    New
+                </button>
+            )}
         </section>
     );
 }

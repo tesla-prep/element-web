@@ -140,6 +140,12 @@ export const BackIcon = (p: IconProps): JSX.Element => (
     </Stroke>
 );
 
+export const ArrowRightIcon = (p: IconProps): JSX.Element => (
+    <Stroke {...p}>
+        <path d="M5 12h14M13 6l6 6-6 6" />
+    </Stroke>
+);
+
 export const CloseIcon = (p: IconProps): JSX.Element => (
     <Stroke size={20} {...p}>
         <path d="M6 6l12 12M18 6L6 18" />
