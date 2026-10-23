@@ -9,7 +9,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 // Every connected WhatsApp number or Telegram account ("inbox") has a space the
 // bridge made ("personal filtering space", renamed by the relay bot to
 // "WhatsApp · Main #1"); its topic ends with the number. A chat belongs to the
-// inboxes whose spaces list it as a child.
+// inboxes whose spaces list it as a child, or list the WhatsApp community it is in.
 
 import { EventType, type MatrixClient, type Room } from "matrix-js-sdk/src/matrix";
 
@@ -29,6 +29,10 @@ export interface Inbox {
     /** "wa-01d17870": the relay bot's name for the inbox, from its account user in the space */
     accountName?: string;
     childIds: Set<string>;
+    /** False once the relay bot says the number's bridge login is gone (no phone behind it) */
+    connected: boolean;
+    /** Private chats' numbers WhatsApp only gives the bridge as LIDs, by the chat's bridge id ("2385…@lid") */
+    contactPhones: Map<string, string>;
     /**
      * The bridge's users that are this number or account itself: what its owner
      * sends from the phone reaches Matrix from them. The bridge's ghost of the
@@ -40,6 +44,18 @@ export interface Inbox {
 
 /** Space state the relay bot keeps: `{ "user_ids": [...] }`, the number's own bridge users. */
 export const NUMBER_USERS_EVENT = "com.cirqle.team_messenger.number_users";
+
+/**
+ * Space state the relay bot keeps: `{ "connected": false, "number": "+16463313251", "state": "BAD_CREDENTIALS" }`.
+ * `connected` turns false once WhatsApp or Telegram ended the session (not on a short drop).
+ */
+export const INBOX_STATE_EVENT = "com.cirqle.team_messenger.inbox";
+
+/**
+ * Space state the relay bot keeps: `{ "phones": { "2385…@lid": "+79161234567" } }`, the
+ * customer's number for private chats WhatsApp names by LID. Any state key: the bot may split it.
+ */
+export const CONTACT_PHONES_EVENT = "com.cirqle.team_messenger.contact_phones";
 
 const NETWORK_PREFIXES: Record<Network, string> = { whatsapp: "WhatsApp · ", telegram: "Telegram · " };
 
@@ -59,6 +75,18 @@ function bridgeContent(room: Room): BridgeContent | undefined {
 export function networkOf(room: Room): Network | undefined {
     const id = bridgeContent(room)?.protocol?.id;
     return id === "whatsapp" || id === "telegram" ? id : undefined;
+}
+
+/** WhatsApp's Status updates reach Matrix as a chat with the bridge id `status@broadcast`; they are not one. */
+export function isStatusBroadcast(room: Room): boolean {
+    return bridgeContent(room)?.channel?.id === "status@broadcast";
+}
+
+function listedChildren(space: Room): string[] {
+    return space.currentState
+        .getStateEvents(EventType.SpaceChild)
+        .filter((ev) => Array.isArray(ev.getContent()?.via))
+        .map((ev) => ev.getStateKey()!);
 }
 
 /** "+16463313251" as "+1 646 331 3251"; other countries keep their digits in two groups. */
@@ -90,12 +118,26 @@ export function getInboxes(client: MatrixClient): Inbox[] {
             .getStateEvents(EventType.RoomTopic, "")
             ?.getContent()?.topic;
         const phoneMatch = topic?.match(/(\+\d{6,})\s*$/);
-        const childIds = new Set(
-            room.currentState
-                .getStateEvents(EventType.SpaceChild)
-                .filter((ev) => Array.isArray(ev.getContent()?.via))
-                .map((ev) => ev.getStateKey()!),
-        );
+        // A WhatsApp community the number is in is a space inside the number's space;
+        // the bridge lists the community's groups only there
+        const childIds = new Set<string>();
+        const spaces = [room];
+        for (let space = spaces.pop(); space; space = spaces.pop()) {
+            for (const id of listedChildren(space)) {
+                if (childIds.has(id)) continue;
+                childIds.add(id);
+                const child = client.getRoom(id);
+                if (child && bridgeContent(child)?.["com.beeper.room_type.v2"] === "space") spaces.push(child);
+            }
+        }
+        const contactPhones = new Map<string, string>();
+        for (const ev of room.currentState.getStateEvents(CONTACT_PHONES_EVENT)) {
+            const phones = ev.getContent()?.phones;
+            if (!phones || typeof phones !== "object") continue;
+            for (const [id, phone] of Object.entries(phones)) {
+                if (typeof phone === "string") contactPhones.set(id, phone);
+            }
+        }
         const account = room
             .getJoinedMembers()
             .map((member) => member.userId.match(/^@account_(?:whatsapp|telegram)_([^:]+):/)?.[1])
@@ -112,6 +154,8 @@ export function getInboxes(client: MatrixClient): Inbox[] {
             phone: phoneMatch ? formatPhone(phoneMatch[1]) : undefined,
             accountName: account,
             childIds,
+            connected: room.currentState.getStateEvents(INBOX_STATE_EVENT, "")?.getContent()?.connected !== false,
+            contactPhones,
             ownUsers,
         });
     }
@@ -146,6 +190,19 @@ export function inboxesOf(room: Room, inboxes: Inbox[]): Inbox[] {
     return inboxes.filter((inbox) => inbox.childIds.has(room.roomId));
 }
 
+/**
+ * The chats a picked number shows: only its own. All numbers is every connected
+ * number's chats, and the chats no number lists. WhatsApp's Status never shows.
+ */
+export function numberChats(rooms: Room[], inboxes: Inbox[], picked: Inbox | undefined): Room[] {
+    return rooms.filter((room) => {
+        if (isStatusBroadcast(room)) return false;
+        if (picked) return picked.childIds.has(room.roomId);
+        const own = inboxesOf(room, inboxes);
+        return own.length === 0 || own.some((inbox) => inbox.connected);
+    });
+}
+
 export function chatKind(room: Room): ChatKind {
     // New chat opens a local room until the first message: always a private chat
     if (isLocalRoom(room)) return "chat";
@@ -174,6 +231,34 @@ export function numberLine(room: Room, inboxes: Inbox[]): { text: string; networ
     else if (kind === "channel") parts.push("Channel");
     if (names) parts.push(names);
     return { text: parts.join(" · "), network };
+}
+
+/**
+ * The customer's number in a private chat: from the bridge's id for the chat when
+ * WhatsApp gave the number, else from the relay bot's list for LID chats.
+ */
+export function contactPhone(room: Room, inboxes: Inbox[]): string | undefined {
+    const id = bridgeContent(room)?.channel?.id;
+    if (!id || chatKind(room) !== "chat") return undefined;
+    const number =
+        id.match(/^(\d{7,15})@s\.whatsapp\.net$/)?.[1] ??
+        inboxesOf(room, inboxes)
+            .map((inbox) => inbox.contactPhones.get(id))
+            .find(Boolean);
+    return number ? formatPhone(number) : undefined;
+}
+
+/** Private chats whose name is not unique among these: WhatsApp shows the number beside such names. */
+export function repeatedNames(rooms: Room[]): Set<string> {
+    const seen = new Set<string>();
+    const repeated = new Set<string>();
+    for (const room of rooms) {
+        if (chatKind(room) !== "chat") continue;
+        const name = stripNetworkSuffix(room.name);
+        if (seen.has(name)) repeated.add(name);
+        seen.add(name);
+    }
+    return repeated;
 }
 
 const GHOST_NUMBER = /^@(?:whatsapp|telegram)_(\d{7,15}):/;

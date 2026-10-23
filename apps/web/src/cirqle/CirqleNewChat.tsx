@@ -12,7 +12,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 // contact, Element's startDmOnFirstMessage (createRoom on the first message,
 // answered by the relay bot with the real chat). "Write from" narrows the
 // search to that number's contacts; under All numbers nothing is offered until
-// staff pick the number.
+// staff pick the number. A disconnected number is not offered: nothing sends from it.
 
 import React, { type JSX, useEffect, useMemo, useRef, useState } from "react";
 import { type Room } from "matrix-js-sdk/src/matrix";
@@ -66,7 +66,7 @@ function contactSub(room: Room): string {
 
 export function CirqleNewChat(): JSX.Element {
     const client = useMatrixClientContext();
-    const inboxes = useCirqleInboxes();
+    const inboxes = useCirqleInboxes().filter((inbox) => inbox.connected);
     const [query, setQuery] = useState(CirqleUiStore.newChatQuery);
     const activeSpace = SDKContextClass.instance.spaceStore.activeSpace;
     const [fromId, setFromId] = useState<string | undefined>(

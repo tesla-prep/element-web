@@ -21,7 +21,7 @@ import { type Inbox } from "./CirqleInboxes";
 const SLAVA_TEST = "!slava-test:server";
 const OTHER = "!other:server";
 
-const mocked = vi.hoisted(() => ({ spaces: [] as string[] }));
+const mocked = vi.hoisted(() => ({ spaces: [] as string[], disconnected: [] as string[] }));
 
 vi.mock("./useCirqleChats", () => ({
     // The inboxes are read again on every room list update: new objects each render
@@ -33,6 +33,8 @@ vi.mock("./useCirqleChats", () => ({
             phone: undefined,
             accountName: spaceId === "!slava-test:server" ? "wa-efa4b19c" : "wa-bba81064",
             childIds: new Set(),
+            connected: !mocked.disconnected.includes(spaceId),
+            contactPhones: new Map(),
             ownUsers: new Set(),
         })),
 }));
@@ -50,6 +52,7 @@ describe("CirqleNewChat", () => {
         client = stubClient();
         activeSpace = MetaSpace.Home;
         mocked.spaces = [OTHER, SLAVA_TEST];
+        mocked.disconnected = [];
         vi.spyOn(SDKContextClass.instance.spaceStore, "activeSpace", "get").mockImplementation(() => activeSpace);
         client.searchUserDirectory = vi.fn().mockResolvedValue({
             limited: false,
@@ -111,6 +114,14 @@ describe("CirqleNewChat", () => {
         expect(client.searchUserDirectory).toHaveBeenCalledTimes(1);
         expect(await screen.findByText("Test Person")).toBeTruthy();
         expect(screen.queryByRole("status")).toBeNull();
+    });
+
+    it("does not offer a disconnected number to write from", () => {
+        mocked.disconnected = [OTHER];
+        activeSpace = OTHER;
+        render(panel());
+        expect(Array.from(writeFrom().options).map((option) => option.value)).toEqual([SLAVA_TEST]);
+        expect(writeFrom().value).toBe(SLAVA_TEST);
     });
 
     it("writes from the only number there is", () => {

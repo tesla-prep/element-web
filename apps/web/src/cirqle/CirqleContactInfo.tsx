@@ -25,8 +25,7 @@ import { getTagsForRoom } from "../utils/room/getTagsForRoom";
 import { tagRoom } from "../utils/room/tagRoom";
 import RoomAvatar from "../components/views/avatars/RoomAvatar";
 import { BellOffIcon, CloseIcon, MediaIcon, StarIcon } from "./CirqleIcons";
-import { chatKind, inboxesOf, networkOf, privateChatContact, stripNetworkSuffix } from "./CirqleInboxes";
-import { ghostPhone } from "./CirqleMemberCard";
+import { chatKind, contactPhone, inboxesOf, networkOf, stripNetworkSuffix } from "./CirqleInboxes";
 import { useCirqleInboxes } from "./useCirqleChats";
 
 export function isCirqleContactInfoRoom(room: Room): boolean {
@@ -83,8 +82,8 @@ export function CirqleContactInfo({ room }: { room: Room }): JSX.Element {
     const sdkContext = useContext(SDKContext);
     const inboxes = useCirqleInboxes();
     const name = stripNetworkSuffix(useRoomName(room));
-    const contact = privateChatContact(room);
-    const phone = contact ? ghostPhone(contact) : undefined;
+    // The bridge's number for the contact, or the one the relay bot lists for a WhatsApp LID
+    const phone = contactPhone(room, inboxes);
     const own = inboxesOf(room, inboxes);
     const sub = [
         networkOf(room) === "telegram" ? "Telegram" : "WhatsApp",
