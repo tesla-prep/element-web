@@ -26,6 +26,7 @@ Hooks in upstream files (each one line or a small block):
 | File | Hook |
 |---|---|
 | `res/themes/light/css/light.pcss` | imports `cirqle/_cirqle.pcss` |
+| `vector/index.ts` | phones open the app (phone layout), not Element's mobile guide |
 | `settings/watchers/ThemeWatcher.ts` | always the light theme |
 | `settings/SettingsStore.ts` | `CIRQLE_FORCED_SETTINGS` (bubbles, timestamps, previews, one list, all rooms under All numbers, newest first) |
 | `stores/room-list-v3/skip-list/sorters/BaseRecencySorter.ts` | chats sorted by their last message (`cirqle/CirqleActivity.ts`) |

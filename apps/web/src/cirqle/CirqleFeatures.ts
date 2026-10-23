@@ -36,6 +36,12 @@ export const CIRQLE_FORCED_SETTINGS: Record<string, unknown> = {
     "RoomList.preferredSorting": "Recency",
 };
 
+/**
+ * Phones stay in the web app, which has its own phone layout, instead of being
+ * sent to Element's page that offers Element X (Element X cannot pick a number).
+ */
+export const CIRQLE_MOBILE_GUIDE_REDIRECT = false;
+
 /** The one theme the CIRQLE look is drawn on. */
 export const CIRQLE_THEME = "light";
 
