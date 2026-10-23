@@ -14,7 +14,7 @@ import SdkConfig from "../SdkConfig";
 import { CIRQLE_BRAND } from "./CirqleFeatures";
 import { deliveryFailure, deliveryText, ROOM_FEATURES_EVENT, SEND_STATUS_EVENT } from "./CirqleDelivery";
 import { cirqleCanEdit, cirqleMayDelete } from "./CirqleMessages";
-import { refusalText } from "./CirqleInviteRefusals";
+import { addMemberProblem, refusalText } from "./CirqleInviteRefusals";
 
 const ROOM = "!chat:server";
 const NOW = 1_800_000_000_000;
@@ -143,5 +143,34 @@ describe("CIRQLE delivery", () => {
         expect(refusalText("+79181888877 не найден", "WhatsApp")).toBe("+79181888877 is not on WhatsApp.");
         expect(refusalText("не получилось", "WhatsApp")).toBe("WhatsApp did not accept it.");
         expect(refusalText("slava test: номер не подключён", "WhatsApp")).toBe("slava test: номер не подключён");
+    });
+
+    it("reads the relay bot's Add member outcome", () => {
+        const field = "com.cirqle.add_member";
+        expect(
+            addMemberProblem({ membership: "leave", [field]: { outcome: "added", contact: "+1" } }, "WhatsApp"),
+        ).toBeUndefined();
+        expect(
+            addMemberProblem(
+                {
+                    membership: "leave",
+                    reason: "Anna does not let others add her to groups.",
+                    [field]: {
+                        outcome: "failed",
+                        error: "privacy",
+                        message: "Anna does not let others add her to groups.",
+                    },
+                },
+                "WhatsApp",
+            ),
+        ).toBe("Anna does not let others add her to groups.");
+        expect(addMemberProblem({ membership: "leave", [field]: { outcome: "unknown" } }, "WhatsApp")).toBe(
+            "WhatsApp did not confirm it.",
+        );
+        // The bot before com.cirqle.add_member: a reason only when it failed
+        expect(addMemberProblem({ membership: "leave" }, "WhatsApp")).toBeUndefined();
+        expect(addMemberProblem({ membership: "leave", reason: "+79990000000 не найден" }, "WhatsApp")).toBe(
+            "+79990000000 is not on WhatsApp.",
+        );
     });
 });
