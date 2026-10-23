@@ -7,13 +7,19 @@ SPDX-License-Identifier: AGPL-3.0-only
 // @vitest-environment happy-dom
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { type MatrixClient, MatrixEvent, type RoomMember } from "matrix-js-sdk/src/matrix";
+import { EventType, type MatrixClient, MatrixEvent, Room, type RoomMember } from "matrix-js-sdk/src/matrix";
+import { KnownMembership } from "matrix-js-sdk/src/types";
 import { stubClient } from "test-utils";
 
 import Modal from "../Modal";
 import SdkConfig from "../SdkConfig";
 import { CIRQLE_BRAND } from "./CirqleFeatures";
-import { ADD_MEMBER_EVENT_FIELD, NO_ANSWER_MS, watchCirqleInviteRefusals } from "./CirqleInviteRefusals";
+import {
+    ADD_MEMBER_EVENT_FIELD,
+    isCirqleInvitable,
+    NO_ANSWER_MS,
+    watchCirqleInviteRefusals,
+} from "./CirqleInviteRefusals";
 
 const ROOM = "!group:server";
 const CONTACT = "@newchat_whatsapp_wa-efa4b19c_=79181888877:server";
@@ -101,5 +107,51 @@ describe("Add member outcome", () => {
         onMembership(event(CONTACT, { membership: "leave", reason: "не получилось" }), member("leave"), "invite");
         vi.advanceTimersByTime(NO_ANSWER_MS);
         expect(Modal.createDialog).not.toHaveBeenCalled();
+    });
+});
+
+describe("Add member offers the group's own number", () => {
+    afterEach(() => {
+        SdkConfig.reset();
+        vi.restoreAllMocks();
+    });
+
+    it("offers only that number's contacts", () => {
+        const client = stubClient();
+        SdkConfig.put({ brand: CIRQLE_BRAND });
+        const state = (roomId: string, type: string, stateKey: string, content: Record<string, unknown>): MatrixEvent =>
+            new MatrixEvent({
+                type,
+                state_key: stateKey,
+                room_id: roomId,
+                sender: "@whatsappbot:server",
+                event_id: `$${type}${stateKey}`,
+                content,
+            });
+        const bridge = { bridgebot: "@whatsappbot:server", protocol: { id: "whatsapp" } };
+        const group = new Room(ROOM, client, client.getSafeUserId());
+        group.currentState.setStateEvents([
+            state(ROOM, "m.bridge", "server/whatsapp", { ...bridge, channel: { id: "1@g.us" } }),
+        ]);
+        const space = new Room("!slava:server", client, client.getSafeUserId());
+        space.currentState.setStateEvents([
+            state("!slava:server", EventType.RoomCreate, "", { type: "m.space" }),
+            state("!slava:server", "m.bridge", "server/whatsapp", {
+                ...bridge,
+                "channel": { "id": "__personal_filtering_space__", "fi.mau.receiver": "79648986389" },
+                "com.beeper.room_type.v2": "personal_filtering_space",
+            }),
+            state("!slava:server", EventType.SpaceChild, ROOM, { via: ["server"] }),
+        ]);
+        vi.spyOn(space, "getMyMembership").mockReturnValue(KnownMembership.Join);
+        vi.spyOn(space, "getJoinedMembers").mockReturnValue([
+            { userId: "@account_whatsapp_wa-efa4b19c:server" } as RoomMember,
+        ]);
+        client.getRooms = () => [group, space];
+        client.getRoom = (id?: string) => [group, space].find((room) => room.roomId === id) ?? null;
+
+        expect(isCirqleInvitable(client, ROOM, CONTACT)).toBe(true);
+        expect(isCirqleInvitable(client, ROOM, "@newchat_whatsapp_wa-e7d32330_=79181888877:server")).toBe(false);
+        expect(isCirqleInvitable(client, ROOM, "@colleague:server")).toBe(false);
     });
 });

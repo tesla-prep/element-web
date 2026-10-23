@@ -53,6 +53,7 @@ Hooks in upstream files (each one line or a small block):
 | `context_menus/MessageContextMenu.tsx` | no thread, Share, Copy link, Report, View source; "Delete for everyone" for our own messages (`cirqle/CirqleMessages.ts`) |
 | `viewmodels/room/EventTileActionBarViewModel.ts` | hover bar without Reply in thread and Pin |
 | `views/dialogs/ConfirmRedactDialog.tsx` | "Delete for everyone?" without a reason |
+| `views/dialogs/InviteDialog.tsx` | Add member offers the contacts of the group's own number only (`cirqle/CirqleInviteRefusals.ts`) |
 | `utils/EventUtils.ts` | Edit only while the network takes it (`com.beeper.room_features`, `cirqle/CirqleMessages.ts`) |
 | `views/rooms/EventTile.tsx` | under a message the network refused: "Not delivered to WhatsApp: …" (`com.beeper.message_send_status`, `cirqle/CirqleDelivery.tsx`) |
 

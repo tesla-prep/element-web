@@ -17,7 +17,7 @@ import { type MatrixClient, type MatrixEvent, type RoomMember, RoomMemberEvent }
 import Modal from "../Modal";
 import ErrorDialog from "../components/views/dialogs/ErrorDialog";
 import { isCirqleMessenger } from "./CirqleFeatures";
-import { networkOf, stripNetworkSuffix } from "./CirqleInboxes";
+import { getInboxes, inboxesOf, networkOf, stripNetworkSuffix } from "./CirqleInboxes";
 
 export const ADD_MEMBER_EVENT_FIELD = "com.cirqle.add_member";
 
@@ -51,6 +51,20 @@ export function addMemberProblem(content: Record<string, unknown>, network: stri
 /** "Anna Petrova, +7918… · slava test" is "Anna Petrova, +7918…" */
 function contactName(member: RoomMember): string {
     return member.name.replace(/\s·\s[^·]+$/, "");
+}
+
+/**
+ * Add member offers the contacts of the group's own number. The relay bot's
+ * people search returns every number's contacts, and inviting another number's
+ * contact made the bot open a new group from that other number and close this one.
+ */
+export function isCirqleInvitable(client: MatrixClient, roomId: string | undefined, userId: string): boolean {
+    if (!isCirqleMessenger() || !roomId) return true;
+    const room = client.getRoom(roomId);
+    if (!room || !networkOf(room)) return true;
+    return inboxesOf(room, getInboxes(client)).some(
+        (inbox) => !!inbox.accountName && userId.startsWith(`@newchat_${inbox.network}_${inbox.accountName}_`),
+    );
 }
 
 /** Starts watching; returns the function that stops. */
