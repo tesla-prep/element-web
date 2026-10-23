@@ -39,7 +39,7 @@ Hooks in upstream files (each one line or a small block):
 | `structures/HomePage.tsx` | empty side |
 | `structures/RightPanel.tsx` | Group info for bridged groups and channels |
 | `views/rooms/RoomHeader/RoomHeader.tsx` | name without "(WA)", subtitle, back arrow, search and menu |
-| `views/rooms/EventTile.tsx` | staff messages on our side; customer name hidden in private chats |
+| `views/rooms/EventTile.tsx` | staff messages and the number's own ghost (what the owner sends from the phone) on our side; customer name hidden in private chats |
 | `views/rooms/MessageComposerButtons.tsx` | microphone beside the input |
 
 ## How chats map to numbers
