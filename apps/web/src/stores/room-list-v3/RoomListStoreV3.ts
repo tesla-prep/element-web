@@ -41,6 +41,7 @@ import { filterBoolean } from "../../utils/arrays";
 import { CHATS_TAG, createSection, deleteSection, editSection, getOrderedSectionTags, reorderSection } from "./section";
 import { DefaultTagID, type TagID } from "./skip-list/tag";
 import { SDKContextClass } from "../../contexts/SDKContextClass.ts";
+import { CIRQLE_ACTIVITY_UPDATE, CirqleActivity } from "../../cirqle/CirqleActivity";
 
 export enum RoomListStoreV3Event {
     // The event/channel which is called when the room lists have been changed.
@@ -123,6 +124,10 @@ export class RoomListStoreV3Class extends AsyncStoreWithClient<EmptyObject> {
         });
         SDKContextClass.instance.spaceStore.on(UPDATE_HOME_BEHAVIOUR, () => this.onActiveSpaceChanged());
         SettingsStore.watchSetting("RoomList.OrderedCustomSections", null, () => this.onSectionsChange());
+        // CIRQLE: a chat whose last message the server just told us moves to its place
+        CirqleActivity.on(CIRQLE_ACTIVITY_UPDATE, (room: Room) => {
+            if (this.roomSkipList?.initialized) this.addRoomAndEmit(room);
+        });
 
         SettingsStore.watchSetting("Notifications.activityIsUnread", null, (_settingsName, _roomId, _level, newValue) =>
             this.onActivityIsUnreadChange(Boolean(newValue)),

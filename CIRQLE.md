@@ -16,7 +16,7 @@ Everything lives in two places; upstream files only get one-line hooks marked
 
 | Where | What |
 |---|---|
-| `apps/web/src/cirqle/` | rail, chat list, number picker, New chat, Group info, header, empty side, composer buttons, timeline sides, forced settings |
+| `apps/web/src/cirqle/` | rail, chat list and its order, number picker, New chat, Group info, header, empty side, composer buttons, timeline sides, forced settings |
 | `apps/web/res/themes/light/css/cirqle/` | the look, imported unlayered at the end of `light.pcss` so it wins over Element's layered CSS |
 | `apps/web/res/fonts/Source_Serif_4/`, `apps/web/res/img/cirqle/` | heading font (OFL) and the shield logo |
 | `cirqle/` | `config.json`, `deploy.sh`, `nginx-next.conf` |
@@ -27,7 +27,9 @@ Hooks in upstream files (each one line or a small block):
 |---|---|
 | `res/themes/light/css/light.pcss` | imports `cirqle/_cirqle.pcss` |
 | `settings/watchers/ThemeWatcher.ts` | always the light theme |
-| `settings/SettingsStore.ts` | `CIRQLE_FORCED_SETTINGS` (bubbles, timestamps, previews, one list, all rooms under All numbers) |
+| `settings/SettingsStore.ts` | `CIRQLE_FORCED_SETTINGS` (bubbles, timestamps, previews, one list, all rooms under All numbers, newest first) |
+| `stores/room-list-v3/skip-list/sorters/BaseRecencySorter.ts` | chats sorted by their last message (`cirqle/CirqleActivity.ts`) |
+| `stores/room-list-v3/RoomListStoreV3.ts` | a chat moves when the server tells us its last message |
 | `stores/ToastStore.ts` | no key backup, verification or analytics toasts |
 | `customisations/helpers/UIComponents.ts` | no room directory, integrations, space creation |
 | `shouldHideEvent.ts` | room state events (joins, renames) hidden, tombstones kept |
@@ -46,6 +48,18 @@ filtering space, renamed by the relay bot "WhatsApp · Main #1"; its topic ends
 with the number and the account user `@account_<bridge>_<name>` is a member.
 The number picker makes that space Element's active space ("All numbers" is
 Home with every room). A chat's number line names the spaces that list it.
+
+## Chat order
+
+Newest message on top, as on WhatsApp: a message anyone in the chat wrote, in or
+out, text, media, voice, files, stickers or polls. Room state (joins, renames,
+avatars), the bridge bots' and relay bot's messages, edits, reactions and
+receipts do not move a chat. Element only looks at the last 20 events sync
+loaded; when none of them is a message, `CirqleActivity` asks the server
+(`/messages` filtered to message types) for the last one before them, four
+rooms at a time, and keeps the answer in `localStorage` (`cirqle_chat_activity`)
+until that room's loaded events change. Muted and low priority chats still go to
+the bottom, as in stock Element.
 
 ## Build and deploy
 
