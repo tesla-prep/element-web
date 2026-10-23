@@ -14,24 +14,27 @@ import { stubClient } from "test-utils";
 
 import MatrixClientContext from "../contexts/MatrixClientContext";
 import { SDKContextClass } from "../contexts/SDKContextClass";
+import { MetaSpace } from "../stores/spaces";
 import { CirqleNewChat } from "./CirqleNewChat";
 import { type Inbox } from "./CirqleInboxes";
 
-const SPACE = "!slava-test:server";
+const SLAVA_TEST = "!slava-test:server";
+const OTHER = "!other:server";
+
+const mocked = vi.hoisted(() => ({ spaces: [] as string[] }));
 
 vi.mock("./useCirqleChats", () => ({
-    // The inboxes are read again on every room list update: a new object each render
-    useCirqleInboxes: (): Inbox[] => [
-        {
-            spaceId: "!slava-test:server",
+    // The inboxes are read again on every room list update: new objects each render
+    useCirqleInboxes: (): Inbox[] =>
+        mocked.spaces.map((spaceId) => ({
+            spaceId,
             network: "whatsapp",
-            label: "slava test",
-            phone: "+7 964 898 6389",
-            accountName: "wa-efa4b19c",
+            label: spaceId === "!slava-test:server" ? "slava test" : "Other",
+            phone: undefined,
+            accountName: spaceId === "!slava-test:server" ? "wa-efa4b19c" : "wa-bba81064",
             childIds: new Set(),
             ownUsers: new Set(),
-        },
-    ],
+        })),
 }));
 
 vi.mock("../stores/room-list-v3/RoomListStoreV3", () => ({
@@ -40,11 +43,14 @@ vi.mock("../stores/room-list-v3/RoomListStoreV3", () => ({
 
 describe("CirqleNewChat", () => {
     let client: MatrixClient;
+    let activeSpace: string;
 
     beforeEach(() => {
         vi.useFakeTimers({ shouldAdvanceTime: true });
         client = stubClient();
-        vi.spyOn(SDKContextClass.instance.spaceStore, "activeSpace", "get").mockReturnValue(SPACE);
+        activeSpace = MetaSpace.Home;
+        mocked.spaces = [OTHER, SLAVA_TEST];
+        vi.spyOn(SDKContextClass.instance.spaceStore, "activeSpace", "get").mockImplementation(() => activeSpace);
         client.searchUserDirectory = vi.fn().mockResolvedValue({
             limited: false,
             results: [
@@ -66,13 +72,16 @@ describe("CirqleNewChat", () => {
             <CirqleNewChat />
         </MatrixClientContext.Provider>
     );
+    const writeFrom = (): HTMLSelectElement => screen.getByRole("combobox", { name: "Write from" });
+    const search = (term: string): void => {
+        fireEvent.change(screen.getByRole("textbox", { name: "Search name or number" }), { target: { value: term } });
+    };
 
     it("searches once per typed term although the inboxes are re-read", async () => {
+        activeSpace = SLAVA_TEST;
         const { rerender } = render(panel());
-        expect(screen.getByRole("combobox", { name: "Write from" })).toHaveProperty("value", SPACE);
-        fireEvent.change(screen.getByRole("textbox", { name: "Search name or number" }), {
-            target: { value: "+79990001122" },
-        });
+        expect(writeFrom().value).toBe(SLAVA_TEST);
+        search("+79990001122");
         for (let i = 0; i < 5; i++) {
             rerender(panel());
             await act(() => vi.advanceTimersByTimeAsync(400));
@@ -84,5 +93,30 @@ describe("CirqleNewChat", () => {
         expect(await screen.findByText("Test Person")).toBeTruthy();
         expect(screen.getByText("+7 999 000 1122 · On WhatsApp")).toBeTruthy();
         expect(screen.queryByText("+7 999 000 1122")).toBeNull();
+    });
+
+    it("under All numbers offers nobody until a number is picked", async () => {
+        render(panel());
+        expect(writeFrom().value).toBe("");
+        expect(screen.getByRole("status").textContent).toBe("Choose the number to write from");
+
+        search("+79990001122");
+        await act(() => vi.advanceTimersByTimeAsync(400));
+        fireEvent.keyDown(screen.getByRole("textbox", { name: "Search name or number" }), { key: "Enter" });
+        expect(client.searchUserDirectory).not.toHaveBeenCalled();
+        expect(screen.queryByText("Test Person")).toBeNull();
+
+        fireEvent.change(writeFrom(), { target: { value: SLAVA_TEST } });
+        await act(() => vi.advanceTimersByTimeAsync(400));
+        expect(client.searchUserDirectory).toHaveBeenCalledTimes(1);
+        expect(await screen.findByText("Test Person")).toBeTruthy();
+        expect(screen.queryByRole("status")).toBeNull();
+    });
+
+    it("writes from the only number there is", () => {
+        mocked.spaces = [SLAVA_TEST];
+        render(panel());
+        expect(writeFrom().value).toBe(SLAVA_TEST);
+        expect(screen.queryByRole("status")).toBeNull();
     });
 });

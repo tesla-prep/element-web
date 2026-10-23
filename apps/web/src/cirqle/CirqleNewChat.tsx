@@ -10,8 +10,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 // (user_directory/search, which the relay bot fills with each inbox's contacts
 // and typed numbers as @newchat_<bridge>_<inbox>_<contact>) and, for the picked
 // contact, Element's startDmOnFirstMessage (createRoom on the first message,
-// answered by the relay bot with the real chat). "Write from" only narrows the
-// search to that number's contacts.
+// answered by the relay bot with the real chat). "Write from" narrows the
+// search to that number's contacts; under All numbers nothing is offered until
+// staff pick the number.
 
 import React, { type JSX, useEffect, useMemo, useRef, useState } from "react";
 import { type Room } from "matrix-js-sdk/src/matrix";
@@ -71,7 +72,8 @@ export function CirqleNewChat(): JSX.Element {
     const [fromId, setFromId] = useState<string | undefined>(
         () => inboxes.find((inbox) => inbox.spaceId === activeSpace)?.spaceId,
     );
-    const from = inboxes.find((inbox) => inbox.spaceId === fromId) ?? inboxes[0];
+    // No number is assumed under All numbers: staff pick the one they write from
+    const from = inboxes.find((inbox) => inbox.spaceId === fromId) ?? (inboxes.length === 1 ? inboxes[0] : undefined);
     const [found, setFound] = useState<Found[]>([]);
     const [busy, setBusy] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
@@ -168,7 +170,7 @@ export function CirqleNewChat(): JSX.Element {
                     onChange={(ev) => setQuery(ev.target.value)}
                     onKeyDown={(ev) => {
                         if (ev.key === "Escape") CirqleUiStore.closeNewChat();
-                        if (ev.key === "Enter" && found[0] && !busy) void start(found[0]);
+                        if (ev.key === "Enter" && from && found[0] && !busy) void start(found[0]);
                     }}
                 />
             </div>
@@ -177,9 +179,14 @@ export function CirqleNewChat(): JSX.Element {
                     <label htmlFor="cirqle_NewChat_from">Write from</label>
                     <select
                         id="cirqle_NewChat_from"
-                        value={from?.spaceId}
+                        value={from?.spaceId ?? ""}
                         onChange={(ev) => setFromId(ev.target.value)}
                     >
+                        {!from && (
+                            <option value="" disabled>
+                                Choose a number
+                            </option>
+                        )}
                         {inboxes.map((inbox) => (
                             <option key={inbox.spaceId} value={inbox.spaceId}>
                                 {inboxOption(inbox)}
@@ -188,12 +195,17 @@ export function CirqleNewChat(): JSX.Element {
                     </select>
                 </div>
             )}
+            {inboxes.length > 0 && !from && (
+                <p className="cirqle_NewChat_hint" role="status">
+                    Choose the number to write from
+                </p>
+            )}
             <div className="cirqle_NewChat_rows">
                 {found.map((person) => (
                     <button
                         key={person.userId}
                         className="cirqle_NewChat_row cirqle_NewChat_found"
-                        disabled={busy}
+                        disabled={busy || !from}
                         onClick={() => void start(person)}
                     >
                         <BaseAvatar name={person.name} idName={person.userId} url={person.avatarUrl} size="48px" />
