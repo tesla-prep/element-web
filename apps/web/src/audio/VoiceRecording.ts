@@ -52,6 +52,7 @@ export interface IRecordingUpdate {
 
 export enum RecordingState {
     Started = "started",
+    Paused = "paused",
     EndingSoon = "ending_soon", // emits an object with a single numerical value: secondsLeft
     Ended = "ended",
     Uploading = "uploading",
@@ -66,6 +67,7 @@ export class VoiceRecording extends EventEmitter implements IDestroyable {
     private recorderWorklet?: AudioWorkletNode;
     private recorderProcessor?: ScriptProcessorNode;
     private recording = false;
+    private paused = false;
     private observable?: SimpleObservable<IRecordingUpdate>;
     private targetMaxLength: number | null = TARGET_MAX_LENGTH;
     public amplitudes: number[] = []; // at each second mark, generated
@@ -83,6 +85,10 @@ export class VoiceRecording extends EventEmitter implements IDestroyable {
 
     public get isRecording(): boolean {
         return this.recording;
+    }
+
+    public get isPaused(): boolean {
+        return this.paused;
     }
 
     public emit(event: string, ...args: any[]): boolean {
@@ -275,11 +281,34 @@ export class VoiceRecording extends EventEmitter implements IDestroyable {
         this.emit(RecordingState.Started);
     }
 
+    /**
+     * Pauses the recording, flushing what has been encoded so far so it can be played back.
+     * The audio context is suspended too, so the clock, the waveform and the duration stand
+     * still until {@link resume}.
+     */
+    public async pause(): Promise<void> {
+        if (!this.recording || this.paused) return;
+        this.paused = true;
+        await this.recorder!.pause(true);
+        await this.recorderContext!.suspend();
+        this.emit(RecordingState.Paused);
+    }
+
+    /** Continues a paused recording: what follows is added to the same voice message. */
+    public async resume(): Promise<void> {
+        if (!this.recording || !this.paused) return;
+        await this.recorderContext!.resume();
+        this.recorder!.resume();
+        this.paused = false;
+        this.emit(RecordingState.Started);
+    }
+
     public async stop(): Promise<void> {
         return Singleflight.for(this, "stop").do(async (): Promise<void> => {
             if (!this.recording) {
                 throw new Error("No recording to stop");
             }
+            this.paused = false;
 
             // Disconnect the source early to start shutting down resources
             await this.recorder!.stop(); // stop first to flush the last frame

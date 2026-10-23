@@ -50,6 +50,19 @@ export class VoiceMessageRecording implements IDestroyable {
         return this.audioBuffer;
     }
 
+    /** Pauses the recording; {@link getPlayback} then plays what was recorded so far. */
+    public async pause(): Promise<void> {
+        await this.voiceRecording.pause();
+    }
+
+    /** Continues a paused recording; the playback of the part recorded so far is let go. */
+    public async resume(): Promise<void> {
+        this.playback?.destroy();
+        this.playback = undefined;
+        Singleflight.for(this, "playback").forget();
+        await this.voiceRecording.resume();
+    }
+
     public on(event: string | symbol, listener: (...args: any[]) => void): this {
         this.voiceRecording.on(event, listener);
         return this;
@@ -70,6 +83,10 @@ export class VoiceMessageRecording implements IDestroyable {
 
     public get isRecording(): boolean {
         return this.voiceRecording.isRecording;
+    }
+
+    public get isPaused(): boolean {
+        return this.voiceRecording.isPaused;
     }
 
     /**

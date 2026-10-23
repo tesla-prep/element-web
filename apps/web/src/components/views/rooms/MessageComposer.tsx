@@ -64,6 +64,7 @@ import { MessageComposerUrlPreviewViewModel } from "../../../viewmodels/composer
 import { useScopedRoomContext } from "../../../contexts/ScopedRoomContext";
 import PlatformPeg from "../../../PlatformPeg";
 import { ModuleApi } from "../../../modules/Api";
+import { isCirqleMessenger } from "../../../cirqle/CirqleFeatures";
 
 // The prefix used when persisting editor drafts to localstorage.
 export const WYSIWYG_EDITOR_STATE_STORAGE_PREFIX = "mx_wysiwyg_state_";
@@ -542,7 +543,7 @@ export class MessageComposer extends React.Component<IProps, IState> {
     private onRecordStartEndClick = (): void => {
         void this.voiceRecordingButton.current?.onRecordStartEndClick();
 
-        if (this.context.narrow) {
+        if (this.context.narrow && !isCirqleMessenger()) {
             this.toggleButtonMenu();
         }
     };

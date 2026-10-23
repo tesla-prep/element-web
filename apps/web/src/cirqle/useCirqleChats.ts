@@ -36,6 +36,11 @@ const CHIP_MATCHES: Record<CirqleChip, (room: Room) => boolean> = {
     groups: (room) => chatKind(room) === "group" && networkOf(room) !== undefined,
 };
 
+/** The chips a section offers: channels are never groups, so the Channels list has no Groups chip. */
+export function sectionChips(section: CirqleSection): CirqleChip[] {
+    return section === "channels" ? ["all", "unread", "favourites"] : ["all", "unread", "favourites", "groups"];
+}
+
 /** Re-render whenever the room list, the spaces or the unread counts change. */
 function useListVersion(): number {
     const [version, setVersion] = useState(0);
@@ -84,6 +89,23 @@ function sectionChats(inboxes: Inbox[], picked: Inbox | undefined, section: Cirq
     return numberChats(RoomListStoreV3.instance.getSortedRooms(), inboxes, picked).filter((room) =>
         inSection(room, section),
     );
+}
+
+/** Whether a number (any connected number when undefined) has a channel: the rail shows Channels only then. */
+export function hasChannels(rooms: Room[], inboxes: Inbox[], picked: Inbox | undefined): boolean {
+    return numberChats(rooms, inboxes, picked).some((room) => inSection(room, "channels"));
+}
+
+export function useCirqleHasChannels(): boolean {
+    const client = useMatrixClientContext();
+    const version = useListVersion();
+    const read = useCallback(() => {
+        const inboxes = getInboxes(client);
+        return hasChannels(RoomListStoreV3.instance.getSortedRooms(), inboxes, pickedInbox(inboxes));
+    }, [client]);
+    const [has, setHas] = useState(read);
+    useEffect(() => setHas(read()), [read, version]);
+    return has;
 }
 
 /** Unread chats of a number (All numbers when undefined) in a section. */

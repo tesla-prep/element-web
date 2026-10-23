@@ -277,7 +277,7 @@ slots by their data-testid.
 }
 
 .mx_MessageComposer_row .cirqle_mic,
-.mx_MessageComposer_row .mx_MessageComposer_sendMessageWrapper {
+.mx_MessageComposer_row .mx_MessageComposer_sendMessage {
     order: 5;
 }
 
@@ -338,12 +338,231 @@ slots by their data-testid.
 }
 
 /* While there is text the send button takes the microphone's place */
-.mx_MessageComposer_row:has(.mx_MessageComposer_sendMessageWrapper) .cirqle_mic {
+.mx_MessageComposer_row:has(.mx_MessageComposer_sendMessage) .cirqle_mic {
     display: none;
 }
 
 .mx_MessageComposer_sendMessage {
     background: var(--cirqle-green) !important;
+}
+
+/* ---------- recording a voice message (cirqle/CirqleVoiceRecorder.tsx) ----------
+   As on WhatsApp Web the recorder takes the whole row: the input goes away and
+   delete, the red dot with the time, the waveform and pause sit at the right,
+   before the send button. */
+
+.mx_MessageComposer_row:has(.cirqle_VoiceRecorder) > .mx_SendMessageComposer,
+.mx_MessageComposer_row:has(.cirqle_VoiceRecorder) > .mx_SendWysiwygComposer {
+    display: none;
+}
+
+.mx_MessageComposer_row > .mx_MessageComposer_actions > .cirqle_VoiceRecorder {
+    order: 3;
+    flex: 1 1 auto;
+    width: auto;
+    min-width: 0;
+    height: 44px;
+    border-radius: 0;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
+}
+
+.cirqle_VoiceRecorder_button {
+    flex: 0 0 44px;
+    width: 44px;
+    height: 44px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 22px;
+    background: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--cirqle-ink-2);
+    cursor: pointer;
+}
+
+.cirqle_VoiceRecorder_button:hover {
+    background: var(--cirqle-ground);
+}
+
+.cirqle_VoiceRecorder_button:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
+.cirqle_VoiceRecorder_button svg {
+    width: 24px;
+    height: 24px;
+}
+
+.cirqle_VoiceRecorder_red {
+    color: var(--cirqle-record);
+}
+
+.cirqle_VoiceRecorder .mx_VoiceMessagePrimaryContainer {
+    flex: 0 1 auto;
+    min-width: 0;
+    max-width: none;
+    height: 44px;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0 16px 0 14px;
+    border: 0;
+    border-radius: 22px;
+    background: var(--cirqle-ground);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--cirqle-ink);
+}
+
+.cirqle_VoiceRecorder_dot {
+    flex: 0 0 10px;
+    height: 10px;
+    border-radius: 5px;
+    background: var(--cirqle-record);
+    animation: cirqle-recording 1.4s ease-in-out infinite;
+}
+
+@keyframes cirqle-recording {
+    50% {
+        opacity: 0.25;
+    }
+}
+
+.cirqle_VoiceRecorder .mx_VoiceMessagePrimaryContainer .mx_Clock {
+    flex: 0 0 auto;
+    width: auto;
+    min-width: 0;
+    padding: 0;
+    font-size: 15px;
+    font-variant-numeric: tabular-nums;
+    color: var(--cirqle-ink);
+}
+
+/* Narrow rows keep the newest bars: the waveform gives up its oldest ones */
+.cirqle_VoiceRecorder .mx_VoiceMessagePrimaryContainer .mx_Waveform {
+    flex: 0 1 auto;
+    min-width: 0;
+    height: 28px;
+    top: 0;
+    justify-content: flex-end;
+}
+
+.cirqle_VoiceRecorder .mx_VoiceMessagePrimaryContainer .mx_Waveform .mx_Waveform_bar {
+    background-color: var(--cirqle-ink-3);
+}
+
+.cirqle_VoiceRecorder .mx_VoiceMessagePrimaryContainer .mx_Waveform .mx_Waveform_bar.mx_Waveform_bar_100pct {
+    background-color: var(--cirqle-whatsapp);
+}
+
+.cirqle_VoiceRecorder_failed {
+    flex: 0 0 auto;
+    font-size: 13px;
+    white-space: nowrap;
+    color: var(--cirqle-danger);
+}
+
+/* ---------- voice messages in the timeline: WhatsApp's bubble ----------
+   play, the waveform with a dot where it plays, the length under it; the
+   time stays in the bubble's corner. */
+
+.mx_MVoiceMessageBody .mx_VoiceMessagePrimaryContainer {
+    width: 272px;
+    max-width: 100%;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 2px 0 0;
+    border: 0;
+    border-radius: 0;
+    background: none;
+    display: grid;
+    grid-template-columns: 36px minmax(0, 1fr);
+    grid-template-rows: 32px 18px;
+    column-gap: 8px;
+    align-items: center;
+}
+
+.mx_MVoiceMessageBody .mx_RecordingPlayback_timelineLayoutMiddle {
+    grid-row: 1;
+    grid-column: 2;
+    margin: 0;
+}
+
+.mx_MVoiceMessageBody .mx_RecordingPlayback_timelineLayoutMiddle + .mx_Clock {
+    grid-row: 2;
+    grid-column: 2;
+    width: auto;
+    min-width: 0;
+    padding: 0;
+    text-align: left;
+    font-size: 12px;
+    line-height: 16px;
+    font-variant-numeric: tabular-nums;
+    color: var(--cirqle-ink-3);
+}
+
+.mx_MVoiceMessageBody .mx_Waveform .mx_Waveform_bar {
+    background-color: #aab3ad;
+}
+
+.mx_MVoiceMessageBody .mx_Waveform .mx_Waveform_bar.mx_Waveform_bar_100pct {
+    background-color: var(--cirqle-whatsapp);
+}
+
+.mx_MVoiceMessageBody .mx_RecordingPlayback_timelineLayoutMiddle .mx_SeekBar::-webkit-slider-thumb {
+    width: 12px;
+    height: 12px;
+    border-radius: 6px;
+    background-color: var(--cirqle-whatsapp);
+}
+
+.mx_MVoiceMessageBody .mx_RecordingPlayback_timelineLayoutMiddle .mx_SeekBar::-moz-range-thumb {
+    width: 12px;
+    height: 12px;
+    border-radius: 6px;
+    background-color: var(--cirqle-whatsapp);
+}
+
+/* Play and pause: the green glyph alone, as WhatsApp draws it, in the bubble and in the recorder */
+.mx_MVoiceMessageBody .mx_PlayPauseButton,
+.cirqle_VoiceRecorder .mx_PlayPauseButton {
+    grid-row: 1;
+    grid-column: 1;
+    --cpd-icon-button-size: 36px !important;
+    background: none;
+}
+
+.mx_MVoiceMessageBody .mx_PlayPauseButton *,
+.cirqle_VoiceRecorder .mx_PlayPauseButton * {
+    color: var(--cirqle-whatsapp);
+}
+
+.mx_MVoiceMessageBody .mx_PlayPauseButton svg,
+.cirqle_VoiceRecorder .mx_PlayPauseButton svg {
+    width: 28px;
+    height: 28px;
+}
+
+/* Element draws media without a bubble; a voice message keeps its bubble */
+[class*="_layoutBubble_"] > [data-testid="event-tile-line"]:has(.mx_MVoiceMessageBody) {
+    background: var(--event-tile-bubble-other-background);
+    padding-inline: 10px;
+    padding-bottom: 6px;
+}
+
+[class*="_layoutBubble_"][class*="_stateOwnEvent_"] > [data-testid="event-tile-line"]:has(.mx_MVoiceMessageBody) {
+    background: var(--event-tile-bubble-self-background);
+}
+
+[class*="_layoutBubble_"]:not(:has(> [data-testid="event-tile-slot-sender"] *))
+    > [data-testid="event-tile-line"]:has(.mx_MVoiceMessageBody) {
+    padding-top: 8px;
 }
 
 /* ---------- empty side ---------- */
@@ -461,4 +680,3 @@ slots by their data-testid.
     content: "! ";
     font-weight: 700;
 }
-
