@@ -45,6 +45,7 @@ import AccessibleButton, { type ButtonEvent } from "../elements/AccessibleButton
 import { useScopedRoomContext } from "../../../contexts/ScopedRoomContext.tsx";
 import { useRoomUploadViewModel } from "../../../viewmodels/room/RoomUploadViewModel.tsx";
 import { cirqleComposerButtons } from "../../../cirqle/CirqleComposer";
+import { isCirqleMessenger } from "../../../cirqle/CirqleFeatures";
 
 interface IProps {
     addEmoji: (emoji: string) => boolean;
@@ -125,7 +126,7 @@ const MessageComposerButtons: React.FC<IProps> = (props: IProps) => {
         ];
     }
 
-    if (!narrow) [mainButtons, moreButtons] = cirqleComposerButtons(mainButtons, moreButtons); // CIRQLE: mic beside the input
+    if (!narrow || isCirqleMessenger()) [mainButtons, moreButtons] = cirqleComposerButtons(mainButtons, moreButtons); // CIRQLE: mic beside the input
     mainButtons = filterBoolean(mainButtons);
     moreButtons = filterBoolean(moreButtons);
 
@@ -190,7 +191,7 @@ function showStickersButton(props: IProps): ReactElement | null {
 
 function voiceRecordingButton(props: IProps, narrow: boolean): ReactElement | null {
     // XXX: recording UI does not work well in narrow mode, so hide for now
-    return narrow ? null : (
+    return narrow && !isCirqleMessenger() ? null : (
         <CollapsibleButton
             key="voice_message_send"
             className="mx_MessageComposer_button"

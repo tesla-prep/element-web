@@ -37,6 +37,10 @@ declare module "opus-recorder/dist/recorder.min.js" {
 
         public stop(): Promise<void>;
 
+        public pause(flush?: boolean): Promise<void>;
+
+        public resume(): void;
+
         public close(): void;
     }
 }

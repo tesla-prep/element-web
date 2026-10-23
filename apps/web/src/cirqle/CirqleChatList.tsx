@@ -30,7 +30,14 @@ import { chatPreview } from "./CirqlePreview";
 import { GroupIcon, KebabIcon, PencilIcon, PlusIcon, SearchIcon, SettingsIcon } from "./CirqleIcons";
 import { contactPhone, type Inbox, numberLine, repeatedNames, stripNetworkSuffix } from "./CirqleInboxes";
 import { CirqleUiStore, type CirqleSection } from "./CirqleUiStore";
-import { type CirqleChip, isUnreadChat, pickedInbox, useCirqleInboxes, useCirqleRooms } from "./useCirqleChats";
+import {
+    type CirqleChip,
+    isUnreadChat,
+    pickedInbox,
+    sectionChips,
+    useCirqleInboxes,
+    useCirqleRooms,
+} from "./useCirqleChats";
 
 const PAGE = 60;
 
@@ -100,17 +107,19 @@ function ChatRow({
     );
 }
 
-const CHIPS: { chip: CirqleChip; label: string }[] = [
-    { chip: "all", label: "All" },
-    { chip: "unread", label: "Unread" },
-    { chip: "favourites", label: "Favourites" },
-    { chip: "groups", label: "Groups" },
-];
+const CHIP_LABELS: Record<CirqleChip, string> = {
+    all: "All",
+    unread: "Unread",
+    favourites: "Favourites",
+    groups: "Groups",
+};
 
 export function CirqleChatList({ section }: { section: CirqleSection }): JSX.Element {
     const sdkContext = useContext(SDKContext);
     const inboxes = useCirqleInboxes();
-    const [chip, setChip] = useState<CirqleChip>("all");
+    const [pickedChip, setChip] = useState<CirqleChip>("all");
+    const chips = sectionChips(section);
+    const chip = chips.includes(pickedChip) ? pickedChip : "all";
     const [query, setQuery] = useState("");
     const [menuOpen, setMenuOpen] = useState(false);
     const [shown, setShown] = useState(PAGE);
@@ -182,7 +191,7 @@ export function CirqleChatList({ section }: { section: CirqleSection }): JSX.Ele
                 />
             </div>
             <div className="cirqle_ChatList_chips" role="tablist" aria-label="Filter">
-                {CHIPS.map(({ chip: c, label }) => (
+                {chips.map((c) => (
                     <button
                         key={c}
                         role="tab"
@@ -190,7 +199,7 @@ export function CirqleChatList({ section }: { section: CirqleSection }): JSX.Ele
                         className={`cirqle_chip cirqle_chip_${c}`}
                         onClick={() => setChip(c)}
                     >
-                        {label}
+                        {CHIP_LABELS[c]}
                         {c === "unread" && unread > 0 ? ` ${unread}` : ""}
                     </button>
                 ))}

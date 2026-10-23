@@ -5,7 +5,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 */
 
 // The deep green rail on the left, in place of Element's space bar:
-// logo, Chats (with the number of unread chats), Channels, settings, profile.
+// logo, Chats (with the number of unread chats), Channels (only while the picked
+// number, or any number under All numbers, has a channel), settings, profile.
 
 import React, { type JSX, useCallback, useEffect, useState } from "react";
 import { Menu, MenuItem } from "@vector-im/compound-web";
@@ -13,7 +14,7 @@ import { Menu, MenuItem } from "@vector-im/compound-web";
 import logoUrl from "../../res/img/cirqle/cirqle-shield-outlined-marble.svg";
 import { ChannelIcon, ChatsIcon, LeaveIcon, SettingsIcon } from "./CirqleIcons";
 import { CirqleUiStore, useCirqleUi } from "./CirqleUiStore";
-import { useCirqleUnreadChats } from "./useCirqleChats";
+import { useCirqleHasChannels, useCirqleUnreadChats } from "./useCirqleChats";
 import dis from "../dispatcher/dispatcher";
 import { Action } from "../dispatcher/actions";
 import { OwnProfileStore } from "../stores/OwnProfileStore";
@@ -41,6 +42,7 @@ export function CirqleRail(): JSX.Element {
     const client = useMatrixClientContext();
     const { section, panel } = useCirqleUi();
     const unreadChats = useCirqleUnreadChats();
+    const channels = useCirqleHasChannels();
     const [profileOpen, setProfileOpen] = useState(false);
     const profile = useEventEmitterState(OwnProfileStore.instance, UPDATE_EVENT, () => ({
         name: OwnProfileStore.instance.displayName ?? client.getUserId() ?? "",
@@ -48,6 +50,9 @@ export function CirqleRail(): JSX.Element {
     }));
 
     useEffect(() => watchCirqleInviteRefusals(client), [client]);
+    useEffect(() => {
+        if (!channels && CirqleUiStore.section === "channels") CirqleUiStore.showSection("chats");
+    }, [channels]);
 
     const openSettings = useCallback(() => dis.fire(Action.ViewUserSettings), []);
     const chatsActive = section === "chats" || panel !== "list";
@@ -64,14 +69,16 @@ export function CirqleRail(): JSX.Element {
                 <ChatsIcon />
                 {unreadChats > 0 && <span className="cirqle_Rail_badge">{unreadChats}</span>}
             </button>
-            <button
-                className="cirqle_Rail_button"
-                aria-label="Channels"
-                aria-current={!chatsActive && section === "channels" ? "page" : undefined}
-                onClick={() => CirqleUiStore.showSection("channels")}
-            >
-                <ChannelIcon />
-            </button>
+            {channels && (
+                <button
+                    className="cirqle_Rail_button"
+                    aria-label="Channels"
+                    aria-current={!chatsActive && section === "channels" ? "page" : undefined}
+                    onClick={() => CirqleUiStore.showSection("channels")}
+                >
+                    <ChannelIcon />
+                </button>
+            )}
             <div className="cirqle_Rail_spacer" />
             <button className="cirqle_Rail_button" aria-label="Settings" onClick={openSettings}>
                 <SettingsIcon />

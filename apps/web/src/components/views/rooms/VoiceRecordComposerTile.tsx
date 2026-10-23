@@ -36,6 +36,8 @@ import RoomContext from "../../../contexts/RoomContext";
 import { type IUpload, type VoiceMessageRecording } from "../../../audio/VoiceMessageRecording";
 import { createVoiceMessageContent } from "../../../utils/createVoiceMessageContent";
 import AccessibleButton from "../elements/AccessibleButton";
+import { isCirqleMessenger } from "../../../cirqle/CirqleFeatures";
+import { CirqleVoiceRecorder } from "../../../cirqle/CirqleVoiceRecorder";
 
 interface IProps {
     room: Room;
@@ -159,6 +161,14 @@ export default class VoiceRecordComposerTile extends React.PureComponent<IProps,
         await this.disposeRecording();
     };
 
+    private onPause = async (): Promise<void> => {
+        await this.state.recorder?.pause();
+    };
+
+    private onResume = async (): Promise<void> => {
+        await this.state.recorder?.resume();
+    };
+
     public onRecordStartEndClick = async (): Promise<void> => {
         if (this.state.recorder) {
             await this.state.recorder.stop();
@@ -241,6 +251,19 @@ export default class VoiceRecordComposerTile extends React.PureComponent<IProps,
 
     public render(): ReactNode {
         if (!this.state.recordingPhase) return null;
+
+        if (isCirqleMessenger() && this.state.recorder) {
+            return (
+                <CirqleVoiceRecorder
+                    recorder={this.state.recorder}
+                    phase={this.state.recordingPhase}
+                    uploadFailed={!!this.state.didUploadFail}
+                    onDelete={this.onCancel}
+                    onPause={this.onPause}
+                    onResume={this.onResume}
+                />
+            );
+        }
 
         let stopBtn;
         let deleteButton;

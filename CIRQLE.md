@@ -16,7 +16,7 @@ Everything lives in two places; upstream files only get one-line hooks marked
 
 | Where | What |
 |---|---|
-| `apps/web/src/cirqle/` | rail, chat list and its order, number picker, New chat, New group, Group info, Contact info, member card, header, empty side, composer buttons, timeline sides, forced settings |
+| `apps/web/src/cirqle/` | rail (Channels only while a number has a channel), chat list and its order, number picker, New chat, New group, Group info, Contact info, member card, header, empty side, composer buttons, timeline sides, forced settings |
 | `apps/web/res/themes/light/css/cirqle/` | the look, imported unlayered at the end of `light.pcss` so it wins over Element's layered CSS |
 | `apps/web/res/fonts/Source_Serif_4/`, `apps/web/res/img/cirqle/` | heading font (OFL) and the shield logo |
 | `cirqle/` | `config.json`, `deploy.sh`, `nginx-next.conf` |
@@ -41,7 +41,9 @@ Hooks in upstream files (each one line or a small block):
 | `structures/RightPanel.tsx` | Contact info and Group info for bridged chats in place of the room summary and People; the member card in place of user info everywhere (`cirqle/CirqleRightPanel.tsx`) |
 | `views/rooms/RoomHeader/RoomHeader.tsx` | name without "(WA)", subtitle, back arrow, search and menu |
 | `views/rooms/EventTile.tsx` | staff messages and the number's own ghost (what the owner sends from the phone) on our side; customer name hidden in private chats |
-| `views/rooms/MessageComposerButtons.tsx` | microphone beside the input |
+| `views/rooms/MessageComposerButtons.tsx`, `views/rooms/MessageComposer.tsx` | microphone beside the input, on phones too |
+| `views/rooms/VoiceRecordComposerTile.tsx` | recording a voice message takes the whole row, WhatsApp Web style: delete, red dot and time, waveform, pause; paused, it plays back and continues (`cirqle/CirqleVoiceRecorder.tsx`) |
+| `audio/VoiceRecording.ts`, `audio/VoiceMessageRecording.ts` | pause and resume: the encoder flushes and the audio context is suspended, so the clock and the length stand still |
 | `vector/init.tsx`, `i18n/settings.ts` | English for everyone |
 | `settings/SettingsStore.ts` (second line) | read receipts and typing always sent: the relay bot passes them on from the number |
 | `slash-commands/command.ts` | slash commands: only /plain, /shrug, /tableflip, /unflip, /lenny |
