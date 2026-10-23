@@ -35,7 +35,7 @@ import { PdfViewerCard } from "../views/right_panel/PdfViewerCard";
 import { type XOR } from "../../@types/common";
 import ExtensionsCard from "../views/right_panel/ExtensionsCard";
 import MemberListView from "../views/rooms/MemberList/MemberListView";
-import { CirqleGroupInfo, isCirqleGroupInfoRoom } from "../../cirqle/CirqleGroupInfo";
+import { cirqleRightPanelCard } from "../../cirqle/CirqleRightPanel";
 
 interface BaseProps {
     overwriteCard?: IRightPanelCard; // used to display a custom card and ignoring the RightPanelStore (used for UserView)
@@ -152,6 +152,7 @@ export default class RightPanel extends React.Component<Props, IState> {
         const roomId = this.props.room?.roomId;
         const phase = this.props.overwriteCard?.phase ?? this.state.phase;
         const cardState = this.props.overwriteCard?.state ?? this.state.cardState;
+        const cirqleCard = cirqleRightPanelCard(phase, this.props.room, cardState, this.onClose); // CIRQLE: our info panels and member card
         switch (phase) {
             case RightPanelPhases.MemberList:
                 if (!!roomId) {
@@ -253,9 +254,7 @@ export default class RightPanel extends React.Component<Props, IState> {
                 break;
 
             case RightPanelPhases.RoomSummary:
-                if (this.props.room && isCirqleGroupInfoRoom(this.props.room)) {
-                    card = <CirqleGroupInfo room={this.props.room} />; // CIRQLE: WhatsApp-style group info
-                } else if (!!this.props.room) {
+                if (!!this.props.room) {
                     card = (
                         <RoomSummaryCardView
                             room={this.props.room}
@@ -291,7 +290,7 @@ export default class RightPanel extends React.Component<Props, IState> {
 
         return (
             <aside className="mx_RightPanel" id="mx_RightPanel" data-testid="right-panel">
-                {card}
+                {cirqleCard ?? card /* CIRQLE */}
             </aside>
         );
     }

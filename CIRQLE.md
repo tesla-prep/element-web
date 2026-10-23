@@ -16,7 +16,7 @@ Everything lives in two places; upstream files only get one-line hooks marked
 
 | Where | What |
 |---|---|
-| `apps/web/src/cirqle/` | rail, chat list and its order, number picker, New chat, Group info, header, empty side, composer buttons, timeline sides, forced settings |
+| `apps/web/src/cirqle/` | rail, chat list and its order, number picker, New chat, Group info, Contact info, member card, header, empty side, composer buttons, timeline sides, forced settings |
 | `apps/web/res/themes/light/css/cirqle/` | the look, imported unlayered at the end of `light.pcss` so it wins over Element's layered CSS |
 | `apps/web/res/fonts/Source_Serif_4/`, `apps/web/res/img/cirqle/` | heading font (OFL) and the shield logo |
 | `cirqle/` | `config.json`, `deploy.sh`, `nginx-next.conf` |
@@ -38,7 +38,7 @@ Hooks in upstream files (each one line or a small block):
 | `structures/LoggedInView.tsx` | rail in place of the space bar, list 360 px |
 | `structures/LeftPanel.tsx` | chat list in place of the room list |
 | `structures/HomePage.tsx` | empty side |
-| `structures/RightPanel.tsx` | Group info for bridged groups and channels |
+| `structures/RightPanel.tsx` | Contact info and Group info for bridged chats in place of the room summary and People; the member card in place of user info everywhere (`cirqle/CirqleRightPanel.tsx`) |
 | `views/rooms/RoomHeader/RoomHeader.tsx` | name without "(WA)", subtitle, back arrow, search and menu |
 | `views/rooms/EventTile.tsx` | staff messages and the number's own ghost (what the owner sends from the phone) on our side; customer name hidden in private chats |
 | `views/rooms/MessageComposerButtons.tsx` | microphone beside the input |
