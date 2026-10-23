@@ -55,6 +55,10 @@ Hooks in upstream files (each one line or a small block):
 | `views/dialogs/ConfirmRedactDialog.tsx` | "Delete for everyone?" without a reason |
 | `views/dialogs/InviteDialog.tsx` | Add member offers the contacts of the group's own number only (`cirqle/CirqleInviteRefusals.ts`) |
 | `utils/EventUtils.ts` | Edit only while the network takes it (`com.beeper.room_features`, `cirqle/CirqleMessages.ts`) |
+| `views/dialogs/ForwardDialog.tsx` | Forward only to chats of the same number, after "Forward to …?" (`cirqle/CirqleForward.ts`) |
+| `views/rooms/EventTile/ReactionsRowAdapter.tsx` | our number's reaction counted once, its latest shown (`cirqle/CirqleReactions.ts`) |
+| `emojipicker/ReactionPicker.tsx`, `reactions/ReactionsRowButtonViewModel.ts` | a new reaction takes our previous one back, as WhatsApp replaces it |
+| `autocomplete/UserProvider.tsx` | @ offers the customers, not colleagues, service users or our own number |
 | `views/rooms/EventTile.tsx` | under a message the network refused: "Not delivered to WhatsApp: …" (`com.beeper.message_send_status`, `cirqle/CirqleDelivery.tsx`) |
 
 Hooks that take stock Element's own screens away (from `vector/init.tsx` down) are behind

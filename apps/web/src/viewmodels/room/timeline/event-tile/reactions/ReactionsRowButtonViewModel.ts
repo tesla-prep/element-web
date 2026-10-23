@@ -18,6 +18,7 @@ import { formatList } from "../../../../../utils/FormattingUtils";
 import dis from "../../../../../dispatcher/dispatcher";
 import { ReactionsRowButtonTooltipViewModel } from "./ReactionsRowButtonTooltipViewModel";
 import { REACTION_SHORTCODE_KEY } from "./reactionShortcode";
+import { cirqleReplaceOwnReaction } from "../../../../../cirqle/CirqleReactions";
 
 export interface ReactionsRowButtonViewModelProps {
     /**
@@ -199,6 +200,7 @@ export class ReactionsRowButtonViewModel
             return;
         }
 
+        cirqleReplaceOwnReaction(client, mxEvent, content); // CIRQLE: a new reaction replaces ours
         void client.sendEvent(mxEvent.getRoomId()!, EventType.Reaction, {
             "m.relates_to": {
                 rel_type: RelationType.Annotation,

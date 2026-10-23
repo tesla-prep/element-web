@@ -64,6 +64,7 @@ import { CommandPartCreator } from "../../../editor/parts";
 import SettingsStore from "../../../settings/SettingsStore";
 import { parseEvent } from "../../../editor/deserialize";
 import EditorModel from "../../../editor/model";
+import { confirmCirqleForward, isCirqleForwardTarget } from "../../../cirqle/CirqleForward";
 
 const AVATAR_SIZE = 30;
 
@@ -106,6 +107,7 @@ const Entry: React.FC<IEntryProps<any>> = ({ room, type, content, matrixClient: 
         onFinished(true);
     };
     const send = async (): Promise<void> => {
+        if (!(await confirmCirqleForward(cli, room))) return; // CIRQLE: "Forward to …?"
         setSendState(SendState.Sending);
         try {
             await cli.sendEvent(room.roomId, type, content);
@@ -292,10 +294,11 @@ const ForwardDialog: React.FC<IProps> = ({ matrixClient: cli, event, permalinkCr
             sortRoomsByRecency(
                 cli
                     .getVisibleRooms(msc3946DynamicRoomPredecessors)
-                    .filter((room) => room.getMyMembership() === KnownMembership.Join && !room.isSpaceRoom()),
+                    .filter((room) => room.getMyMembership() === KnownMembership.Join && !room.isSpaceRoom())
+                    .filter((room) => isCirqleForwardTarget(cli, event, room)), // CIRQLE: chats of the same number
                 cli.getSafeUserId(),
             ),
-        [cli, msc3946DynamicRoomPredecessors],
+        [cli, event, msc3946DynamicRoomPredecessors], // CIRQLE: event
     );
 
     if (lcQuery) {

@@ -16,6 +16,7 @@ import { Action } from "../../../dispatcher/actions";
 import RoomContext from "../../../contexts/RoomContext";
 import { type FocusComposerPayload } from "../../../dispatcher/payloads/FocusComposerPayload";
 import { EmojiPickerWithRecents } from "../../../emojipicker/EmojiPickerWithRecents";
+import { cirqleReplaceOwnReaction } from "../../../cirqle/CirqleReactions";
 
 interface IProps {
     mxEvent: MatrixEvent;
@@ -100,6 +101,7 @@ class ReactionPicker extends React.Component<IProps, IState> {
             // Tell the emoji picker not to bump this in the more frequently used list.
             return false;
         } else {
+            cirqleReplaceOwnReaction(MatrixClientPeg.safeGet(), this.props.mxEvent, reaction); // CIRQLE
             void MatrixClientPeg.safeGet().sendEvent(this.props.mxEvent.getRoomId()!, EventType.Reaction, {
                 "m.relates_to": {
                     rel_type: RelationType.Annotation,

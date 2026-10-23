@@ -24,6 +24,8 @@ import { isContentActionable } from "../../../../utils/EventUtils";
 import { type EventTileViewModel } from "../../../../viewmodels/room/timeline/event-tile/EventTileViewModel";
 import { ReactionsRowButtonViewModel } from "../../../../viewmodels/room/timeline/event-tile/reactions/ReactionsRowButtonViewModel";
 import { MAX_ITEMS_WHEN_LIMITED } from "../../../../viewmodels/room/timeline/event-tile/reactions/ReactionsRowViewModel";
+import { MatrixClientPeg } from "../../../../MatrixClientPeg";
+import { cirqleReactionGroups } from "../../../../cirqle/CirqleReactions";
 
 /**
  * Props for the {@link ReactionsRowButtonAdapter} component.
@@ -90,13 +92,16 @@ interface ReactionGroup {
 }
 
 const getReactionGroups = (reactions?: Relations | null): ReactionGroup[] =>
-    reactions
-        ?.getSortedAnnotationsByKey()
-        ?.map(([content, events]) => ({
-            content,
-            events: [...events],
-        }))
-        .filter(({ events }) => events.length > 0) ?? [];
+    cirqleReactionGroups(
+        reactions
+            ?.getSortedAnnotationsByKey()
+            ?.map(([content, events]) => ({
+                content,
+                events: [...events],
+            }))
+            .filter(({ events }) => events.length > 0) ?? [],
+        MatrixClientPeg.get(),
+    ); // CIRQLE: our number reacts once, as on WhatsApp
 
 const getMyReactions = (reactions: Relations | null | undefined, userId?: string): MatrixEvent[] | null => {
     if (!reactions || !userId) {

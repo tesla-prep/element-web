@@ -33,6 +33,7 @@ import { makeUserPermalink } from "../utils/permalinks/Permalinks";
 import { type ICompletion, type ISelectionRange } from "./Autocompleter";
 import MemberAvatar from "../components/views/avatars/MemberAvatar";
 import { type TimelineRenderingType } from "../contexts/RoomContext";
+import { isCirqleMentionable } from "../cirqle/CirqleMessages";
 
 const USER_REGEX = /\B@\S*/g;
 
@@ -167,6 +168,7 @@ export default class UserProvider extends AutocompleteProvider {
         const currentUserId = MatrixClientPeg.safeGet().credentials.userId;
         this.users = this.room.getJoinedMembers().filter(({ userId }) => userId !== currentUserId);
         this.users = this.users.concat(this.room.getMembersWithMembership(KnownMembership.Invite));
+        this.users = this.users.filter(({ userId }) => isCirqleMentionable(this.room.client, userId)); // CIRQLE: customers only
 
         this.users = sortBy(this.users, (member) => 1e20 - lastSpoken[member.userId] || 1e20);
 
@@ -177,6 +179,7 @@ export default class UserProvider extends AutocompleteProvider {
         if (!this.users) return;
         if (!user) return;
         if (user.userId === MatrixClientPeg.safeGet().getSafeUserId()) return;
+        if (!isCirqleMentionable(this.room.client, user.userId)) return; // CIRQLE
 
         // Move the user that spoke to the front of the array
         this.users.splice(
