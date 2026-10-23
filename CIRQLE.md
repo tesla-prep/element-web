@@ -30,6 +30,7 @@ Hooks in upstream files (each one line or a small block):
 | `settings/SettingsStore.ts` | `CIRQLE_FORCED_SETTINGS` (bubbles, timestamps, previews, one list, all rooms under All numbers, newest first) |
 | `stores/room-list-v3/skip-list/sorters/BaseRecencySorter.ts` | chats sorted by their last message (`cirqle/CirqleActivity.ts`) |
 | `stores/room-list-v3/RoomListStoreV3.ts` | a chat moves when the server tells us its last message |
+| `stores/room-list-v3/skip-list/sorters/RecencySorter.ts` | muted chats keep their place by recency |
 | `stores/ToastStore.ts` | no key backup, verification or analytics toasts |
 | `customisations/helpers/UIComponents.ts` | no room directory, integrations, space creation |
 | `shouldHideEvent.ts` | room state events (joins, renames) hidden, tombstones kept |
@@ -58,8 +59,8 @@ receipts do not move a chat. Element only looks at the last 20 events sync
 loaded; when none of them is a message, `CirqleActivity` asks the server
 (`/messages` filtered to message types) for the last one before them, four
 rooms at a time, and keeps the answer in `localStorage` (`cirqle_chat_activity`)
-until that room's loaded events change. Muted and low priority chats still go to
-the bottom, as in stock Element.
+until that room's loaded events change. Muted chats keep their place, as on
+WhatsApp; low priority chats still go to the bottom, as in stock Element.
 
 ## Build and deploy
 
