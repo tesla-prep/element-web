@@ -65,6 +65,7 @@ import SettingsStore from "../../../settings/SettingsStore";
 import { parseEvent } from "../../../editor/deserialize";
 import EditorModel from "../../../editor/model";
 import { confirmCirqleForward, isCirqleForwardTarget } from "../../../cirqle/CirqleForward";
+import { isCirqleMessenger } from "../../../cirqle/CirqleFeatures";
 
 const AVATAR_SIZE = 30;
 
@@ -107,7 +108,7 @@ const Entry: React.FC<IEntryProps<any>> = ({ room, type, content, matrixClient: 
         onFinished(true);
     };
     const send = async (): Promise<void> => {
-        if (!(await confirmCirqleForward(cli, room))) return; // CIRQLE: "Forward to …?"
+        if (isCirqleMessenger() && !(await confirmCirqleForward(cli, room))) return; // CIRQLE: "Forward to …?"
         setSendState(SendState.Sending);
         try {
             await cli.sendEvent(room.roomId, type, content);
