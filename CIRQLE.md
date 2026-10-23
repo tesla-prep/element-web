@@ -62,7 +62,9 @@ Hooks in upstream files (each one line or a small block):
 | `views/rooms/EventTile/ReactionsRowAdapter.tsx` | our number's reaction counted once, its latest shown (`cirqle/CirqleReactions.ts`) |
 | `emojipicker/ReactionPicker.tsx`, `reactions/ReactionsRowButtonViewModel.ts` | a new reaction takes our previous one back, as WhatsApp replaces it |
 | `autocomplete/UserProvider.tsx` | @ offers the customers, not colleagues, service users or our own number |
-| `views/rooms/EventTile.tsx` | under a message the network refused: "Not delivered to WhatsApp: …" (`com.beeper.message_send_status`, `cirqle/CirqleDelivery.tsx`) |
+| `views/rooms/EventTile.tsx` | under a message the network refused: "Not delivered to WhatsApp: …" (`com.beeper.message_send_status`, `cirqle/CirqleDelivery.tsx`); also when our reaction did not get through ("Reaction 🤟 not delivered: Telegram takes only its standard reactions") |
+| `emojipicker/ReactionPicker.tsx`, `views/rooms/EventTile/ReactionsRowAdapter.tsx` | reactions limited to what the network takes (`allowed_reactions` in `com.beeper.room_features`): Telegram's standard set; a customer's other emoji can't be added to |
+| `packages/shared-components/.../EmojiPicker.tsx`, `QuickReactions.tsx`, `emojipicker/EmojiPickerWithRecents.tsx` | `emojiFilter` prop: only the emoji it lets through are offered (generic, used by the line above) |
 
 Hooks that take stock Element's own screens away (from `vector/init.tsx` down) are behind
 `isCirqleMessenger()` (`brand` in `cirqle/config.json`), so Element's own unit tests
