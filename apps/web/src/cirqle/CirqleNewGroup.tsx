@@ -62,7 +62,7 @@ function reasonOf(e: unknown): string {
 
 export function CirqleNewGroup(): JSX.Element {
     const client = useMatrixClientContext();
-    const inboxes = useCirqleInboxes();
+    const inboxes = useCirqleInboxes().filter((inbox) => inbox.connected); // a disconnected number sends nothing
     const activeSpace = SDKContextClass.instance.spaceStore.activeSpace;
     const [fromId, setFromId] = useState<string | undefined>(
         () => inboxes.find((inbox) => inbox.spaceId === activeSpace)?.spaceId,

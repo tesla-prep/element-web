@@ -27,7 +27,12 @@ const SERVER = "server";
 const MAIN = "!main:server";
 const OTHER = "!other:server";
 
-const mocked = vi.hoisted(() => ({ spaces: [] as string[], rooms: [] as unknown[], mainChats: new Set<string>() }));
+const mocked = vi.hoisted(() => ({
+    spaces: [] as string[],
+    rooms: [] as unknown[],
+    mainChats: new Set<string>(),
+    disconnected: new Set<string>(),
+}));
 
 vi.mock("./useCirqleChats", () => ({
     useCirqleInboxes: (): Inbox[] =>
@@ -39,6 +44,8 @@ vi.mock("./useCirqleChats", () => ({
             accountName: spaceId === "!main:server" ? "wa-01d17870" : "wa-bba81064",
             childIds: spaceId === "!main:server" ? mocked.mainChats : new Set(),
             ownUsers: new Set(),
+            connected: !mocked.disconnected.has(spaceId),
+            contactPhones: new Map(),
         })),
 }));
 
@@ -47,7 +54,16 @@ vi.mock("../stores/room-list-v3/RoomListStoreV3", () => ({
 }));
 
 function inbox(network: "whatsapp" | "telegram", accountName?: string): Inbox {
-    return { spaceId: MAIN, network, label: "Main #1", accountName, childIds: new Set(), ownUsers: new Set() };
+    return {
+        spaceId: MAIN,
+        network,
+        label: "Main #1",
+        accountName,
+        childIds: new Set(),
+        ownUsers: new Set(),
+        connected: true,
+        contactPhones: new Map(),
+    };
 }
 
 /** A chat the bridge made, as `m.bridge` describes it */
@@ -127,6 +143,7 @@ describe("CirqleNewGroup", () => {
             bridged(client, "!elsewhere:server", "Carl (WA)", "whatsapp", "15550001111@s.whatsapp.net"),
         ];
         mocked.mainChats = new Set(["!anna:server", "!bob:server"]);
+        mocked.disconnected = new Set();
         vi.spyOn(SDKContextClass.instance.spaceStore, "activeSpace", "get").mockImplementation(() => activeSpace);
         client.searchUserDirectory = vi.fn().mockResolvedValue({
             limited: false,
@@ -179,6 +196,14 @@ describe("CirqleNewGroup", () => {
         expect(await screen.findByText("Test Person")).toBeTruthy();
         // Only the contacts of the number written from
         expect(screen.queryByText("+7 999 000 1122")).toBeNull();
+    });
+
+    it("does not offer a disconnected number", () => {
+        mocked.disconnected = new Set([OTHER]);
+        render(panel());
+        // The one connected number is written from, as when it is the only one
+        expect(writeFrom().value).toBe(MAIN);
+        expect(Array.from(writeFrom().options).map((option) => option.value)).toEqual([MAIN]);
     });
 
     it("offers the number's private chats as contacts", () => {
