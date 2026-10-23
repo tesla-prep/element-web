@@ -43,6 +43,7 @@ Hooks in upstream files (each one line or a small block):
 | `views/rooms/EventTile.tsx` | staff messages and the number's own ghost (what the owner sends from the phone) on our side; customer name hidden in private chats |
 | `views/rooms/MessageComposerButtons.tsx` | microphone beside the input |
 | `vector/init.tsx`, `i18n/settings.ts` | English for everyone |
+| `settings/SettingsStore.ts` (second line) | read receipts and typing always sent: the relay bot passes them on from the number |
 | `slash-commands/command.ts` | slash commands: only /plain, /shrug, /tableflip, /unflip, /lenny |
 | `autocomplete/NotifProvider.tsx` | no @room |
 | `utils/DialogOpener.ts` | room settings open the chat's info panel (header avatar included) |
@@ -86,6 +87,13 @@ The relay bot also keeps, in each number's space:
 - `com.cirqle.team_messenger.contact_phones` `{ "phones": { "<chat's bridge id>":
   "+7…" } }`: customers' numbers WhatsApp hides behind LIDs, shown beside a
   private chat's name when another chat in the list has the same name.
+
+## Leave group
+
+Leave group… in Group info (WhatsApp groups only) takes the number itself out of
+the group, for everyone at CIRQLE, after a confirmation: the relay bot's
+`POST /_matrix/client/unstable/com.cirqle/leave_group` (`cirqle/CirqleLeaveGroup.ts`).
+It needs that endpoint deployed (cirqle-agents#174) before this client.
 
 ## What the networks refuse
 

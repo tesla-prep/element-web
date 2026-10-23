@@ -227,7 +227,7 @@ describe("CIRQLE right panel", () => {
     });
 
     describe("Group info", () => {
-        it("has favourite, mute, media and Add member, but no Leave group", () => {
+        it("has favourite, mute, media, Add member and Leave group", () => {
             panel(<CirqleGroupInfo room={group} />);
             expect(buttons()).toEqual([
                 "Close group info",
@@ -235,6 +235,7 @@ describe("CIRQLE right panel", () => {
                 "Mute notifications",
                 "Media, links and docs",
                 "Add member",
+                "Leave group…",
             ]);
         });
 

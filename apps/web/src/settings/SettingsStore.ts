@@ -41,7 +41,7 @@ import ReloadOnChangeController from "./controllers/ReloadOnChangeController";
 import { MatrixClientPeg } from "../MatrixClientPeg";
 import { MediaPreviewValue } from "../@types/media_preview";
 import SettingController, { getSettingDisabled, toControllers } from "./controllers/SettingController.ts";
-import { CIRQLE_FORCED_SETTINGS } from "../cirqle/CirqleFeatures";
+import { CIRQLE_FORCED_SETTINGS, CIRQLE_PRESENCE, isCirqleMessenger } from "../cirqle/CirqleFeatures";
 
 // Convert the settings to easier to manage objects for the handlers
 const defaultSettings: Record<string, any> = {};
@@ -390,6 +390,8 @@ export default class SettingsStore {
         excludeDefault = false,
     ): Settings[S]["default"] | undefined {
         if (settingName in CIRQLE_FORCED_SETTINGS) return CIRQLE_FORCED_SETTINGS[settingName] as Settings[S]["default"]; // CIRQLE
+        if (isCirqleMessenger() && settingName in CIRQLE_PRESENCE)
+            return CIRQLE_PRESENCE[settingName] as Settings[S]["default"]; // CIRQLE
         // Verify that the setting is actually a setting
         if (!SETTINGS[settingName]) {
             throw new Error("Setting '" + settingName + "' does not appear to be a setting.");
