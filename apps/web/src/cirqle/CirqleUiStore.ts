@@ -5,14 +5,14 @@ SPDX-License-Identifier: AGPL-3.0-only
 */
 
 // What the left column shows: the chat list or the channel list (picked on the
-// rail), or the New chat panel in its place.
+// rail), or the New chat or New group panel in its place.
 
 import { EventEmitter } from "events";
 
 import { useEventEmitterState } from "../hooks/useEventEmitter";
 
 export type CirqleSection = "chats" | "channels";
-export type CirqlePanel = "list" | "newChat";
+export type CirqlePanel = "list" | "newChat" | "newGroup";
 
 export const CIRQLE_UI_CHANGED = "changed";
 
@@ -34,7 +34,13 @@ class CirqleUiStoreClass extends EventEmitter {
         this.emit(CIRQLE_UI_CHANGED);
     }
 
-    public closeNewChat(): void {
+    public openNewGroup(): void {
+        this.panel = "newGroup";
+        this.emit(CIRQLE_UI_CHANGED);
+    }
+
+    /** Back to the list from New chat or New group */
+    public closePanel(): void {
         this.panel = "list";
         this.emit(CIRQLE_UI_CHANGED);
     }

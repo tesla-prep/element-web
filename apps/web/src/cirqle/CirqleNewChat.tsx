@@ -27,10 +27,9 @@ import { DirectoryMember, startDmOnFirstMessage } from "../utils/direct-messages
 import RoomAvatar from "../components/views/avatars/RoomAvatar";
 import BaseAvatar from "../components/views/avatars/BaseAvatar";
 import RoomListStoreV3 from "../stores/room-list-v3/RoomListStoreV3";
-import { BackIcon, ChannelIcon, GroupIcon, SearchIcon } from "./CirqleIcons";
+import { BackIcon, GroupIcon, SearchIcon } from "./CirqleIcons";
 import { chatKind, contactNumber, formatPhone, type Inbox, type Network, stripNetworkSuffix } from "./CirqleInboxes";
 import { CirqleUiStore } from "./CirqleUiStore";
-import { createChannel, createGroup } from "./CirqleChatList";
 import { useCirqleInboxes } from "./useCirqleChats";
 
 interface Found {
@@ -41,13 +40,13 @@ interface Found {
 }
 
 /** "Main #1 · WhatsApp +1 646 331 3251" */
-function inboxOption(inbox: Inbox): string {
+export function inboxOption(inbox: Inbox): string {
     const messenger = inbox.network === "whatsapp" ? "WhatsApp" : "Telegram";
     return `${inbox.label} · ${[messenger, inbox.phone].filter(Boolean).join(" ")}`;
 }
 
 /** "+14695551234 · Main #1" or "Anna Petrova, +14695551234 · Main #1": the relay bot's label, without the inbox. */
-function splitLabel(displayName: string, network: Network): { name: string; sub: string } {
+export function splitLabel(displayName: string, network: Network): { name: string; sub: string } {
     const person = displayName.replace(/\s·\s[^·]+$/, "");
     const [name, number] = person.split(/,\s(?=\+)/);
     const messenger = network === "whatsapp" ? "On WhatsApp" : "On Telegram";
@@ -58,7 +57,7 @@ function splitLabel(displayName: string, network: Network): { name: string; sub:
 }
 
 /** The contact's number, unless the chat is already named by it */
-function contactSub(room: Room): string {
+export function contactSub(room: Room): string {
     const number = contactNumber(room);
     if (!number) return "";
     return room.name.replace(/[^\d]/g, "").includes(number.replace(/[^\d]/g, "")) ? "" : number;
@@ -131,9 +130,13 @@ export function CirqleNewChat(): JSX.Element {
         setBusy(true);
         try {
             await startDmOnFirstMessage(client, [
-                new DirectoryMember({ user_id: person.userId, display_name: person.name, avatar_url: person.avatarUrl }),
+                new DirectoryMember({
+                    user_id: person.userId,
+                    display_name: person.name,
+                    avatar_url: person.avatarUrl,
+                }),
             ]);
-            CirqleUiStore.closeNewChat();
+            CirqleUiStore.closePanel();
         } catch (e) {
             logger.error("CIRQLE new chat failed", e);
         } finally {
@@ -143,7 +146,7 @@ export function CirqleNewChat(): JSX.Element {
 
     const open = (room: Room): void => {
         dis.dispatch<ViewRoomPayload>({ action: Action.ViewRoom, room_id: room.roomId, metricsTrigger: "RoomList" });
-        CirqleUiStore.closeNewChat();
+        CirqleUiStore.closePanel();
     };
 
     return (
@@ -152,7 +155,7 @@ export function CirqleNewChat(): JSX.Element {
                 <button
                     className="cirqle_iconButton cirqle_iconButton_green cirqle_NewChat_back"
                     aria-label="Back to chats"
-                    onClick={() => CirqleUiStore.closeNewChat()}
+                    onClick={() => CirqleUiStore.closePanel()}
                 >
                     <BackIcon />
                 </button>
@@ -169,7 +172,7 @@ export function CirqleNewChat(): JSX.Element {
                     value={query}
                     onChange={(ev) => setQuery(ev.target.value)}
                     onKeyDown={(ev) => {
-                        if (ev.key === "Escape") CirqleUiStore.closeNewChat();
+                        if (ev.key === "Escape") CirqleUiStore.closePanel();
                         if (ev.key === "Enter" && from && found[0] && !busy) void start(found[0]);
                     }}
                 />
@@ -215,23 +218,22 @@ export function CirqleNewChat(): JSX.Element {
                         </span>
                     </button>
                 ))}
-                <button className="cirqle_NewChat_row cirqle_NewChat_action" onClick={createGroup}>
+                <button
+                    className="cirqle_NewChat_row cirqle_NewChat_action"
+                    onClick={() => CirqleUiStore.openNewGroup()}
+                >
                     <span className="cirqle_NewChat_actionIcon">
                         <GroupIcon />
                     </span>
                     <span className="cirqle_NewChat_actionLabel">New group</span>
                 </button>
-                <button className="cirqle_NewChat_row cirqle_NewChat_action" onClick={createChannel}>
-                    <span className="cirqle_NewChat_actionIcon">
-                        <ChannelIcon />
-                    </span>
-                    <span className="cirqle_NewChat_actionLabel">New channel</span>
-                </button>
-                {from && contacts.length > 0 && (
-                    <div className="cirqle_NewChat_section">Contacts on {from.label}</div>
-                )}
+                {from && contacts.length > 0 && <div className="cirqle_NewChat_section">Contacts on {from.label}</div>}
                 {contacts.map((room) => (
-                    <button key={room.roomId} className="cirqle_NewChat_row cirqle_NewChat_contact" onClick={() => open(room)}>
+                    <button
+                        key={room.roomId}
+                        className="cirqle_NewChat_row cirqle_NewChat_contact"
+                        onClick={() => open(room)}
+                    >
                         <RoomAvatar room={room} size="44px" />
                         <span className="cirqle_NewChat_text cirqle_NewChat_text_ruled">
                             <span className="cirqle_NewChat_name">{stripNetworkSuffix(room.name)}</span>

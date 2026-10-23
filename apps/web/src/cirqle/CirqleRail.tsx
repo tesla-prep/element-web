@@ -50,7 +50,7 @@ export function CirqleRail(): JSX.Element {
     useEffect(() => watchCirqleInviteRefusals(client), [client]);
 
     const openSettings = useCallback(() => dis.fire(Action.ViewUserSettings), []);
-    const chatsActive = section === "chats" || panel === "newChat";
+    const chatsActive = section === "chats" || panel !== "list";
 
     return (
         <nav className="cirqle_Rail" aria-label="Sections">

@@ -9,9 +9,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 import React, { type JSX } from "react";
 
 import logoUrl from "../../res/img/cirqle/cirqle-shield-outlined-marble.svg";
-import { AllNumbersIcon, ChannelIcon, GroupIcon, PencilIcon } from "./CirqleIcons";
+import { AllNumbersIcon, GroupIcon, PencilIcon } from "./CirqleIcons";
 import { CirqleUiStore } from "./CirqleUiStore";
-import { createChannel, createGroup } from "./CirqleChatList";
 
 function openNumberPicker(): void {
     CirqleUiStore.showSection("chats");
@@ -20,8 +19,7 @@ function openNumberPicker(): void {
 
 const ACTIONS = [
     { label: "New chat", Icon: PencilIcon, onClick: () => CirqleUiStore.openNewChat() },
-    { label: "New group", Icon: GroupIcon, onClick: createGroup },
-    { label: "New channel", Icon: ChannelIcon, onClick: createChannel },
+    { label: "New group", Icon: GroupIcon, onClick: () => CirqleUiStore.openNewGroup() },
     { label: "Switch number", Icon: AllNumbersIcon, onClick: openNumberPicker },
 ];
 
@@ -34,8 +32,8 @@ export function CirqleEmpty(): JSX.Element {
                 </div>
                 <h2 className="cirqle_Empty_title">CIRQLE Messenger</h2>
                 <p className="cirqle_Empty_text">
-                    Pick a chat on the left, or start a new one. Every message goes out from the number shown under
-                    the chat.
+                    Pick a chat on the left, or start a new one. Every message goes out from the number shown under the
+                    chat.
                 </p>
                 <div className="cirqle_Empty_actions">
                     {ACTIONS.map(({ label, Icon, onClick }) => (
