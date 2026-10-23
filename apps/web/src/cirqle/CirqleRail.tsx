@@ -7,7 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 // The deep green rail on the left, in place of Element's space bar:
 // logo, Chats (with the number of unread chats), Channels, settings, profile.
 
-import React, { type JSX, useCallback, useState } from "react";
+import React, { type JSX, useCallback, useEffect, useState } from "react";
 import { Menu, MenuItem } from "@vector-im/compound-web";
 
 import logoUrl from "../../res/img/cirqle/cirqle-shield-outlined-marble.svg";
@@ -23,6 +23,7 @@ import BaseAvatar from "../components/views/avatars/BaseAvatar";
 import Modal from "../Modal";
 import QuestionDialog from "../components/views/dialogs/QuestionDialog";
 import { useMatrixClientContext } from "../contexts/MatrixClientContext";
+import { watchCirqleInviteRefusals } from "./CirqleInviteRefusals";
 
 function confirmSignOut(): void {
     const { finished } = Modal.createDialog(QuestionDialog, {
@@ -45,6 +46,8 @@ export function CirqleRail(): JSX.Element {
         name: OwnProfileStore.instance.displayName ?? client.getUserId() ?? "",
         avatarUrl: OwnProfileStore.instance.getHttpAvatarUrl(72),
     }));
+
+    useEffect(() => watchCirqleInviteRefusals(client), [client]);
 
     const openSettings = useCallback(() => dis.fire(Action.ViewUserSettings), []);
     const chatsActive = section === "chats" || panel === "newChat";

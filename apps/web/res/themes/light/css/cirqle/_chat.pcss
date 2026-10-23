@@ -442,3 +442,17 @@ slots by their data-testid.
 .cirqle_Empty_action:hover .cirqle_Empty_actionIcon {
     border-color: var(--cirqle-green);
 }
+
+/* A message, edit or delete WhatsApp or Telegram refused (CirqleDelivery) */
+.cirqle_DeliveryNotice {
+    margin-top: 4px;
+    font-size: 12px;
+    line-height: 16px;
+    color: var(--cirqle-danger);
+}
+
+.cirqle_DeliveryNotice::before {
+    content: "! ";
+    font-weight: 700;
+}
+
