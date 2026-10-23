@@ -17,6 +17,7 @@ import { shouldPolyfill as shouldPolyFillIntlSegmenter } from "@formatjs/intl-se
 import { parseAppUrl } from "./url_utils";
 import "./modernizr.cjs";
 import { polyfillTouchEvent } from "../@types/polyfill";
+import { CIRQLE_MOBILE_GUIDE_REDIRECT } from "../cirqle/CirqleFeatures"; // CIRQLE
 
 import "../../res/css/_index.pcss";
 // Require common CSS here; this will make webpack process it into bundle.css.
@@ -143,7 +144,8 @@ async function start(): Promise<void> {
         // verifying a 3pid (but after we've loaded the config)
         // or if the user is following a deep link
         // (https://github.com/element-hq/element-web/issues/7378)
-        const preventRedirect = !!parsedUrl.params.threepid || parsedUrl.location.length > 0;
+        const preventRedirect =
+            !!parsedUrl.params.threepid || parsedUrl.location.length > 0 || !CIRQLE_MOBILE_GUIDE_REDIRECT; // CIRQLE
 
         if (!preventRedirect) {
             const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
