@@ -15,6 +15,8 @@ import AudioPlayerBase, { type IProps as IAudioPlayerBaseProps } from "./AudioPl
 import LegacySeekBar from "./LegacySeekBar";
 import PlaybackWaveform from "./PlaybackWaveform";
 import { PlaybackState } from "../../../audio/Playback";
+import { isCirqleMessenger } from "../../../cirqle/CirqleFeatures";
+import { CirqleVoiceSpeedButton } from "../../../cirqle/CirqleVoiceSpeedButton";
 
 export enum PlaybackLayout {
     /**
@@ -86,6 +88,9 @@ export default class RecordingPlayback extends AudioPlayerBase<IProps> {
                     ref={this.playPauseRef}
                 />
                 {body}
+                {isCirqleMessenger() && (
+                    <CirqleVoiceSpeedButton playback={this.props.playback} phase={this.state.playbackPhase} />
+                )}
             </MediaBody>
         );
     }

@@ -6,9 +6,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 // Recording a voice message, WhatsApp Web style: while it records, the whole
 // composer row is this panel (the input and the emoji go away, see _chat.pcss):
-// delete, a red dot with the running time, the live waveform and pause. Paused,
-// the part recorded so far plays back and the microphone continues it. The send
-// button beside the panel is the composer's own.
+// delete, a red dot with the running time, the live waveform and pause, across the
+// row. Paused, the part recorded so far plays back (seek on the waveform, speed) and
+// the microphone continues it. The send button beside the panel is the composer's own.
 
 import React, { type JSX } from "react";
 import { MediaBody } from "@element-hq/web-shared-components";
@@ -59,7 +59,7 @@ export function CirqleVoiceRecorder({
                     <LiveRecordingWaveform recorder={recorder} />
                 </MediaBody>
             ) : (
-                <RecordingPlayback playback={recorder.getPlayback()} layout={PlaybackLayout.Composer} />
+                <RecordingPlayback playback={recorder.getPlayback()} layout={PlaybackLayout.Timeline} />
             )}
             {uploading && <InlineSpinner size={20} />}
             {uploadFailed && !uploading && (

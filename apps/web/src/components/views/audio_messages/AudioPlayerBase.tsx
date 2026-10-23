@@ -77,7 +77,10 @@ export default abstract class AudioPlayerBase<T extends IProps = IProps> extends
         // stopPropagation() prevents the FocusComposer catch-all from triggering,
         // but we need to do it on key down instead of press (even though the user
         // interaction is typically on press).
+        // preventDefault() keeps a focused seek bar or play button from also acting on the key
+        // itself, which would undo the 5 second skip or toggle playback twice.
         if (handled) {
+            ev.preventDefault();
             ev.stopPropagation();
         }
     };
