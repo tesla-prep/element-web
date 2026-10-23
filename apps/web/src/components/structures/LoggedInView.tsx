@@ -42,7 +42,7 @@ import { type IOOBData, type IThreepidInvite } from "../../stores/ThreepidInvite
 import Modal from "../../Modal";
 import { getKeyBindingsManager } from "../../KeyBindingsManager";
 import { type IOpts } from "../../createRoom";
-import SpacePanel from "../views/spaces/SpacePanel";
+import { CirqleRail } from "../../cirqle/CirqleRail";
 import { LegacyCallHandlerEvent } from "../../LegacyCallHandler";
 import AudioFeedArrayForLegacyCall from "../views/voip/AudioFeedArrayForLegacyCall";
 import { OwnProfileStore } from "../../stores/OwnProfileStore";
@@ -698,13 +698,13 @@ class LoggedInView extends React.Component<IProps, IState> {
             // (leftPanel omits it).
             content = (
                 <GroupView vm={resizerViewModel}>
-                    <SpacePanel />
+                    <CirqleRail />
                     <LeftResizablePanelView
                         vm={resizerViewModel}
                         className="mx_LeftPanel_panel"
-                        minSize="200px"
-                        maxSize="370px"
-                        defaultSize="370px"
+                        minSize="300px"
+                        maxSize="440px"
+                        defaultSize="360px"
                     >
                         {leftPanel}
                     </LeftResizablePanelView>
@@ -718,7 +718,7 @@ class LoggedInView extends React.Component<IProps, IState> {
             // own layout.
             content = (
                 <>
-                    <SpacePanel />
+                    <CirqleRail />
                     {leftPanel}
                     {roomView}
                 </>

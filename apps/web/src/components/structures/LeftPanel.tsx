@@ -11,7 +11,7 @@ import classNames from "classnames";
 
 import type ResizeNotifier from "../../utils/ResizeNotifier";
 import { type SpaceKey, UPDATE_SELECTED_SPACE } from "../../stores/spaces";
-import { RoomListPanel } from "../views/rooms/RoomListPanel";
+import { CirqleLeftColumn } from "../../cirqle/CirqleLeftColumn";
 import { SDKContext } from "../../contexts/SDKContext.ts";
 
 interface IProps {
@@ -56,7 +56,8 @@ export default class LeftPanel extends React.Component<IProps, IState> {
         return (
             <div className={containerClasses}>
                 <div className="mx_LeftPanel_roomListContainer">
-                    <RoomListPanel activeSpace={this.state.activeSpace} />
+                    {/* CIRQLE: WhatsApp-style chat list in place of the room list */}
+                    <CirqleLeftColumn />
                 </div>
             </div>
         );

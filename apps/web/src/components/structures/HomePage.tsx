@@ -24,6 +24,9 @@ import MatrixClientContext, { useMatrixClientContext } from "../../contexts/Matr
 import MiniAvatarUploader, { AVATAR_SIZE } from "../views/elements/MiniAvatarUploader";
 import PosthogTrackers from "../../PosthogTrackers";
 import EmbeddedPage from "./EmbeddedPage";
+import { CirqleEmpty } from "../../cirqle/CirqleEmpty";
+
+const CIRQLE_EMPTY = true;
 
 const onClickSendDm = (ev: ButtonEvent): void => {
     PosthogTrackers.trackInteraction("WebHomeCreateChatButton", ev);
@@ -87,6 +90,7 @@ const UserWelcomeTop: React.FC = () => {
 };
 
 const HomePage: React.FC<IProps> = ({ justRegistered = false }) => {
+    if (CIRQLE_EMPTY) return <CirqleEmpty />; // CIRQLE: the empty chat side
     const cli = useMatrixClientContext();
     const config = SdkConfig.get();
     const pageUrl = getHomePageUrl(config, cli);

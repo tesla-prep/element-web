@@ -1,0 +1,337 @@
+/*
+Copyright 2026 CIRQLE.
+
+SPDX-License-Identifier: AGPL-3.0-only
+
+New chat panel and Group info (concept artboards NewChat and GroupInfo).
+*/
+
+/* ---------- new chat ---------- */
+
+.cirqle_NewChat {
+    height: 100%;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    background: #ffffff;
+    border-right: 1px solid var(--cirqle-line);
+    color: var(--cirqle-ink);
+}
+
+.cirqle_NewChat > * {
+    flex: 0 0 auto;
+}
+
+.cirqle_NewChat_header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 18px 16px 12px 12px;
+}
+
+.cirqle_NewChat_back {
+    width: 44px;
+    height: 44px;
+    border-radius: 22px;
+}
+
+.cirqle_NewChat_title {
+    margin: 0;
+    font-family: var(--cirqle-serif);
+    font-weight: 600;
+    font-size: 24px;
+    line-height: normal;
+    color: var(--cirqle-green);
+}
+
+.cirqle_NewChat_search {
+    margin-bottom: 12px;
+}
+
+.cirqle_NewChat_search:focus-within {
+    box-shadow: inset 0 0 0 2px var(--cirqle-green);
+}
+
+.cirqle_NewChat_search input {
+    font-size: 15px;
+}
+
+.cirqle_NewChat_from {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 16px 14px 20px;
+}
+
+.cirqle_NewChat_from label {
+    flex: 0 0 auto;
+    white-space: nowrap;
+    font-size: 13px;
+    color: var(--cirqle-ink-2);
+}
+
+.cirqle_NewChat_from select {
+    flex: 1 1 auto;
+    min-width: 0;
+    height: 36px;
+    padding: 0 10px;
+    border-radius: 10px;
+    border: 1px solid var(--cirqle-pill-line);
+    background: var(--cirqle-pill);
+    font: inherit;
+    font-size: 14px;
+    color: var(--cirqle-ink);
+}
+
+.cirqle_NewChat > .cirqle_NewChat_rows {
+    flex: 1 1 0;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+.cirqle_NewChat_row {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 8px 20px;
+    border: 0;
+    background: #ffffff;
+    font: inherit;
+    text-align: left;
+    color: var(--cirqle-ink);
+    cursor: pointer;
+}
+
+.cirqle_NewChat_row:hover {
+    background: #f7f6f2;
+}
+
+.cirqle_NewChat_found {
+    padding: 10px 20px;
+    background: var(--cirqle-green-selected);
+}
+
+.cirqle_NewChat_action {
+    padding: 12px 20px;
+}
+
+.cirqle_NewChat_action:first-of-type,
+.cirqle_NewChat_found + .cirqle_NewChat_action {
+    margin-top: 6px;
+}
+
+.cirqle_NewChat_actionIcon {
+    flex: 0 0 48px;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--cirqle-green);
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.cirqle_NewChat_actionLabel {
+    font-size: 16px;
+    font-weight: 500;
+}
+
+.cirqle_NewChat_text {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.cirqle_NewChat_text_ruled {
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--cirqle-line-soft);
+}
+
+.cirqle_NewChat_name {
+    font-size: 15px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.cirqle_NewChat_sub {
+    font-size: 13px;
+    color: var(--cirqle-ink-3);
+}
+
+.cirqle_NewChat_sub_green {
+    color: var(--cirqle-green-hover);
+}
+
+.cirqle_NewChat_section {
+    padding: 18px 20px 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--cirqle-green-hover);
+}
+
+/* ---------- group info ---------- */
+
+.mx_RightPanel:has(.cirqle_GroupInfo) {
+    background: var(--cirqle-ground);
+}
+
+.cirqle_GroupInfo {
+    height: 100%;
+    overflow-y: auto;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background: var(--cirqle-ground);
+    border-left: 1px solid var(--cirqle-line);
+    color: var(--cirqle-ink);
+}
+
+.cirqle_GroupInfo > * {
+    flex: 0 0 auto;
+}
+
+.cirqle_GroupInfo_bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    background: #ffffff;
+}
+
+.cirqle_GroupInfo_bar .cirqle_iconButton {
+    width: 44px;
+    height: 44px;
+    border-radius: 22px;
+}
+
+.cirqle_GroupInfo_barTitle {
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.cirqle_GroupInfo_card {
+    background: #ffffff;
+    display: flex;
+    flex-direction: column;
+}
+
+.cirqle_GroupInfo_identity {
+    align-items: center;
+    gap: 6px;
+    padding: 20px;
+    text-align: center;
+}
+
+.cirqle_GroupInfo_name {
+    margin: 8px 0 0;
+    font-family: var(--cirqle-serif);
+    font-weight: 600;
+    font-size: 22px;
+    line-height: normal;
+    color: var(--cirqle-green);
+}
+
+.cirqle_GroupInfo_sub {
+    font-size: 13px;
+    color: var(--cirqle-ink-3);
+}
+
+.cirqle_GroupInfo_section {
+    padding: 14px 20px 6px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--cirqle-green-hover);
+}
+
+.cirqle_GroupInfo_row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 8px 12px 8px 20px;
+    border: 0;
+    background: #ffffff;
+    font: inherit;
+    text-align: left;
+    color: var(--cirqle-ink);
+}
+
+.cirqle_GroupInfo_add {
+    padding: 10px 20px;
+    cursor: pointer;
+}
+
+.cirqle_GroupInfo_addIcon {
+    flex: 0 0 44px;
+    width: 44px;
+    height: 44px;
+}
+
+.cirqle_GroupInfo_addLabel {
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.cirqle_GroupInfo_text {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.cirqle_GroupInfo_memberName {
+    font-size: 15px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.cirqle_GroupInfo_memberSub {
+    font-size: 13px;
+    color: var(--cirqle-ink-3);
+}
+
+.cirqle_GroupInfo_admin {
+    flex: 0 0 auto;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--cirqle-green-hover);
+    background: var(--cirqle-green-soft);
+    border-radius: 6px;
+    padding: 3px 8px;
+}
+
+.cirqle_GroupInfo_remove {
+    flex: 0 0 auto;
+    height: 34px;
+    padding: 0 12px;
+    border-radius: 17px;
+    border: 1px solid var(--cirqle-pill-line);
+    background: #ffffff;
+    font: inherit;
+    font-size: 13px;
+    color: var(--cirqle-danger);
+    cursor: pointer;
+}
+
+.cirqle_GroupInfo_leave {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 20px;
+    border: 0;
+    background: #ffffff;
+    font: inherit;
+    font-size: 15px;
+    color: var(--cirqle-danger);
+    text-align: left;
+    cursor: pointer;
+}

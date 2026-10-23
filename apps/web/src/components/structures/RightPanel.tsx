@@ -35,6 +35,7 @@ import { PdfViewerCard } from "../views/right_panel/PdfViewerCard";
 import { type XOR } from "../../@types/common";
 import ExtensionsCard from "../views/right_panel/ExtensionsCard";
 import MemberListView from "../views/rooms/MemberList/MemberListView";
+import { CirqleGroupInfo, isCirqleGroupInfoRoom } from "../../cirqle/CirqleGroupInfo";
 
 interface BaseProps {
     overwriteCard?: IRightPanelCard; // used to display a custom card and ignoring the RightPanelStore (used for UserView)
@@ -252,7 +253,9 @@ export default class RightPanel extends React.Component<Props, IState> {
                 break;
 
             case RightPanelPhases.RoomSummary:
-                if (!!this.props.room) {
+                if (this.props.room && isCirqleGroupInfoRoom(this.props.room)) {
+                    card = <CirqleGroupInfo room={this.props.room} />; // CIRQLE: WhatsApp-style group info
+                } else if (!!this.props.room) {
                     card = (
                         <RoomSummaryCardView
                             room={this.props.room}

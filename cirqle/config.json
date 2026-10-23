@@ -14,6 +14,7 @@
         "immediate": true
     },
     "setting_defaults": {
+        "Spaces.allRoomsInHome": true,
         "RoomList.showMessagePreview": true,
         "RoomList.showSections": false,
         "UIFeature.voip": false,
@@ -28,6 +29,14 @@
         "UIFeature.identityServer": false,
         "UIFeature.thirdPartyId": false,
         "UIFeature.advancedSettings": false,
-        "UIFeature.advancedEncryption": false
+        "UIFeature.advancedEncryption": false,
+        "layout": "bubble",
+        "alwaysShowTimestamps": true,
+        "showJoinLeaves": false,
+        "showAvatarChanges": false,
+        "showDisplaynameChanges": false,
+        "showReadReceipts": false,
+        "MessageComposerInput.showStickersButton": false,
+        "MessageComposerInput.showPollsButton": false
     }
 }

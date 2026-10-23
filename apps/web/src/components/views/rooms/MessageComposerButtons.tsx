@@ -44,6 +44,7 @@ import { useSettingValue } from "../../../hooks/useSettings";
 import AccessibleButton, { type ButtonEvent } from "../elements/AccessibleButton";
 import { useScopedRoomContext } from "../../../contexts/ScopedRoomContext.tsx";
 import { useRoomUploadViewModel } from "../../../viewmodels/room/RoomUploadViewModel.tsx";
+import { cirqleComposerButtons } from "../../../cirqle/CirqleComposer";
 
 interface IProps {
     addEmoji: (emoji: string) => boolean;
@@ -124,6 +125,7 @@ const MessageComposerButtons: React.FC<IProps> = (props: IProps) => {
         ];
     }
 
+    if (!narrow) [mainButtons, moreButtons] = cirqleComposerButtons(mainButtons, moreButtons); // CIRQLE: mic beside the input
     mainButtons = filterBoolean(mainButtons);
     moreButtons = filterBoolean(moreButtons);
 

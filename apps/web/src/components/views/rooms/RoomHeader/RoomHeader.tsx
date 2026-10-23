@@ -56,6 +56,8 @@ import { LocalRoom } from "../../../../models/LocalRoom.ts";
 import { useIsEncrypted } from "../../../../hooks/useIsEncrypted.ts";
 import { useUserStatus } from "../../../../hooks/useUserStatus.ts";
 import { SDKContext } from "../../../../contexts/SDKContext.ts";
+import { CirqleRoomHeaderButtons, CirqleRoomSubtitle } from "../../../../cirqle/CirqleRoomHeader";
+import { stripNetworkSuffix } from "../../../../cirqle/CirqleInboxes";
 
 function RoomHeaderButtons({ room, extraButtons }: { room: Room; extraButtons?: JSX.Element }): JSX.Element {
     const sdkContext = useContext(SDKContext);
@@ -289,6 +291,7 @@ function RoomHeaderButtons({ room, extraButtons }: { room: Room; extraButtons?: 
         isVideoRoom ||
         roomContext.mainSplitContentType === MainSplitContentType.MaximisedWidget ||
         roomContext.mainSplitContentType === MainSplitContentType.Call;
+    if (room) return <CirqleRoomHeaderButtons room={room} />; // CIRQLE: search and a menu only
     return (
         <>
             {extraButtons}
@@ -467,7 +470,7 @@ export default function RoomHeader({
                             aria-level={1}
                             className="mx_RoomHeader_heading"
                         >
-                            <span className="mx_RoomHeader_truncated mx_lineClamp">{roomName}</span>
+                            <span className="mx_RoomHeader_truncated mx_lineClamp">{stripNetworkSuffix(roomName)}</span>
 
                             {isDirectMessage && dmUserStatus && (
                                 <StatusTextView status={dmUserStatus} className="mx_RoomHeader_userStatus" />
@@ -509,6 +512,7 @@ export default function RoomHeader({
 
                             {isRoomEncrypted && historyVisibilityIcon(historyVisibility)}
                         </Text>
+                        <CirqleRoomSubtitle room={room} /> {/* CIRQLE */}
                     </Box>
                 </button>
                 {/* If the room is local-only then we don't want to show any additional buttons, as it won't work */}

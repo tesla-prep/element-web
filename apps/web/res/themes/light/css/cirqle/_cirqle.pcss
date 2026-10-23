@@ -11,6 +11,10 @@ specificity, and upstream CSS can change underneath without this file needing
 !important.
 */
 
+@import "_list.pcss";
+@import "_chat.pcss";
+@import "_panels.pcss";
+
 @font-face {
     font-family: "Source Serif 4";
     font-style: normal;
@@ -108,7 +112,7 @@ body {
     background-color: var(--cirqle-ground);
 }
 
-/* Until the CIRQLE rail replaces it, the space bar wears the deep green */
+/* Element's space bar, should a view still show it */
 .mx_SpacePanel {
     background-color: var(--cirqle-green);
     --cpd-color-icon-secondary: #d7e4dc;
@@ -124,3 +128,4 @@ body {
 .mx_LegacyRoomHeader_videoCallButton {
     display: none;
 }
+

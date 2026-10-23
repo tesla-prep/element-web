@@ -1,0 +1,453 @@
+/*
+Copyright 2026 CIRQLE.
+
+SPDX-License-Identifier: AGPL-3.0-only
+
+The open chat (concept artboard Main) and the empty side (artboard Empty).
+
+Element's timeline is drawn by shared components with CSS-module class names
+(_stateOwnEvent_<hash>_<line>); they are matched by their stable prefix, and
+slots by their data-testid.
+*/
+
+/* ---------- header ---------- */
+
+.mx_RoomHeader.mx_RoomHeader {
+    gap: 14px;
+    padding: 12px 20px;
+    min-height: 66px;
+    box-sizing: border-box;
+    background: #ffffff;
+    border-bottom: 1px solid var(--cirqle-line);
+}
+
+.mx_RoomHeader .mx_RoomHeader_info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.mx_RoomHeader .mx_RoomHeader_heading {
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 20px;
+    color: var(--cirqle-ink);
+}
+
+.cirqle_RoomHeader_subtitle {
+    font-size: 13px;
+    line-height: 17px;
+    color: var(--cirqle-ink-3);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.cirqle_RoomHeader_button {
+    width: 44px;
+    height: 44px;
+    border-radius: 22px;
+}
+
+/* ---------- timeline ---------- */
+
+.mx_RoomView_body,
+.mx_RoomView_timeline,
+.mx_RoomView_MessageList {
+    background: var(--cirqle-ground);
+}
+
+.mx_RoomView_body[data-layout="bubble"] {
+    --event-tile-bubble-other-background: #ffffff;
+    --event-tile-bubble-self-background: var(--cirqle-green-soft);
+    --event-tile-bubble-hover-background: transparent;
+    --event-tile-bubble-corner-radius: 10px;
+    --event-tile-bubble-line-max-width: 62%;
+    --event-tile-bubble-margin-inline-start: max(16px, 5%);
+    --event-tile-bubble-margin-inline-end: max(16px, 5%);
+    --event-tile-bubble-line-margin-inline-start: 0px;
+    --event-tile-bubble-line-margin-inline-end: 0px;
+}
+
+/* No avatars beside bubbles, as on WhatsApp */
+[class*="_layoutBubble_"] > [data-testid="event-tile-slot-avatar"] {
+    display: none;
+}
+
+[class*="_layoutBubble_"] > [data-testid="event-tile-line"] {
+    box-shadow: 0 1px 1px rgba(20, 32, 25, 0.08);
+    font-size: 15px;
+    line-height: 21px;
+}
+
+/* First bubble of a run: the tail corner, like the concept */
+[class*="_layoutBubble_"]:not([class*="_stateContinuation_"]):not([class*="_stateOwnEvent_"])
+    > [data-testid="event-tile-line"] {
+    border-start-start-radius: 0;
+}
+
+[class*="_layoutBubble_"][class*="_stateOwnEvent_"]:not([class*="_stateContinuation_"])
+    > [data-testid="event-tile-line"] {
+    border-start-end-radius: 0;
+}
+
+/* The sender's name goes inside the bubble: sender and line share one grid
+   cell that is as wide as the bubble. Staff names show on our side too. */
+[class*="_layoutBubble_"]:has(> [data-testid="event-tile-slot-sender"] *) {
+    display: grid;
+    grid-template-columns: fit-content(62%);
+    justify-content: start;
+}
+
+[class*="_layoutBubble_"][class*="_stateOwnEvent_"]:has(> [data-testid="event-tile-slot-sender"] *) {
+    justify-content: end;
+}
+
+[class*="_layoutBubble_"]:has(> [data-testid="event-tile-slot-sender"] *) > [data-testid="event-tile-slot-sender"],
+[class*="_layoutBubble_"]:has(> [data-testid="event-tile-slot-sender"] *) > [data-testid="event-tile-line"] {
+    grid-row: 1;
+    grid-column: 1;
+}
+
+[class*="_layoutBubble_"]:has(> [data-testid="event-tile-slot-sender"] *) > [data-testid="event-tile-line"] {
+    max-width: none;
+    width: auto;
+    min-width: 0;
+    margin-inline: 0;
+    padding-top: 26px;
+}
+
+[class*="_layoutBubble_"] > [data-testid="event-tile-slot-sender"] {
+    display: block;
+    z-index: 4;
+    align-self: start;
+    max-width: calc(100% - 24px);
+    margin: 6px 12px 0;
+    inset: auto;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 16px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+[class*="_layoutBubble_"] > [data-testid="event-tile-slot-sender"] * {
+    font-size: 12px;
+    line-height: 16px;
+}
+
+[class*="_layoutBubble_"][class*="_stateOwnEvent_"] > [data-testid="event-tile-slot-sender"] * {
+    color: var(--cirqle-green-hover);
+}
+
+/* Footer (reactions) under the bubble */
+[class*="_layoutBubble_"] > [data-testid="event-tile-slot-footer"] {
+    grid-column: 1;
+}
+
+.mx_ReactionsRowButton {
+    height: 24px;
+    padding: 0 8px;
+    border-radius: 12px;
+    background: #ffffff;
+    border: 1px solid var(--cirqle-line);
+    font-size: 12px;
+    color: var(--cirqle-ink-2);
+}
+
+/* Replies: a green bar on the warm ground, inside the bubble */
+.mx_ReplyChain {
+    border-left: 3px solid var(--cirqle-whatsapp) !important;
+    background: var(--cirqle-ground);
+    border-radius: 6px;
+    padding: 6px 10px;
+    margin-bottom: 6px;
+}
+
+/* System notes (renames, joins): small and centered, as on WhatsApp */
+[class*="_layoutBubble_"][class*="_stateInfo_"] {
+    text-align: center;
+    justify-content: center;
+}
+
+[class*="_layoutBubble_"][class*="_stateInfo_"] > [data-testid="event-tile-line"] {
+    width: fit-content;
+    max-width: 80%;
+    margin-inline: auto;
+    padding: 4px 12px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.7);
+    box-shadow: none;
+    font-size: 12px;
+    line-height: 16px;
+    color: var(--cirqle-ink-3);
+}
+
+[class*="_layoutBubble_"][class*="_stateInfo_"] [data-testid="event-tile-slot-timestamp"],
+[class*="_layoutBubble_"][class*="_stateInfo_"] > [data-testid="event-tile-slot-avatar"] {
+    display: none;
+}
+
+/* Day dividers: small centered chips */
+.mx_TimelineSeparator,
+.mx_DateSeparator {
+    justify-content: center;
+}
+
+.mx_DateSeparator > hr,
+.mx_TimelineSeparator > hr {
+    display: none;
+}
+
+.mx_DateSeparator h2,
+.mx_DateSeparator [role="heading"],
+.mx_TimelineSeparator > div {
+    padding: 4px 12px;
+    border-radius: 8px;
+    background: #ffffff;
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--cirqle-ink-2);
+    box-shadow: 0 1px 1px rgba(20, 32, 25, 0.08);
+}
+
+.mx_GenericEventListSummary[data-layout="bubble"],
+[class*="_layoutBubble_"][class*="_stateInfo_"] {
+    font-size: 12px;
+    color: var(--cirqle-ink-3);
+}
+
+/* The "beginning of your conversation" card has no place in a WhatsApp chat */
+.mx_NewRoomIntro {
+    display: none;
+}
+
+/* ---------- composer ---------- */
+
+.mx_MessageComposer.mx_MessageComposer {
+    box-sizing: border-box;
+    width: 100%;
+    padding: 10px 16px;
+    margin: 0;
+    background: #ffffff;
+    border-top: 1px solid var(--cirqle-line);
+}
+
+.mx_MessageComposer_wrapper {
+    padding: 0;
+}
+
+.mx_MessageComposer_row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.mx_MessageComposer_e2eIconWrapper {
+    display: none;
+}
+
+.mx_MessageComposer_actions {
+    display: contents;
+}
+
+.mx_MessageComposer_row .mx_EmojiButton {
+    order: 1;
+}
+
+.mx_MessageComposer_row [aria-label="Attachment"] {
+    order: 2;
+}
+
+.mx_MessageComposer_row .mx_SendMessageComposer {
+    order: 3;
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 44px;
+    margin: 0;
+    padding: 0 16px;
+    box-sizing: border-box;
+    border-radius: 22px;
+    background: var(--cirqle-ground);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: stretch;
+}
+
+.mx_MessageComposer_row .mx_BasicMessageComposer {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.mx_MessageComposer_row .mx_BasicMessageComposer_input {
+    font-size: 15px;
+    line-height: 21px;
+    padding: 11px 0;
+}
+
+.mx_MessageComposer_row .mx_BasicMessageComposer_inputEmpty > :first-child::before {
+    content: "Type a message";
+    color: var(--cirqle-ink-3);
+}
+
+.mx_MessageComposer_row .mx_MessageComposer_buttonMenu {
+    order: 4;
+}
+
+.mx_MessageComposer_row .cirqle_mic,
+.mx_MessageComposer_row .mx_MessageComposer_sendMessageWrapper {
+    order: 5;
+}
+
+.mx_MessageComposer_row > .mx_MessageComposer_actions > *,
+.mx_MessageComposer_row .mx_MessageComposer_button {
+    flex: 0 0 44px;
+    width: 44px;
+    height: 44px;
+    margin: 0;
+    padding: 0;
+    border-radius: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--cirqle-ink-2);
+}
+
+.mx_MessageComposer_row .mx_MessageComposer_button svg,
+.mx_MessageComposer_row [aria-label="Attachment"] svg {
+    width: 22px;
+    height: 22px;
+}
+
+/* «+» instead of the paperclip */
+.mx_MessageComposer_row [aria-label="Attachment"] svg {
+    display: none;
+}
+
+.mx_MessageComposer_row [aria-label="Attachment"] > div {
+    width: 22px;
+    height: 22px;
+    background:
+        linear-gradient(currentColor, currentColor) center / 2px 14px no-repeat,
+        linear-gradient(currentColor, currentColor) center / 14px 2px no-repeat;
+    color: var(--cirqle-ink-2);
+}
+
+.mx_MessageComposer_row .cirqle_mic {
+    background: var(--cirqle-green);
+    color: #ffffff;
+}
+
+.mx_MessageComposer_row .cirqle_mic svg {
+    width: 20px;
+    height: 20px;
+    color: #ffffff;
+}
+
+/* While there is text the send button takes the microphone's place */
+.mx_MessageComposer_row:has(.mx_MessageComposer_sendMessageWrapper) .cirqle_mic {
+    display: none;
+}
+
+.mx_MessageComposer_sendMessage {
+    background: var(--cirqle-green) !important;
+}
+
+/* ---------- empty side ---------- */
+
+.cirqle_Empty {
+    flex: 1 1 auto;
+    height: 100%;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 24px;
+    box-sizing: border-box;
+    background: var(--cirqle-ground);
+    font-family: Inter, system-ui, sans-serif;
+    color: var(--cirqle-ink);
+}
+
+.cirqle_Empty_content {
+    max-width: 460px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    text-align: center;
+}
+
+.cirqle_Empty_mark {
+    width: 120px;
+    height: 120px;
+    margin-bottom: 8px;
+    border-radius: 32px;
+    background: var(--cirqle-green);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.cirqle_Empty_mark img {
+    width: 62px;
+    height: 70px;
+    object-fit: contain;
+}
+
+.cirqle_Empty_title {
+    margin: 0;
+    font-family: var(--cirqle-serif);
+    font-weight: 600;
+    font-size: 30px;
+    line-height: normal;
+    color: var(--cirqle-green);
+}
+
+.cirqle_Empty_text {
+    margin: 0;
+    font-size: 15px;
+    line-height: 22px;
+    color: var(--cirqle-ink-2);
+}
+
+.cirqle_Empty_actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 20px;
+    margin-top: 18px;
+}
+
+.cirqle_Empty_action {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    border: 0;
+    padding: 0;
+    background: transparent;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--cirqle-ink);
+    cursor: pointer;
+}
+
+.cirqle_Empty_actionIcon {
+    width: 64px;
+    height: 64px;
+    border-radius: 32px;
+    background: #ffffff;
+    border: 1px solid var(--cirqle-line);
+    color: var(--cirqle-green);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.cirqle_Empty_action:hover .cirqle_Empty_actionIcon {
+    border-color: var(--cirqle-green);
+}

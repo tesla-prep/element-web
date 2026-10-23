@@ -1,0 +1,517 @@
+/*
+Copyright 2026 CIRQLE.
+
+SPDX-License-Identifier: AGPL-3.0-only
+
+Rail, chat list and number picker (concept artboards Main, Empty, NumberPicker).
+*/
+
+/* ---------- rail ---------- */
+
+.cirqle_Rail {
+    flex: 0 0 64px;
+    width: 64px;
+    box-sizing: border-box;
+    padding: 14px 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    background: var(--cirqle-green);
+}
+
+.cirqle_Rail_logo {
+    width: 38px;
+    height: 43px;
+    object-fit: contain;
+    margin: 2px 0 12px;
+}
+
+.cirqle_Rail_button {
+    position: relative;
+    width: 44px;
+    height: 44px;
+    border: 0;
+    border-radius: 12px;
+    background: transparent;
+    color: #d7e4dc;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.cirqle_Rail_button:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.cirqle_Rail_button[aria-current="page"] {
+    background: rgba(255, 255, 255, 0.16);
+    color: #ffffff;
+}
+
+.cirqle_Rail_badge {
+    position: absolute;
+    top: 2px;
+    right: 0;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 4px;
+    box-sizing: border-box;
+    border-radius: 9px;
+    background: var(--cirqle-pill);
+    color: var(--cirqle-green);
+    font-size: 10px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.cirqle_Rail_spacer {
+    flex: 1 1 auto;
+}
+
+.cirqle_Rail_profile {
+    border: 0;
+    padding: 0;
+    background: transparent;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+/* ---------- shared bits ---------- */
+
+.cirqle_dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex: 0 0 auto;
+    background: var(--cirqle-ink-3);
+}
+
+.cirqle_dot_whatsapp {
+    background: var(--cirqle-whatsapp);
+}
+
+.cirqle_dot_telegram {
+    background: var(--cirqle-telegram);
+}
+
+.cirqle_badge {
+    flex: 0 0 auto;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
+    box-sizing: border-box;
+    border-radius: 10px;
+    background: var(--cirqle-whatsapp);
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.cirqle_iconButton {
+    flex: 0 0 auto;
+    width: 40px;
+    height: 40px;
+    border: 0;
+    border-radius: 20px;
+    background: transparent;
+    color: var(--cirqle-ink-2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.cirqle_iconButton:hover {
+    background: var(--cirqle-ground);
+}
+
+.cirqle_iconButton_green {
+    color: var(--cirqle-green);
+}
+
+.cirqle_chip {
+    height: 32px;
+    padding: 0 14px;
+    border: 0;
+    border-radius: 16px;
+    background: var(--cirqle-ground);
+    color: var(--cirqle-ink-2);
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.cirqle_chip[aria-selected="true"] {
+    background: var(--cirqle-green-soft);
+    color: var(--cirqle-green);
+    font-weight: 600;
+}
+
+/* ---------- chat list ---------- */
+
+.mx_LeftPanel_roomListContainer:has(.cirqle_ChatList) {
+    background: #ffffff;
+}
+
+.cirqle_ChatList {
+    height: 100%;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    background: #ffffff;
+    border-right: 1px solid var(--cirqle-line);
+    font-family: Inter, system-ui, sans-serif;
+    color: var(--cirqle-ink);
+}
+
+.cirqle_ChatList_header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 18px 16px 12px 20px;
+}
+
+.cirqle_ChatList_title {
+    flex: 1 1 auto;
+    margin: 0;
+    font-family: var(--cirqle-serif);
+    font-weight: 600;
+    font-size: 26px;
+    line-height: normal;
+    color: var(--cirqle-green);
+}
+
+.cirqle_ChatList_search {
+    margin: 0 16px 10px 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 40px;
+    padding: 0 12px;
+    border-radius: 20px;
+    background: var(--cirqle-ground);
+    color: var(--cirqle-ink-3);
+}
+
+.cirqle_ChatList_search input {
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    padding: 0;
+    margin: 0;
+    background: transparent;
+    font: inherit;
+    font-size: 14px;
+    color: var(--cirqle-ink);
+    outline: none;
+}
+
+.cirqle_ChatList_search input::placeholder {
+    color: var(--cirqle-ink-3);
+}
+
+.cirqle_ChatList_chips {
+    display: flex;
+    gap: 8px;
+    padding: 0 16px 10px 20px;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.cirqle_ChatList_chips > .cirqle_chip {
+    flex: 0 0 auto;
+}
+
+.cirqle_ChatList > * {
+    flex: 0 0 auto;
+}
+
+.cirqle_ChatList > .cirqle_ChatList_rows {
+    flex: 1 1 0;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+.cirqle_ChatList_empty,
+.cirqle_ChatList_startNew {
+    margin: 24px 20px;
+    font-size: 14px;
+    color: var(--cirqle-ink-3);
+}
+
+.cirqle_ChatList_startNew {
+    border: 0;
+    background: transparent;
+    padding: 0;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--cirqle-green-hover);
+    cursor: pointer;
+    text-align: left;
+}
+
+.cirqle_ChatRow {
+    width: 100%;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    padding: 10px 16px 0 20px;
+    border: 0;
+    background: #ffffff;
+    font: inherit;
+    text-align: left;
+    color: var(--cirqle-ink);
+    cursor: pointer;
+}
+
+.cirqle_ChatRow:hover {
+    background: #f7f6f2;
+}
+
+.cirqle_ChatRow_selected,
+.cirqle_ChatRow_selected:hover {
+    background: var(--cirqle-green-selected);
+}
+
+.cirqle_ChatRow > .mx_BaseAvatar,
+.cirqle_ChatRow > span:first-child {
+    flex: 0 0 48px;
+    align-self: flex-start;
+    margin-top: 2px;
+}
+
+.cirqle_ChatRow_body {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--cirqle-line-soft);
+}
+
+.cirqle_ChatRow_top,
+.cirqle_ChatRow_middle {
+    display: flex;
+    gap: 8px;
+}
+
+.cirqle_ChatRow_top {
+    align-items: baseline;
+}
+
+.cirqle_ChatRow_middle {
+    align-items: center;
+    min-height: 20px;
+}
+
+.cirqle_ChatRow_name {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-size: 15px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.cirqle_ChatRow_time {
+    flex: 0 0 auto;
+    font-size: 12px;
+    color: var(--cirqle-ink-3);
+}
+
+.cirqle_ChatRow_time_unread {
+    color: var(--cirqle-green-hover);
+}
+
+.cirqle_ChatRow_preview {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-size: 14px;
+    color: var(--cirqle-ink-3);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.cirqle_ChatRow_line {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--cirqle-ink-3);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.cirqle_ChatRow_line .cirqle_dot {
+    width: 7px;
+    height: 7px;
+}
+
+.cirqle_net_whatsapp {
+    color: var(--cirqle-whatsapp);
+}
+
+.cirqle_net_telegram {
+    color: var(--cirqle-telegram);
+}
+
+/* ---------- number picker ---------- */
+
+.cirqle_NumberPicker {
+    flex: 0 0 auto;
+    min-width: 0;
+}
+
+.cirqle_ChatList_header {
+    position: relative;
+}
+
+.cirqle_NumberPicker_pill {
+    height: 36px;
+    padding: 0 10px 0 12px;
+    border-radius: 18px;
+    border: 1px solid var(--cirqle-pill-line);
+    background: var(--cirqle-pill);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--cirqle-ink);
+    cursor: pointer;
+    max-width: 190px;
+}
+
+.cirqle_NumberPicker_pill_open {
+    border: 2px solid var(--cirqle-green);
+    background: #ffffff;
+}
+
+.cirqle_NumberPicker_label {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.cirqle_NumberPicker_dots {
+    display: flex;
+    gap: 3px;
+}
+
+.cirqle_NumberPicker_list {
+    position: absolute;
+    z-index: 10;
+    top: 62px;
+    left: 12px;
+    right: 12px;
+    background: #ffffff;
+    border-radius: 14px;
+    box-shadow: 0 10px 30px rgba(20, 32, 25, 0.16);
+    padding: 8px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.cirqle_NumberPicker_option {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px;
+    border: 0;
+    border-radius: 10px;
+    background: #ffffff;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.cirqle_NumberPicker_option:hover {
+    background: #f7f6f2;
+}
+
+.cirqle_NumberPicker_option[aria-selected="true"] {
+    background: var(--cirqle-green-selected);
+}
+
+.cirqle_NumberPicker_icon {
+    flex: 0 0 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #e8f1ec;
+    color: var(--cirqle-green);
+}
+
+.cirqle_NumberPicker_icon_whatsapp {
+    background: var(--cirqle-green-soft);
+    color: var(--cirqle-whatsapp);
+}
+
+.cirqle_NumberPicker_icon_telegram {
+    background: #d6e6f5;
+    color: var(--cirqle-telegram);
+}
+
+.cirqle_NumberPicker_text {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.cirqle_NumberPicker_name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--cirqle-ink);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.cirqle_NumberPicker_sub {
+    font-size: 12px;
+    color: var(--cirqle-ink-3);
+}
+
+.cirqle_NumberPicker_check {
+    flex: 0 0 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--cirqle-green);
+}
+
+.cirqle_NumberPicker_count {
+    flex: 0 0 28px;
+    display: flex;
+    justify-content: flex-end;
+}
+
+/* Element's views beside the list sit on the warm ground */
+.mx_RoomView_wrapper {
+    background: var(--cirqle-ground);
+}
+
+/* Element's resize handle between the list and the chat: a plain hairline */
+.mx_Separator {
+    background: var(--cirqle-line);
+}

@@ -114,6 +114,7 @@ import { EventTileE2eViewModel } from "../../../viewmodels/room/timeline/event-t
 import { shouldHighlightEventTile } from "../../../viewmodels/room/timeline/event-tile/EventTileHighlightState";
 import { shouldHideEventTile } from "../../../viewmodels/room/timeline/event-tile/EventTileVisibilityState";
 import { UnreadNotificationBadgeViewModel } from "../../../viewmodels/room/notification-badge/UnreadNotificationBadgeViewModel";
+import { hideCustomerName, isOurSide } from "../../../cirqle/CirqleTimeline";
 
 /** Relation lookup type retained for EventTile consumers. */
 export type { GetRelationsForEvent } from "../../../viewmodels/room/timeline/event-tile/reactions/EventTileReactionState";
@@ -879,7 +880,8 @@ export class UnwrappedEventTile extends React.Component<EventTileProps, IState> 
         const hasReactionsRow = !isRedacted;
         const threadState = this.threadState;
         // Use `getSender()` because searched events might not have a proper `sender`.
-        const isOwnEvent = this.props.mxEvent?.getSender() === MatrixClientPeg.safeGet().getUserId();
+        // CIRQLE: every staff member's message sits on our side of the chat
+        const isOwnEvent = isOurSide(this.props.mxEvent, MatrixClientPeg.safeGet());
 
         return {
             hasPinnedMessageBadge,
@@ -943,7 +945,7 @@ export class UnwrappedEventTile extends React.Component<EventTileProps, IState> 
                               timelineRenderingType: this.context.timelineRenderingType,
                           }),
                 ),
-                hideSender: this.props.hideSender,
+                hideSender: this.props.hideSender || hideCustomerName(this.props.mxEvent, MatrixClientPeg.safeGet()), // CIRQLE
             },
             timestamp: {
                 alwaysShowTimestamps: this.props.alwaysShowTimestamps,
