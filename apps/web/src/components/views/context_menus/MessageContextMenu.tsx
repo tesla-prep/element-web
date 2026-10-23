@@ -75,6 +75,8 @@ import { type ShowThreadPayload } from "../../../dispatcher/payloads/ShowThreadP
 import { CardContext } from "../right_panel/context";
 import PinningUtils from "../../../utils/PinningUtils";
 import PosthogTrackers from "../../../PosthogTrackers.ts";
+import { cirqleMayDelete } from "../../../cirqle/CirqleMessages";
+import { isCirqleMessenger } from "../../../cirqle/CirqleFeatures";
 
 interface IReplyInThreadButton {
     mxEvent: MatrixEvent;
@@ -182,6 +184,7 @@ export default class MessageContextMenu extends React.Component<IProps, IState> 
         // to obliterate the room - https://github.com/matrix-org/synapse/issues/4042
         // Similarly for encryption events, since redacting them "breaks everything"
         const canRedact =
+            cirqleMayDelete(cli, this.props.mxEvent) && // CIRQLE: our own messages only
             !!room?.currentState.maySendRedactionForEvent(this.props.mxEvent, cli.getSafeUserId()) &&
             this.props.mxEvent.getType() !== EventType.RoomServerAcl &&
             this.props.mxEvent.getType() !== EventType.RoomEncryption;
@@ -440,7 +443,7 @@ export default class MessageContextMenu extends React.Component<IProps, IState> 
             redactButton = (
                 <IconizedContextMenuOption
                     icon={<DeleteIcon />}
-                    label={_t("action|remove")}
+                    label={isCirqleMessenger() ? "Delete for everyone" : _t("action|remove")} // CIRQLE: as on WhatsApp
                     onClick={this.onRedactClick}
                 />
             );
@@ -478,7 +481,7 @@ export default class MessageContextMenu extends React.Component<IProps, IState> 
         }
 
         // This is specifically not behind the developerMode flag to give people insight into the Matrix
-        const viewSourceButton = (
+        const viewSourceButton = !isCirqleMessenger() && ( // CIRQLE
             <IconizedContextMenuOption
                 icon={<InlineCodeIcon />}
                 label={_t("timeline|context_menu|view_source")}
@@ -498,7 +501,8 @@ export default class MessageContextMenu extends React.Component<IProps, IState> 
         }
 
         let permalinkButton: JSX.Element | undefined;
-        if (permalink) {
+        if (permalink && !isCirqleMessenger()) {
+            // CIRQLE: no matrix.to links
             permalinkButton = (
                 <IconizedContextMenuOption
                     icon={<ShareIcon />}
@@ -576,7 +580,8 @@ export default class MessageContextMenu extends React.Component<IProps, IState> 
         }
 
         let reportEventButton: JSX.Element | undefined;
-        if (mxEvent.getSender() !== me) {
+        if (mxEvent.getSender() !== me && !isCirqleMessenger()) {
+            // CIRQLE: Report reaches our server's admins, not WhatsApp
             reportEventButton = (
                 <IconizedContextMenuOption
                     icon={<ErrorSolidIcon />}
@@ -587,7 +592,8 @@ export default class MessageContextMenu extends React.Component<IProps, IState> 
         }
 
         let copyLinkButton: JSX.Element | undefined;
-        if (link) {
+        if (link && !isCirqleMessenger()) {
+            // CIRQLE: no matrix.to links
             copyLinkButton = (
                 <IconizedContextMenuOption
                     icon={<CopyIcon />}
@@ -653,6 +659,7 @@ export default class MessageContextMenu extends React.Component<IProps, IState> 
         let replyInThreadButton: JSX.Element | undefined;
         if (
             rightClick &&
+            !isCirqleMessenger() && // CIRQLE: no threads on WhatsApp
             contentActionable &&
             canSendMessages &&
             Thread.hasServerSideSupport &&

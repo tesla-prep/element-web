@@ -49,6 +49,7 @@ import { type SDKContextClass } from "../../../contexts/SDKContextClass";
 import { useSettingValue } from "../../../hooks/useSettings";
 import { NoChange, useEventEmitterAsyncState, type AsyncStateCallbackResult } from "../../../hooks/useEventEmitter";
 import { EncryptionUserSettingsTab, type State } from "../settings/tabs/user/EncryptionUserSettingsTab";
+import { cirqleUserTabs } from "../../../cirqle/CirqleSettings";
 
 interface IProps {
     initialTabId?: UserTab;
@@ -255,7 +256,7 @@ export default function UserSettingsDialog(props: IProps): JSX.Element {
             ),
         );
 
-        return tabs as NonEmptyArray<Tab<UserTab>>;
+        return cirqleUserTabs(tabs) as NonEmptyArray<Tab<UserTab>>; // CIRQLE
     };
 
     const [activeTabId, _setActiveTabId] = useActiveTabWithDefault(getTabs(), UserTab.Account, props.initialTabId);

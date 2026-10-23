@@ -14,6 +14,8 @@ import { MatrixClientPeg } from "../../../MatrixClientPeg";
 import Modal from "../../../Modal";
 import ErrorDialog from "./ErrorDialog";
 import TextInputDialog from "./TextInputDialog";
+import { CirqleDeleteDialog } from "../../../cirqle/CirqleDeleteDialog";
+import { isCirqleMessenger } from "../../../cirqle/CirqleFeatures";
 
 interface IProps {
     event: MatrixEvent;
@@ -26,6 +28,15 @@ interface IProps {
  */
 export default class ConfirmRedactDialog extends React.Component<IProps> {
     public render(): React.ReactNode {
+        if (isCirqleMessenger()) {
+            // CIRQLE: "Delete for everyone?" without a reason nobody receives
+            return (
+                <CirqleDeleteDialog
+                    event={this.props.event}
+                    onFinished={(ok) => (ok ? this.props.onFinished(true) : this.props.onFinished())}
+                />
+            );
+        }
         let description = _t("redact|confirm_description");
         if (this.props.event.isState()) {
             description += " " + _t("redact|confirm_description_state");
