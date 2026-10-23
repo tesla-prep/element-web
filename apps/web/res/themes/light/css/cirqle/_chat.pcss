@@ -444,7 +444,13 @@ slots by their data-testid.
 }
 
 /* A message, edit or delete WhatsApp or Telegram refused (CirqleDelivery) */
+/* The body slot is display: contents inside the tile's flex line, so the notice wraps to its own row */
+.mx_EventTile_line:has(.cirqle_DeliveryNotice) {
+    flex-wrap: wrap;
+}
+
 .cirqle_DeliveryNotice {
+    flex-basis: 100%;
     margin-top: 4px;
     font-size: 12px;
     line-height: 16px;
