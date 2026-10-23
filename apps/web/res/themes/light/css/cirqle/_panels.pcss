@@ -3,7 +3,8 @@ Copyright 2026 CIRQLE.
 
 SPDX-License-Identifier: AGPL-3.0-only
 
-New chat panel and Group info (concept artboards NewChat and GroupInfo).
+New chat panel and Group info (concept artboards NewChat and GroupInfo); Contact
+info and the member card share Group info's look.
 */
 
 /* ---------- new chat ---------- */
@@ -247,6 +248,77 @@ New chat panel and Group info (concept artboards NewChat and GroupInfo).
 .cirqle_GroupInfo_sub {
     font-size: 13px;
     color: var(--cirqle-ink-3);
+}
+
+.cirqle_GroupInfo_phone {
+    font-size: 15px;
+    color: var(--cirqle-ink-2);
+}
+
+.cirqle_GroupInfo_message {
+    margin-top: 10px;
+    height: 36px;
+    padding: 0 22px;
+    border: 0;
+    border-radius: 18px;
+    background: var(--cirqle-green);
+    font: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    color: #ffffff;
+    cursor: pointer;
+}
+
+.cirqle_GroupInfo_message:hover {
+    background: var(--cirqle-green-hover);
+}
+
+.cirqle_GroupInfo_action {
+    padding: 14px 20px;
+    cursor: pointer;
+}
+
+.cirqle_GroupInfo_action:hover {
+    background: #f7f6f2;
+}
+
+.cirqle_GroupInfo_action svg {
+    flex: 0 0 auto;
+    color: var(--cirqle-ink-3);
+}
+
+.cirqle_GroupInfo_actionLabel {
+    flex: 1 1 auto;
+    font-size: 15px;
+}
+
+.cirqle_GroupInfo_switch {
+    flex: 0 0 36px;
+    height: 20px;
+    border-radius: 10px;
+    background: var(--cirqle-pill-line);
+    position: relative;
+    transition: background 0.15s;
+}
+
+.cirqle_GroupInfo_switch::after {
+    content: "";
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #ffffff;
+    transition: transform 0.15s;
+}
+
+.cirqle_GroupInfo_action[aria-checked="true"] .cirqle_GroupInfo_switch {
+    background: var(--cirqle-green);
+}
+
+.cirqle_GroupInfo_action[aria-checked="true"] .cirqle_GroupInfo_switch::after {
+    transform: translateX(16px);
 }
 
 .cirqle_GroupInfo_section {

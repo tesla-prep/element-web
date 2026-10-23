@@ -9,9 +9,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 //
 // Members are the people in the group on WhatsApp or Telegram: the bridge's
 // ghost users and our number's own account. Staff and service users are Matrix
-// only and are not listed. Add member, Remove… and Leave group… are Element's
-// own invite, remove (kick) and leave, which the relay bot and the bridges
-// carry out on WhatsApp and Telegram.
+// only and are not listed. Add member and Remove… are Element's own invite and
+// remove (kick), which the relay bot and the bridges carry out on WhatsApp and
+// Telegram; a channel has subscribers, not members, so it has no Add member.
+// Leave group… waits for the number itself to leave (decision 5, option B):
+// Element's own leave only takes the staff member out, and the relay bot puts
+// them back.
 
 import React, { type JSX, useContext } from "react";
 import { KnownMembership, type Room, type RoomMember } from "matrix-js-sdk/src/matrix";
@@ -28,18 +31,21 @@ import ErrorDialog from "../components/views/dialogs/ErrorDialog";
 import RoomAvatar from "../components/views/avatars/RoomAvatar";
 import MemberAvatar from "../components/views/avatars/MemberAvatar";
 import { AddMemberIcon, CloseIcon, LeaveIcon } from "./CirqleIcons";
-import { chatKind, formatPhone, inboxesOf, networkOf, stripNetworkSuffix } from "./CirqleInboxes";
+import { chatKind, inboxesOf, networkOf, stripNetworkSuffix } from "./CirqleInboxes";
+import { CirqleChatActions } from "./CirqleContactInfo";
+import { ACCOUNT, ghostPhone } from "./CirqleMemberCard";
 import { useCirqleInboxes } from "./useCirqleChats";
 
 const GHOST = /^@(whatsapp|telegram)_([^:]+):/;
-export const ACCOUNT = /^@account_(whatsapp|telegram)_/;
+const SHOW_LEAVE = false;
 
-/** Bridged groups and channels get this panel; private chats keep Element's room summary. */
 /** The people in the group on WhatsApp or Telegram: ghosts and our accounts, not staff. */
 export function groupPeople(members: RoomMember[]): RoomMember[] {
     return members
         .filter((m) => m.membership === KnownMembership.Join && (GHOST.test(m.userId) || ACCOUNT.test(m.userId)))
-        .sort((a, b) => Number(ACCOUNT.test(b.userId)) - Number(ACCOUNT.test(a.userId)) || a.name.localeCompare(b.name));
+        .sort(
+            (a, b) => Number(ACCOUNT.test(b.userId)) - Number(ACCOUNT.test(a.userId)) || a.name.localeCompare(b.name),
+        );
 }
 
 /** "1 member", "3 members" */
@@ -47,16 +53,16 @@ export function membersLabel(count: number): string {
     return count === 1 ? "1 member" : `${count} members`;
 }
 
+/** Bridged groups and channels get this panel, private chats get Contact info. */
 export function isCirqleGroupInfoRoom(room: Room): boolean {
     return !!networkOf(room) && chatKind(room) !== "chat";
 }
 
-function memberSub(member: RoomMember): string {
-    const digits = member.userId.match(GHOST)?.[2];
-    return digits && /^\d{7,15}$/.test(digits) ? formatPhone(digits) : "";
-}
-
-async function removeMember(room: Room, member: RoomMember, client: ReturnType<typeof useMatrixClientContext>): Promise<void> {
+async function removeMember(
+    room: Room,
+    member: RoomMember,
+    client: ReturnType<typeof useMatrixClientContext>,
+): Promise<void> {
     const { finished } = Modal.createDialog(ConfirmUserActionDialog, {
         member,
         action: "Remove",
@@ -108,6 +114,7 @@ export function CirqleGroupInfo({ room }: { room: Room }): JSX.Element {
         <aside className="cirqle_GroupInfo" aria-labelledby="cirqle_GroupInfo_title">
             <div className="cirqle_GroupInfo_bar">
                 <button
+                    type="button"
                     className="cirqle_iconButton"
                     aria-label="Close group info"
                     onClick={() => sdkContext.rightPanelStore.hide(room.roomId)}
@@ -125,22 +132,31 @@ export function CirqleGroupInfo({ room }: { room: Room }): JSX.Element {
                 <span className="cirqle_GroupInfo_sub">{sub}</span>
             </div>
 
+            <CirqleChatActions room={room} />
+
             <div className="cirqle_GroupInfo_card">
                 <div className="cirqle_GroupInfo_section">{membersLabel(people.length)}</div>
-                <button
-                    className="cirqle_GroupInfo_row cirqle_GroupInfo_add"
-                    onClick={() => dis.dispatch({ action: "view_invite", roomId: room.roomId })}
-                >
-                    <span className="cirqle_NewChat_actionIcon cirqle_GroupInfo_addIcon">
-                        <AddMemberIcon />
-                    </span>
-                    <span className="cirqle_GroupInfo_addLabel">Add member</span>
-                </button>
+                {kind !== "channel" && (
+                    <button
+                        type="button"
+                        className="cirqle_GroupInfo_row cirqle_GroupInfo_add"
+                        onClick={() => dis.dispatch({ action: "view_invite", roomId: room.roomId })}
+                    >
+                        <span className="cirqle_NewChat_actionIcon cirqle_GroupInfo_addIcon">
+                            <AddMemberIcon />
+                        </span>
+                        <span className="cirqle_GroupInfo_addLabel">Add member</span>
+                    </button>
+                )}
                 {people.map((m) => {
                     const isUs = ACCOUNT.test(m.userId);
-                    const ours = inboxes.find((inbox) => inbox.accountName && m.userId.includes(`_${inbox.accountName}:`));
-                    const label = isUs ? `${ours?.label ?? stripNetworkSuffix(m.name)} (us)` : stripNetworkSuffix(m.name);
-                    const subline = isUs ? (ours?.phone ?? "") : memberSub(m);
+                    const ours = inboxes.find(
+                        (inbox) => inbox.accountName && m.userId.includes(`_${inbox.accountName}:`),
+                    );
+                    const label = isUs
+                        ? `${ours?.label ?? stripNetworkSuffix(m.name)} (us)`
+                        : stripNetworkSuffix(m.name);
+                    const subline = isUs ? ours?.phone : ghostPhone(m.userId);
                     return (
                         <div key={m.userId} className="cirqle_GroupInfo_row">
                             <MemberAvatar member={m} size="44px" />
@@ -148,9 +164,12 @@ export function CirqleGroupInfo({ room }: { room: Room }): JSX.Element {
                                 <span className="cirqle_GroupInfo_memberName">{label}</span>
                                 {subline && <span className="cirqle_GroupInfo_memberSub">{subline}</span>}
                             </span>
-                            {m.powerLevel >= 100 && !canRemove(m) && <span className="cirqle_GroupInfo_admin">Admin</span>}
+                            {m.powerLevel >= 100 && !canRemove(m) && (
+                                <span className="cirqle_GroupInfo_admin">Admin</span>
+                            )}
                             {canRemove(m) && (
                                 <button
+                                    type="button"
                                     className="cirqle_GroupInfo_remove"
                                     aria-label={`Remove ${label}`}
                                     onClick={() => void removeMember(room, m, client)}
@@ -163,15 +182,18 @@ export function CirqleGroupInfo({ room }: { room: Room }): JSX.Element {
                 })}
             </div>
 
-            <div className="cirqle_GroupInfo_card">
-                <button
-                    className="cirqle_GroupInfo_leave"
-                    onClick={() => dis.dispatch({ action: "leave_room", room_id: room.roomId })}
-                >
-                    <LeaveIcon />
-                    {kind === "channel" ? "Leave channel…" : "Leave group…"}
-                </button>
-            </div>
+            {SHOW_LEAVE && (
+                <div className="cirqle_GroupInfo_card">
+                    <button
+                        type="button"
+                        className="cirqle_GroupInfo_leave"
+                        onClick={() => dis.dispatch({ action: "leave_room", room_id: room.roomId })}
+                    >
+                        <LeaveIcon />
+                        {kind === "channel" ? "Leave channel…" : "Leave group…"}
+                    </button>
+                </div>
+            )}
         </aside>
     );
 }

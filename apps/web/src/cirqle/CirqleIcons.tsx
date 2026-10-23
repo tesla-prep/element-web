@@ -96,6 +96,26 @@ export const AddMemberIcon = (p: IconProps): JSX.Element => (
     </Stroke>
 );
 
+export const StarIcon = (p: IconProps): JSX.Element => (
+    <Stroke size={20} {...p}>
+        <path d="M12 3l2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.3 6.4 20.2l1.1-6.2L3 9.6l6.2-.9z" />
+    </Stroke>
+);
+
+export const BellOffIcon = (p: IconProps): JSX.Element => (
+    <Stroke size={20} {...p}>
+        <path d="M18 8a6 6 0 0 0-9.3-5M6.3 6.3A6 6 0 0 0 6 8c0 7-3 9-3 9h14M13.7 21a2 2 0 0 1-3.4 0M3 3l18 18" />
+    </Stroke>
+);
+
+export const MediaIcon = (p: IconProps): JSX.Element => (
+    <Stroke size={20} {...p}>
+        <rect x="3" y="3" width="18" height="18" rx="2" />
+        <circle cx="8.5" cy="8.5" r="1.5" />
+        <path d="M21 15l-5-5L5 21" />
+    </Stroke>
+);
+
 export const AllNumbersIcon = (p: IconProps): JSX.Element => (
     <Stroke {...p}>
         <path d="M4 6h16M4 12h16M4 18h16" />
