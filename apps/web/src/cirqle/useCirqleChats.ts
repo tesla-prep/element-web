@@ -5,28 +5,35 @@ SPDX-License-Identifier: AGPL-3.0-only
 */
 
 // Element's own room list store, read the CIRQLE way: one list of every chat,
-// newest first, narrowed by the picked number and the chips.
+// newest first, narrowed by the picked number and the chips. A number's chats
+// are the ones its space lists, not Element's space (which also pulls in private
+// chats with anyone in the space), so the list, the chips, the picker and the
+// rail count the same chats.
 
 import { useCallback, useEffect, useState } from "react";
 import { type Room } from "matrix-js-sdk/src/matrix";
 
 import RoomListStoreV3, { LISTS_UPDATE_EVENT } from "../stores/room-list-v3/RoomListStoreV3";
-import { FilterEnum, type FilterKey } from "../stores/room-list-v3/skip-list/filters";
+import { DefaultTagID } from "../stores/room-list-v3/skip-list/tag";
 import { SDKContextClass } from "../contexts/SDKContextClass";
 import { UPDATE_SELECTED_SPACE, UPDATE_TOP_LEVEL_SPACES } from "../stores/spaces";
-import { RoomNotificationStateStore, UPDATE_STATUS_INDICATOR } from "../stores/notifications/RoomNotificationStateStore";
+import {
+    RoomNotificationStateStore,
+    UPDATE_STATUS_INDICATOR,
+} from "../stores/notifications/RoomNotificationStateStore";
 import { getMarkedUnreadState } from "../utils/notifications";
 import { useMatrixClientContext } from "../contexts/MatrixClientContext";
-import { chatKind, getInboxes, type Inbox } from "./CirqleInboxes";
+import { chatKind, getInboxes, type Inbox, networkOf, numberChats } from "./CirqleInboxes";
 import { type CirqleSection } from "./CirqleUiStore";
 
 export type CirqleChip = "all" | "unread" | "favourites" | "groups";
 
-const CHIP_FILTERS: Record<CirqleChip, FilterKey[] | undefined> = {
-    all: undefined,
-    unread: [FilterEnum.UnreadFilter],
-    favourites: [FilterEnum.FavouriteFilter],
-    groups: [FilterEnum.RoomsFilter],
+const CHIP_MATCHES: Record<CirqleChip, (room: Room) => boolean> = {
+    all: () => true,
+    unread: isUnreadChat,
+    favourites: (room) => !!room.tags[DefaultTagID.Favourite],
+    // WhatsApp and Telegram groups, not rooms someone made in Matrix itself
+    groups: (room) => chatKind(room) === "group" && networkOf(room) !== undefined,
 };
 
 /** Re-render whenever the room list, the spaces or the unread counts change. */
@@ -66,13 +73,29 @@ function inSection(room: Room, section: CirqleSection): boolean {
     return (chatKind(room) === "channel") === (section === "channels");
 }
 
-/** Unread chats in every number, for the rail. */
-export function useCirqleUnreadChats(): number {
-    const version = useListVersion();
-    const count = useCallback(
-        () => RoomListStoreV3.instance.getSortedRooms().filter((r) => inSection(r, "chats") && isUnreadChat(r)).length,
-        [],
+/** The number picked in the number picker; undefined is All numbers. */
+export function pickedInbox(inboxes: Inbox[]): Inbox | undefined {
+    const active = SDKContextClass.instance.spaceStore.activeSpace;
+    return inboxes.find((inbox) => inbox.spaceId === active);
+}
+
+/** A number's chats (All numbers when undefined) in a section, newest first. */
+function sectionChats(inboxes: Inbox[], picked: Inbox | undefined, section: CirqleSection): Room[] {
+    return numberChats(RoomListStoreV3.instance.getSortedRooms(), inboxes, picked).filter((room) =>
+        inSection(room, section),
     );
+}
+
+/** Unread chats of a number (All numbers when undefined) in a section. */
+export function countUnread(inboxes: Inbox[], picked: Inbox | undefined, section: CirqleSection): number {
+    return sectionChats(inboxes, picked, section).filter(isUnreadChat).length;
+}
+
+/** Unread chats in every connected number, for the rail. */
+export function useCirqleUnreadChats(): number {
+    const client = useMatrixClientContext();
+    const version = useListVersion();
+    const count = useCallback(() => countUnread(getInboxes(client), undefined, "chats"), [client]);
     const [unread, setUnread] = useState(count);
     useEffect(() => setUnread(count()), [count, version]);
     return unread;
@@ -84,15 +107,11 @@ export interface CirqleRooms {
     unread: number;
 }
 
-export function useCirqleRooms(section: CirqleSection, chip: CirqleChip, query: string): CirqleRooms {
+export function useCirqleRooms(inboxes: Inbox[], section: CirqleSection, chip: CirqleChip, query: string): CirqleRooms {
     const version = useListVersion();
     const read = useCallback((): CirqleRooms => {
-        const store = RoomListStoreV3.instance;
-        const all = store.getSortedRoomsInActiveSpace().sections.flatMap((s) => s.rooms);
-        const shown = store
-            .getSortedRoomsInActiveSpace(CHIP_FILTERS[chip])
-            .sections.flatMap((s) => s.rooms)
-            .filter((room) => inSection(room, section));
+        const all = sectionChats(inboxes, pickedInbox(inboxes), section);
+        const shown = all.filter(CHIP_MATCHES[chip]);
         const needle = query.trim().toLocaleLowerCase();
         const digits = needle.replace(/[^\d]/g, "");
         const rooms = needle
@@ -101,8 +120,8 @@ export function useCirqleRooms(section: CirqleSection, chip: CirqleChip, query: 
                   return name.includes(needle) || (digits.length >= 3 && name.replace(/[^\d]/g, "").includes(digits));
               })
             : shown;
-        return { rooms, unread: all.filter((r) => inSection(r, section) && isUnreadChat(r)).length };
-    }, [section, chip, query]);
+        return { rooms, unread: all.filter(isUnreadChat).length };
+    }, [inboxes, section, chip, query]);
     const [result, setResult] = useState(read);
     useEffect(() => setResult(read()), [read, version]);
     return result;

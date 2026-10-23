@@ -28,9 +28,9 @@ import { CirqleNumberPicker } from "./CirqleNumberPicker";
 import { cirqleLastTimestamp } from "./CirqleActivity";
 import { chatPreview } from "./CirqlePreview";
 import { ChannelIcon, GroupIcon, KebabIcon, PencilIcon, PlusIcon, SearchIcon, SettingsIcon } from "./CirqleIcons";
-import { type Inbox, numberLine, stripNetworkSuffix } from "./CirqleInboxes";
+import { contactPhone, type Inbox, numberLine, repeatedNames, stripNetworkSuffix } from "./CirqleInboxes";
 import { CirqleUiStore, type CirqleSection } from "./CirqleUiStore";
-import { type CirqleChip, isUnreadChat, useCirqleInboxes, useCirqleRooms } from "./useCirqleChats";
+import { type CirqleChip, isUnreadChat, pickedInbox, useCirqleInboxes, useCirqleRooms } from "./useCirqleChats";
 
 const PAGE = 60;
 
@@ -56,13 +56,25 @@ export function createChannel(): void {
     dis.dispatch({ action: Action.CreateRoom, public: true });
 }
 
-function ChatRow({ room, inboxes, selected }: { room: Room; inboxes: Inbox[]; selected: boolean }): JSX.Element {
+function ChatRow({
+    room,
+    inboxes,
+    selected,
+    repeatedName,
+}: {
+    room: Room;
+    inboxes: Inbox[];
+    selected: boolean;
+    /** Another private chat in the list has the same name: the customer's number tells them apart */
+    repeatedName: boolean;
+}): JSX.Element {
     const client = useMatrixClientContext();
     const vm = useCreateAutoDisposedViewModel(() => new RoomListItemViewModel({ room, client }));
     const item = useViewModel(vm);
     const unread = isUnreadChat(room);
     const count = item.notification.count;
     const line = numberLine(room, inboxes);
+    const lineText = [repeatedName ? contactPhone(room, inboxes) : undefined, line.text].filter(Boolean).join(" · ");
 
     const open = (): void => {
         dis.dispatch<ViewRoomPayload>({ action: Action.ViewRoom, room_id: room.roomId, metricsTrigger: "RoomList" });
@@ -86,10 +98,10 @@ function ChatRow({ room, inboxes, selected }: { room: Room; inboxes: Inbox[]; se
                     <span className="cirqle_ChatRow_preview">{chatPreview(room)}</span>
                     {unread && <span className="cirqle_badge">{count > 0 ? count : ""}</span>}
                 </span>
-                {line.text && (
+                {lineText && (
                     <span className={`cirqle_ChatRow_line cirqle_net_${line.network ?? "none"}`}>
                         <span className={`cirqle_dot cirqle_dot_${line.network ?? "none"}`} />
-                        {line.text}
+                        {lineText}
                     </span>
                 )}
             </span>
@@ -111,7 +123,9 @@ export function CirqleChatList({ section }: { section: CirqleSection }): JSX.Ele
     const [query, setQuery] = useState("");
     const [menuOpen, setMenuOpen] = useState(false);
     const [shown, setShown] = useState(PAGE);
-    const { rooms, unread } = useCirqleRooms(section, chip, query);
+    const { rooms, unread } = useCirqleRooms(inboxes, section, chip, query);
+    const picked = pickedInbox(inboxes);
+    const repeated = useMemo(() => repeatedNames(rooms), [rooms]);
     const currentRoomId = useEventEmitterState(sdkContext.roomViewStore, UPDATE_EVENT, () =>
         sdkContext.roomViewStore.getRoomId(),
     );
@@ -131,7 +145,7 @@ export function CirqleChatList({ section }: { section: CirqleSection }): JSX.Ele
         <section className="cirqle_ChatList" aria-label="Chat list">
             <div className="cirqle_ChatList_header">
                 <h1 className="cirqle_ChatList_title">{title}</h1>
-                <CirqleNumberPicker inboxes={inboxes} />
+                <CirqleNumberPicker inboxes={inboxes} section={section} />
                 <button
                     className="cirqle_iconButton cirqle_iconButton_green"
                     aria-label={section === "channels" ? "New channel" : "New chat"}
@@ -189,9 +203,20 @@ export function CirqleChatList({ section }: { section: CirqleSection }): JSX.Ele
                     </button>
                 ))}
             </div>
+            {picked && !picked.connected && (
+                <p className="cirqle_ChatList_disconnected" role="status">
+                    {picked.label} is disconnected: you can read its chats, but not write from it.
+                </p>
+            )}
             <div className="cirqle_ChatList_rows" onScroll={onScroll}>
                 {visible.map((room) => (
-                    <ChatRow key={room.roomId} room={room} inboxes={inboxes} selected={room.roomId === currentRoomId} />
+                    <ChatRow
+                        key={room.roomId}
+                        room={room}
+                        inboxes={inboxes}
+                        selected={room.roomId === currentRoomId}
+                        repeatedName={repeated.has(stripNetworkSuffix(room.name))}
+                    />
                 ))}
                 {rooms.length === 0 && query.trim() !== "" && (
                     <button className="cirqle_ChatList_startNew" onClick={() => CirqleUiStore.openNewChat(query)}>

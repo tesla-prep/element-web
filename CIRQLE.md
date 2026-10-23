@@ -71,7 +71,21 @@ Each connected WhatsApp number or Telegram account has the bridge's personal
 filtering space, renamed by the relay bot "WhatsApp · Main #1"; its topic ends
 with the number and the account user `@account_<bridge>_<name>` is a member.
 The number picker makes that space Element's active space ("All numbers" is
-Home with every room). A chat's number line names the spaces that list it.
+Home), but the list reads the chats that space lists itself, plus the groups of a
+WhatsApp community listed in it, not Element's space, which also pulls in private
+chats with anyone in the space. A chat's number line names the spaces that list
+it. WhatsApp's Status (`status@broadcast`) is never a chat.
+
+The relay bot also keeps, in each number's space:
+
+- `com.cirqle.team_messenger.number_users`: the number's own bridge users, for
+  our side of the timeline;
+- `com.cirqle.team_messenger.number_state` `{ "connected": false }` while the
+  number has no bridge login: the picker marks it Disconnected, All numbers and
+  Write from leave it out, its chats stay readable when it is picked;
+- `com.cirqle.team_messenger.contact_phones` `{ "phones": { "<chat's bridge id>":
+  "+7…" } }`: customers' numbers WhatsApp hides behind LIDs, shown beside a
+  private chat's name when another chat in the list has the same name.
 
 ## What the networks refuse
 
