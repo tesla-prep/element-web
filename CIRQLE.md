@@ -53,6 +53,9 @@ Hooks in upstream files (each one line or a small block):
 | `context_menus/MessageContextMenu.tsx` | no thread, Share, Copy link, Report, View source; "Delete for everyone" for our own messages (`cirqle/CirqleMessages.ts`) |
 | `viewmodels/room/EventTileActionBarViewModel.ts` | hover bar without Reply in thread and Pin |
 | `views/dialogs/ConfirmRedactDialog.tsx` | "Delete for everyone?" without a reason |
+| `views/dialogs/InviteDialog.tsx` | Add member offers the contacts of the group's own number only (`cirqle/CirqleInviteRefusals.ts`) |
+| `utils/EventUtils.ts` | Edit only while the network takes it (`com.beeper.room_features`, `cirqle/CirqleMessages.ts`) |
+| `views/rooms/EventTile.tsx` | under a message the network refused: "Not delivered to WhatsApp: …" (`com.beeper.message_send_status`, `cirqle/CirqleDelivery.tsx`) |
 
 Hooks that take stock Element's own screens away (from `vector/init.tsx` down) are behind
 `isCirqleMessenger()` (`brand` in `cirqle/config.json`), so Element's own unit tests
@@ -65,6 +68,15 @@ filtering space, renamed by the relay bot "WhatsApp · Main #1"; its topic ends
 with the number and the account user `@account_<bridge>_<name>` is a member.
 The number picker makes that space Element's active space ("All numbers" is
 Home with every room). A chat's number line names the spaces that list it.
+
+## What the networks refuse
+
+The bridges publish in every chat what the network takes (`com.beeper.room_features`:
+WhatsApp edits for 15 minutes, deletes for everyone for 2 days) and answer every
+message, edit and delete (`com.beeper.message_send_status`). Edit and "Delete for
+everyone" are offered only within those limits, and a refusal is written under the
+message. A refused Add member comes back as the reason of the relay bot's
+`@newchat_` user leaving (`cirqle/CirqleInviteRefusals.ts`), shown to whoever invited.
 
 ## Chat order
 

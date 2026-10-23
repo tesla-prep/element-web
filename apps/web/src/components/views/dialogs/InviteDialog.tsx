@@ -62,6 +62,7 @@ import { DMRoomTile } from "./invite/DMRoomTile.tsx";
 import { logErrorAndShowErrorDialog } from "../../../utils/ErrorUtils.tsx";
 import UnknownIdentityUsersWarningDialog from "./invite/UnknownIdentityUsersWarningDialog.tsx";
 import { AddressType, getAddressType } from "../../../UserAddress.ts";
+import { isCirqleInvitable } from "../../../cirqle/CirqleInviteRefusals";
 
 interface Result {
     userId: string;
@@ -870,6 +871,13 @@ export default class InviteDialog extends React.PureComponent<Props, IInviteDial
         // Now we mix in the additional members. Again, we presume these have already been filtered. We
         // also assume they are more relevant than our suggestions and prepend them to the list.
         sourceMembers = [...priorityAdditionalMembers, ...sourceMembers, ...otherAdditionalMembers];
+        sourceMembers = sourceMembers.filter((m) =>
+            isCirqleInvitable(
+                MatrixClientPeg.safeGet(),
+                this.props.kind === InviteKind.Invite ? this.props.roomId : undefined,
+                m.userId,
+            ),
+        ); // CIRQLE
 
         // If we're going to hide one member behind 'show more', just use up the space of the button
         // with the member's tile instead.
