@@ -12,7 +12,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 // hidden in CIRQLE, so a failure is shown here to whoever invited. With no
 // answer in 70 seconds they hear that too.
 
-import { type MatrixClient, type MatrixEvent, type RoomMember, RoomMemberEvent } from "matrix-js-sdk/src/matrix";
+import {
+    type MatrixClient,
+    type MatrixEvent,
+    type Room,
+    type RoomMember,
+    RoomMemberEvent,
+} from "matrix-js-sdk/src/matrix";
 
 import Modal from "../Modal";
 import ErrorDialog from "../components/views/dialogs/ErrorDialog";
@@ -46,6 +52,22 @@ export function addMemberProblem(content: Record<string, unknown>, network: stri
     if (result?.outcome === "added") return undefined;
     if (result?.outcome) return result.message || reason || `${network} did not confirm it.`;
     return reason ? refusalText(reason, network) : undefined;
+}
+
+/**
+ * Whether the contact of a @newchat_ user is already in the group: the
+ * bridge's ghost for that LID or number, or a member named by the number.
+ * Inviting them again fails before the bridge sees it.
+ */
+export function isAlreadyInGroup(room: Room, newChatUser: string): boolean {
+    const contact = newChatUser.match(/^@newchat_(whatsapp|telegram)_[^_]+_([^:]+):(.+)$/);
+    if (!contact) return false;
+    const [, network, id, server] = contact;
+    const digits = id.startsWith("=") ? id.slice(1) : undefined;
+    const ghost = `@${network}_${digits ?? id}:${server}`;
+    return room
+        .getJoinedMembers()
+        .some((m) => m.userId === ghost || (!!digits && m.name.replace(/[^\d]/g, "").includes(digits)));
 }
 
 /** "Anna Petrova, +7918… · slava test" is "Anna Petrova, +7918…" */
@@ -96,7 +118,7 @@ export function watchCirqleInviteRefusals(client: MatrixClient): () => void {
         window.clearTimeout(waiting.get(key));
         waiting.delete(key);
         const problem = addMemberProblem(event.getContent(), network);
-        if (problem) tell(member, problem);
+        if (problem) tell(member, room && isAlreadyInGroup(room, member.userId) ? "Already in the group." : problem);
     };
     client.on(RoomMemberEvent.Membership, onMembership);
     return () => {

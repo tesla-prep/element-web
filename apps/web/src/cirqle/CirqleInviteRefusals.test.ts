@@ -16,6 +16,7 @@ import SdkConfig from "../SdkConfig";
 import { CIRQLE_BRAND } from "./CirqleFeatures";
 import {
     ADD_MEMBER_EVENT_FIELD,
+    isAlreadyInGroup,
     isCirqleInvitable,
     NO_ANSWER_MS,
     watchCirqleInviteRefusals,
@@ -153,5 +154,19 @@ describe("Add member offers the group's own number", () => {
         expect(isCirqleInvitable(client, ROOM, CONTACT)).toBe(true);
         expect(isCirqleInvitable(client, ROOM, "@newchat_whatsapp_wa-e7d32330_=79181888877:server")).toBe(false);
         expect(isCirqleInvitable(client, ROOM, "@colleague:server")).toBe(false);
+    });
+});
+
+describe("a contact already in the group", () => {
+    it("is found by the bridge's ghost or by the number in a member's name", () => {
+        const room = {
+            getJoinedMembers: () => [
+                { userId: "@whatsapp_lid-98204511141898:server", name: "Виктория" },
+                { userId: "@whatsapp_lid-1:server", name: "+7 916 123 4567 (WA)" },
+            ],
+        } as unknown as Room;
+        expect(isAlreadyInGroup(room, "@newchat_whatsapp_wa-efa4b19c_lid-98204511141898:server")).toBe(true);
+        expect(isAlreadyInGroup(room, "@newchat_whatsapp_wa-efa4b19c_=79161234567:server")).toBe(true);
+        expect(isAlreadyInGroup(room, "@newchat_whatsapp_wa-efa4b19c_=79181888877:server")).toBe(false);
     });
 });
