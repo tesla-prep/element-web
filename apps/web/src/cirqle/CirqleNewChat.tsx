@@ -10,8 +10,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 // (user_directory/search, which the relay bot fills with each inbox's contacts
 // and typed numbers as @newchat_<bridge>_<inbox>_<contact>) and, for the picked
 // contact, Element's startDmOnFirstMessage (createRoom on the first message,
-// answered by the relay bot with the real chat). "Write from" only narrows the
-// search to that number's contacts.
+// answered by the relay bot with the real chat). "Write from" narrows the
+// search to that number's contacts; under All numbers nothing is offered until
+// staff pick the number.
 
 import React, { type JSX, useEffect, useMemo, useRef, useState } from "react";
 import { type Room } from "matrix-js-sdk/src/matrix";
@@ -27,7 +28,7 @@ import RoomAvatar from "../components/views/avatars/RoomAvatar";
 import BaseAvatar from "../components/views/avatars/BaseAvatar";
 import RoomListStoreV3 from "../stores/room-list-v3/RoomListStoreV3";
 import { BackIcon, ChannelIcon, GroupIcon, SearchIcon } from "./CirqleIcons";
-import { chatKind, contactNumber, formatPhone, type Inbox, stripNetworkSuffix } from "./CirqleInboxes";
+import { chatKind, contactNumber, formatPhone, type Inbox, type Network, stripNetworkSuffix } from "./CirqleInboxes";
 import { CirqleUiStore } from "./CirqleUiStore";
 import { createChannel, createGroup } from "./CirqleChatList";
 import { useCirqleInboxes } from "./useCirqleChats";
@@ -46,10 +47,10 @@ function inboxOption(inbox: Inbox): string {
 }
 
 /** "+14695551234 · Main #1" or "Anna Petrova, +14695551234 · Main #1": the relay bot's label, without the inbox. */
-function splitLabel(displayName: string, inbox: Inbox): { name: string; sub: string } {
+function splitLabel(displayName: string, network: Network): { name: string; sub: string } {
     const person = displayName.replace(/\s·\s[^·]+$/, "");
     const [name, number] = person.split(/,\s(?=\+)/);
-    const messenger = inbox.network === "whatsapp" ? "On WhatsApp" : "On Telegram";
+    const messenger = network === "whatsapp" ? "On WhatsApp" : "On Telegram";
     const asNumber = (text: string): string => (/^\+\d{7,15}$/.test(text) ? formatPhone(text) : text);
     return number
         ? { name: asNumber(name), sub: `${formatPhone(number)} · ${messenger}` }
@@ -71,21 +72,26 @@ export function CirqleNewChat(): JSX.Element {
     const [fromId, setFromId] = useState<string | undefined>(
         () => inboxes.find((inbox) => inbox.spaceId === activeSpace)?.spaceId,
     );
-    const from = inboxes.find((inbox) => inbox.spaceId === fromId) ?? inboxes[0];
+    // No number is assumed under All numbers: staff pick the one they write from
+    const from = inboxes.find((inbox) => inbox.spaceId === fromId) ?? (inboxes.length === 1 ? inboxes[0] : undefined);
     const [found, setFound] = useState<Found[]>([]);
     const [busy, setBusy] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => inputRef.current?.focus(), []);
 
+    // Keyed by the number, not the inbox object: inboxes are re-read on every room list
+    // update, and each search makes the relay bot look the contact up on WhatsApp/Telegram.
+    const fromNetwork = from?.network;
+    const fromAccount = from?.accountName;
     useEffect(() => {
         const term = query.trim();
-        if (!term || !from?.accountName) {
+        if (!term || !fromNetwork || !fromAccount) {
             setFound([]);
             return;
         }
         let stale = false;
-        const prefix = `@newchat_${from.network}_${from.accountName}_`;
+        const prefix = `@newchat_${fromNetwork}_${fromAccount}_`;
         const timer = window.setTimeout(() => {
             client
                 .searchUserDirectory({ term, limit: 30 })
@@ -97,7 +103,7 @@ export function CirqleNewChat(): JSX.Element {
                             .map((u) => ({
                                 userId: u.user_id,
                                 avatarUrl: u.avatar_url,
-                                ...splitLabel(u.display_name ?? u.user_id, from),
+                                ...splitLabel(u.display_name ?? u.user_id, fromNetwork),
                             })),
                     );
                 })
@@ -107,7 +113,7 @@ export function CirqleNewChat(): JSX.Element {
             stale = true;
             window.clearTimeout(timer);
         };
-    }, [client, query, from]);
+    }, [client, query, fromNetwork, fromAccount]);
 
     // The private chats this number already has, as its contacts
     const contacts = useMemo((): Room[] => {
@@ -164,7 +170,7 @@ export function CirqleNewChat(): JSX.Element {
                     onChange={(ev) => setQuery(ev.target.value)}
                     onKeyDown={(ev) => {
                         if (ev.key === "Escape") CirqleUiStore.closeNewChat();
-                        if (ev.key === "Enter" && found[0] && !busy) void start(found[0]);
+                        if (ev.key === "Enter" && from && found[0] && !busy) void start(found[0]);
                     }}
                 />
             </div>
@@ -173,9 +179,14 @@ export function CirqleNewChat(): JSX.Element {
                     <label htmlFor="cirqle_NewChat_from">Write from</label>
                     <select
                         id="cirqle_NewChat_from"
-                        value={from?.spaceId}
+                        value={from?.spaceId ?? ""}
                         onChange={(ev) => setFromId(ev.target.value)}
                     >
+                        {!from && (
+                            <option value="" disabled>
+                                Choose a number
+                            </option>
+                        )}
                         {inboxes.map((inbox) => (
                             <option key={inbox.spaceId} value={inbox.spaceId}>
                                 {inboxOption(inbox)}
@@ -184,12 +195,17 @@ export function CirqleNewChat(): JSX.Element {
                     </select>
                 </div>
             )}
+            {inboxes.length > 0 && !from && (
+                <p className="cirqle_NewChat_hint" role="status">
+                    Choose the number to write from
+                </p>
+            )}
             <div className="cirqle_NewChat_rows">
                 {found.map((person) => (
                     <button
                         key={person.userId}
                         className="cirqle_NewChat_row cirqle_NewChat_found"
-                        disabled={busy}
+                        disabled={busy || !from}
                         onClick={() => void start(person)}
                     >
                         <BaseAvatar name={person.name} idName={person.userId} url={person.avatarUrl} size="48px" />

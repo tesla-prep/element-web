@@ -16,7 +16,7 @@ import { RightPanelPhases } from "../stores/right-panel/RightPanelStorePhases";
 import dis from "../dispatcher/dispatcher";
 import { Action } from "../dispatcher/actions";
 import { useRoomMembers } from "../hooks/useRoomMembers";
-import { groupPeople } from "./CirqleGroupInfo";
+import { groupPeople, membersLabel } from "./CirqleGroupInfo";
 import { chatKind, contactNumber, inboxesOf, networkOf } from "./CirqleInboxes";
 import { useCirqleInboxes } from "./useCirqleChats";
 import { BackIcon, GroupIcon, KebabIcon, SearchIcon } from "./CirqleIcons";
@@ -37,7 +37,7 @@ export function CirqleRoomSubtitle({ room }: { room: Room }): JSX.Element | null
         else if (network === "telegram") parts.push("Telegram");
     } else {
         parts.push(`${network === "telegram" ? "Telegram " : ""}${kind === "channel" ? "channel" : "group"}`);
-        if (kind === "group") parts.push(`${memberCount} members`);
+        if (kind === "group") parts.push(membersLabel(memberCount));
     }
     if (from) parts.push(`from ${from}`);
     if (!parts.length) return null;
