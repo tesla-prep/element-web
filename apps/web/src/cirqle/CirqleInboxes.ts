@@ -45,8 +45,11 @@ export interface Inbox {
 /** Space state the relay bot keeps: `{ "user_ids": [...] }`, the number's own bridge users. */
 export const NUMBER_USERS_EVENT = "com.cirqle.team_messenger.number_users";
 
-/** Space state the relay bot keeps: `{ "connected": false }` while the number has no bridge login. */
-export const NUMBER_STATE_EVENT = "com.cirqle.team_messenger.number_state";
+/**
+ * Space state the relay bot keeps: `{ "connected": false, "number": "+16463313251", "state": "BAD_CREDENTIALS" }`.
+ * `connected` turns false once WhatsApp or Telegram ended the session (not on a short drop).
+ */
+export const INBOX_STATE_EVENT = "com.cirqle.team_messenger.inbox";
 
 /**
  * Space state the relay bot keeps: `{ "phones": { "2385…@lid": "+79161234567" } }`, the
@@ -151,7 +154,7 @@ export function getInboxes(client: MatrixClient): Inbox[] {
             phone: phoneMatch ? formatPhone(phoneMatch[1]) : undefined,
             accountName: account,
             childIds,
-            connected: room.currentState.getStateEvents(NUMBER_STATE_EVENT, "")?.getContent()?.connected !== false,
+            connected: room.currentState.getStateEvents(INBOX_STATE_EVENT, "")?.getContent()?.connected !== false,
             contactPhones,
             ownUsers,
         });

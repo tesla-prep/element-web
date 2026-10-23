@@ -80,8 +80,8 @@ The relay bot also keeps, in each number's space:
 
 - `com.cirqle.team_messenger.number_users`: the number's own bridge users, for
   our side of the timeline;
-- `com.cirqle.team_messenger.number_state` `{ "connected": false }` while the
-  number has no bridge login: the picker marks it Disconnected, All numbers and
+- `com.cirqle.team_messenger.inbox` `{ "connected": false, "number", "state" }` once the
+  network ended the number's session: the picker marks it Disconnected, All numbers and
   Write from leave it out, its chats stay readable when it is picked;
 - `com.cirqle.team_messenger.contact_phones` `{ "phones": { "<chat's bridge id>":
   "+7…" } }`: customers' numbers WhatsApp hides behind LIDs, shown beside a

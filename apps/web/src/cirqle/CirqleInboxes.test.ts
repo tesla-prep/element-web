@@ -18,7 +18,7 @@ import {
     contactPhone,
     getInboxes,
     isStatusBroadcast,
-    NUMBER_STATE_EVENT,
+    INBOX_STATE_EVENT,
     numberChats,
     numberLine,
     repeatedNames,
@@ -97,7 +97,7 @@ describe("numbers and their chats", () => {
             mkInboxSpace(client, "!main1:server", "Main #1", "16463313251", [
                 child("!anna-main1:server"),
                 child("!frisco:server"),
-                { type: NUMBER_STATE_EVENT, content: { connected: false } },
+                { type: INBOX_STATE_EVENT, content: { connected: false } },
             ]),
             mkRoom(client, "!frisco:server", "CIRQLE | Frisco", [
                 { type: "m.room.create", content: { type: "m.space" } },
@@ -109,7 +109,7 @@ describe("numbers and their chats", () => {
                 child("!tanya-1:server"),
                 child("!tanya-2:server"),
                 child("!status:server"),
-                { type: NUMBER_STATE_EVENT, content: { connected: true } },
+                { type: INBOX_STATE_EVENT, content: { connected: true } },
                 { type: CONTACT_PHONES_EVENT, content: { phones: { "238585550754026@lid": "+79161234567" } } },
             ]),
             mkRoom(client, "!anna-main1:server", "Anna (WA)", [dm("111")]),
