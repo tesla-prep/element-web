@@ -1197,10 +1197,11 @@ export class UnwrappedEventTile extends React.Component<EventTileProps, IState> 
                 slots={{
                     avatar,
                     sender,
+                    // CIRQLE: under a message the network refused, why
                     body: (
                         <>
                             {body}
-                            <CirqleDeliveryNotice mxEvent={this.props.mxEvent} /> {/* CIRQLE */}
+                            <CirqleDeliveryNotice mxEvent={this.props.mxEvent} />
                         </>
                     ),
                     timestamp: timestampSlot,

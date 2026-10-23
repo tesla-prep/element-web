@@ -104,10 +104,14 @@ export function deliveryText(failure: DeliveryFailure, network: string): string 
 
 /** Under a message the network refused: what did not reach the customer, and why. */
 export function CirqleDeliveryNotice({ mxEvent }: { mxEvent: MatrixEvent }): JSX.Element | null {
+    return isCirqleMessenger() ? <DeliveryNotice mxEvent={mxEvent} /> : null;
+}
+
+function DeliveryNotice({ mxEvent }: { mxEvent: MatrixEvent }): JSX.Element | null {
     const room = MatrixClientPeg.get()?.getRoom(mxEvent.getRoomId());
     const [, setVersion] = useState(0);
     useEffect(() => {
-        if (!room || !isCirqleMessenger()) return;
+        if (!room) return;
         const onTimeline = (event: MatrixEvent): void => {
             if (event.getType() === SEND_STATUS_EVENT) setVersion((v) => v + 1);
         };
@@ -116,7 +120,7 @@ export function CirqleDeliveryNotice({ mxEvent }: { mxEvent: MatrixEvent }): JSX
             room.off(RoomEvent.Timeline, onTimeline);
         };
     }, [room]);
-    if (!room || !isCirqleMessenger()) return null;
+    if (!room) return null;
     const failure = deliveryFailure(room, mxEvent);
     if (!failure) return null;
     const network = networkOf(room) === "telegram" ? "Telegram" : "WhatsApp";
