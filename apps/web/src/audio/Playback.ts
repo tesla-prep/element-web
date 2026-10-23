@@ -19,6 +19,8 @@ import { PlaybackClock } from "./PlaybackClock";
 import { createAudioContext, decodeOgg } from "./compat";
 import { DEFAULT_WAVEFORM, PLAYBACK_WAVEFORM_SAMPLES } from "./consts";
 import { PlaybackEncoder } from "../PlaybackEncoder";
+import { isCirqleMessenger } from "../cirqle/CirqleFeatures";
+import { cirqleVoiceSpeed } from "../cirqle/CirqleVoiceSpeed";
 
 export enum PlaybackState {
     Preparing = "preparing", // preparing to decode
@@ -54,6 +56,11 @@ export class Playback extends EventEmitter implements IDestroyable, PlaybackInte
     private waveformObservable = new SimpleObservable<number[]>();
     private readonly clock: PlaybackClock;
     private readonly fileSize: number;
+    /**
+     * CIRQLE: the clip plays through an audio element of its own rather than the audio
+     * context, so it can play at 1.5× and 2× without the voice going up in pitch.
+     */
+    private readonly direct = isCirqleMessenger();
 
     /**
      * Creates a new playback instance from a buffer.
@@ -119,6 +126,11 @@ export class Playback extends EventEmitter implements IDestroyable, PlaybackInte
         return this.currentState === PlaybackState.Playing;
     }
 
+    /** Playback speed; only an audio element of our own (CIRQLE) takes it. */
+    public setPlaybackRate(rate: number): void {
+        if (this.direct && this.element) this.element.playbackRate = rate;
+    }
+
     public emit(event: PlaybackState, ...args: any[]): boolean {
         this.state = event;
         super.emit(event, ...args);
@@ -170,6 +182,7 @@ export class Playback extends EventEmitter implements IDestroyable, PlaybackInte
             // decodeAudioData detaches the buffer it is given, so the copy the fallback needs has
             // to be taken before we call it rather than inside the error handler.
             const fallbackBuf = this.buf.slice(0);
+            let elementBuf = this.direct ? this.buf.slice(0) : undefined;
             try {
                 this.audioBuf = await this.context.decodeAudioData(this.buf);
             } catch (e) {
@@ -179,6 +192,7 @@ export class Playback extends EventEmitter implements IDestroyable, PlaybackInte
                 try {
                     // This error handler is largely for Safari, which doesn't support Opus/Ogg very well.
                     const wav = await decodeOgg(fallbackBuf);
+                    if (elementBuf) elementBuf = wav.slice(0);
                     this.audioBuf = await this.context.decodeAudioData(wav);
                 } catch (e) {
                     logger.error("Error decoding recording:", e);
@@ -191,12 +205,24 @@ export class Playback extends EventEmitter implements IDestroyable, PlaybackInte
             this.resampledWaveform = await PlaybackEncoder.instance.getPlaybackWaveform(
                 this.audioBuf.getChannelData(0),
             );
+
+            if (elementBuf) {
+                this.element = document.createElement("AUDIO") as HTMLAudioElement;
+                this.element.preload = "auto";
+                this.element.src = URL.createObjectURL(new Blob([elementBuf]));
+            }
+        }
+
+        if (this.direct && this.element) {
+            const element = this.element;
+            element.addEventListener("ended", this.onPlaybackEnd);
+            this.clock.timeSource = () => element.currentTime;
         }
 
         this.waveformObservable.update(this.resampledWaveform);
 
         this.clock.flagLoadTime(); // must happen first because setting the duration fires a clock update
-        this.clock.durationSeconds = this.element?.duration ?? this.audioBuf!.duration;
+        this.clock.durationSeconds = this.audioBuf?.duration ?? this.element!.duration;
 
         // Signal that we're not decoding anymore. This is done last to ensure the clock is updated for
         // when the downstream callers try to use it.
@@ -204,12 +230,25 @@ export class Playback extends EventEmitter implements IDestroyable, PlaybackInte
     }
 
     private onPlaybackEnd = async (): Promise<void> => {
-        await this.context.suspend();
+        if (this.direct && this.element) {
+            this.element.pause();
+            this.element.currentTime = 0;
+        } else {
+            await this.context.suspend();
+        }
         this.emit(PlaybackState.Stopped);
         this.clock.flagStop();
     };
 
     public async play(): Promise<void> {
+        if (this.direct && this.element) {
+            this.element.playbackRate = cirqleVoiceSpeed();
+            await this.element.play();
+            this.clock.flagStart();
+            this.emit(PlaybackState.Playing);
+            return;
+        }
+
         // We can't restart a buffer source, so we need to create a new one if we hit the end
         if (this.state === PlaybackState.Stopped) {
             this.disconnectSource();
@@ -253,7 +292,8 @@ export class Playback extends EventEmitter implements IDestroyable, PlaybackInte
     }
 
     public async pause(): Promise<void> {
-        await this.context.suspend();
+        if (this.direct && this.element) this.element.pause();
+        else await this.context.suspend();
         this.emit(PlaybackState.Paused);
     }
 
@@ -275,6 +315,13 @@ export class Playback extends EventEmitter implements IDestroyable, PlaybackInte
         // wrong time, and we stop playback at the wrong time, etc.
 
         timeSeconds = clamp(timeSeconds, 0, this.clock.durationSeconds);
+
+        if (this.direct && this.element) {
+            this.element.currentTime = timeSeconds;
+            this.clock.refresh();
+            if (!this.isPlaying) this.emit(PlaybackState.Paused);
+            return;
+        }
 
         // Track playing state so we don't cause seeking to start playing the track.
         const isPlaying = this.isPlaying;

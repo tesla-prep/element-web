@@ -55,6 +55,8 @@ export class PlaybackClock implements IDestroyable {
     private timerId?: number;
     private clipDuration = 0;
     private placeholderDuration = 0;
+    /** Where the clip is, when an audio element plays it rather than the audio context (CIRQLE) */
+    public timeSource?: () => number;
 
     public constructor(private context: AudioContext) {}
 
@@ -68,6 +70,7 @@ export class PlaybackClock implements IDestroyable {
     }
 
     public get timeSeconds(): number {
+        if (this.timeSource) return this.timeSource();
         // The modulo is to ensure that we're only looking at the most recent clip
         // time, as the context is long-running and multiple plays might not be
         // informed to us (if the control is looping, for example). By taking the
@@ -126,6 +129,11 @@ export class PlaybackClock implements IDestroyable {
         // Reset the clock time now so that the update going out will trigger components
         // to check their seek/position information (alongside the clock).
         this.clipStart = this.context.currentTime;
+    }
+
+    /** Tells listeners where the clip is now, e.g. after a seek while paused */
+    public refresh(): void {
+        this.checkTime(true);
     }
 
     public syncTo(contextTime: number, clipTime: number): void {

@@ -67,6 +67,7 @@ export const createTestPlaybackClock = (): PlaybackClock => {
         liveData: new SimpleObservable<number[]>(),
         populatePlaceholdersFrom: vi.fn(),
         flagLoadTime: vi.fn(),
+        refresh: vi.fn(),
         flagStart: vi.fn(),
         flagStop: vi.fn(),
         syncTo: vi.fn(),
