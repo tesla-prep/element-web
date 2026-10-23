@@ -13,6 +13,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 // answer in 70 seconds they hear that too.
 
 import {
+    EventType,
     type MatrixClient,
     type MatrixEvent,
     type Room,
@@ -56,18 +57,24 @@ export function addMemberProblem(content: Record<string, unknown>, network: stri
 
 /**
  * Whether the contact of a @newchat_ user is already in the group: the
- * bridge's ghost for that LID or number, or a member named by the number.
- * Inviting them again fails before the bridge sees it.
+ * bridge's ghost for that LID or number, a member named by the number, or the
+ * member an earlier Add member of the same contact added. Inviting them again
+ * fails before the bridge sees it.
  */
 export function isAlreadyInGroup(room: Room, newChatUser: string): boolean {
     const contact = newChatUser.match(/^@newchat_(whatsapp|telegram)_[^_]+_([^:]+):(.+)$/);
     if (!contact) return false;
     const [, network, id, server] = contact;
     const digits = id.startsWith("=") ? id.slice(1) : undefined;
-    const ghost = `@${network}_${digits ?? id}:${server}`;
+    const added = room
+        .getLiveTimeline()
+        .getEvents()
+        .filter((event) => event.getType() === EventType.RoomMember && event.getStateKey() === newChatUser)
+        .map((event) => (event.getContent()[ADD_MEMBER_EVENT_FIELD] as { member?: string } | undefined)?.member);
+    const ghosts = new Set([`@${network}_${digits ?? id}:${server}`, ...added]);
     return room
         .getJoinedMembers()
-        .some((m) => m.userId === ghost || (!!digits && m.name.replace(/[^\d]/g, "").includes(digits)));
+        .some((m) => ghosts.has(m.userId) || (!!digits && m.name.replace(/[^\d]/g, "").includes(digits)));
 }
 
 /** "Anna Petrova, +7918… · slava test" is "Anna Petrova, +7918…" */

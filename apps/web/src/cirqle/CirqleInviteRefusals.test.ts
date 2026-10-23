@@ -158,15 +158,27 @@ describe("Add member offers the group's own number", () => {
 });
 
 describe("a contact already in the group", () => {
+    const event = (sender: string, content: Record<string, unknown>): MatrixEvent =>
+        new MatrixEvent({ type: "m.room.member", state_key: CONTACT, sender, room_id: ROOM, content });
     it("is found by the bridge's ghost or by the number in a member's name", () => {
+        const events: MatrixEvent[] = [];
         const room = {
             getJoinedMembers: () => [
                 { userId: "@whatsapp_lid-98204511141898:server", name: "Виктория" },
                 { userId: "@whatsapp_lid-1:server", name: "+7 916 123 4567 (WA)" },
             ],
+            getLiveTimeline: () => ({ getEvents: () => events }),
         } as unknown as Room;
         expect(isAlreadyInGroup(room, "@newchat_whatsapp_wa-efa4b19c_lid-98204511141898:server")).toBe(true);
         expect(isAlreadyInGroup(room, "@newchat_whatsapp_wa-efa4b19c_=79161234567:server")).toBe(true);
-        expect(isAlreadyInGroup(room, "@newchat_whatsapp_wa-efa4b19c_=79181888877:server")).toBe(false);
+        expect(isAlreadyInGroup(room, CONTACT)).toBe(false);
+        // Added before by number, in the group by LID
+        events.push(
+            event(CONTACT, {
+                membership: "leave",
+                [ADD_MEMBER_EVENT_FIELD]: { outcome: "added", member: "@whatsapp_lid-98204511141898:server" },
+            }),
+        );
+        expect(isAlreadyInGroup(room, CONTACT)).toBe(true);
     });
 });
