@@ -20,6 +20,7 @@ import { ActionBarAction } from "@element-hq/web-shared-components";
 
 import { isCirqleMessenger } from "./CirqleFeatures";
 import { roomFeatures } from "./CirqleDelivery";
+import { getInboxes } from "./CirqleInboxes";
 
 function allows(level: number | undefined, maxAge: number | undefined, event: MatrixEvent, now: number): boolean {
     if (level !== undefined && level < 1) return false;
@@ -39,6 +40,18 @@ export function cirqleMayDelete(client: MatrixClient, event: MatrixEvent, now = 
     const room = client.getRoom(event.getRoomId());
     const features = room && roomFeatures(room);
     return !features || allows(features.delete, features.delete_max_age, event, now);
+}
+
+const CUSTOMER = /^@(whatsapp|telegram)_/;
+
+/**
+ * Who @ offers: the people in the chat on WhatsApp or Telegram, not colleagues
+ * or service users (a colleague's mention reaches the customer as a bare name)
+ * and not our own number.
+ */
+export function isCirqleMentionable(client: MatrixClient, userId: string): boolean {
+    if (!isCirqleMessenger()) return true;
+    return CUSTOMER.test(userId) && !getInboxes(client).some((inbox) => inbox.ownUsers.has(userId));
 }
 
 /** The hover bar without "Reply in thread" and Pin. */
