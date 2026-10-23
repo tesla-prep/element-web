@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
-# Builds CIRQLE Messenger and copies it to https://chat.cirqlecirqle.com/next/.
-# Static files only: the host nginx serves them from $DEST (see cirqle/nginx-next.conf).
+# Builds CIRQLE Messenger and copies it to https://chat.cirqlecirqle.com/.
+# Static files only: the host nginx serves them from $DEST (see cirqle/nginx.conf).
 # No --delete: older bundles/<hash>/ stay, so a tab opened before the deploy keeps loading.
 set -eu
 cd "$(dirname "$0")/.."
