@@ -12,7 +12,13 @@ import { stubClient } from "test-utils";
 
 import SdkConfig from "../SdkConfig";
 import { CIRQLE_BRAND } from "./CirqleFeatures";
-import { deliveryFailure, deliveryText, ROOM_FEATURES_EVENT, SEND_STATUS_EVENT } from "./CirqleDelivery";
+import {
+    cirqleReactionFilter,
+    deliveryFailure,
+    deliveryText,
+    ROOM_FEATURES_EVENT,
+    SEND_STATUS_EVENT,
+} from "./CirqleDelivery";
 import { cirqleCanEdit, cirqleMayDelete } from "./CirqleMessages";
 import { addMemberProblem, refusalText } from "./CirqleInviteRefusals";
 
@@ -136,6 +142,119 @@ describe("CIRQLE delivery", () => {
         const failure = deliveryFailure(room, original)!;
         expect(deliveryText(failure, "WhatsApp")).toBe(
             "Edit not delivered to WhatsApp: the message is too old to be edited. The customer sees the earlier text",
+        );
+    });
+
+    const TELEGRAM_REACTIONS = ["❤️", "👍️", "👎️", "🔥", "🎉", "😍", "👀", "🫡", "❤️‍🔥"];
+    const features = (content: Record<string, unknown>): void => {
+        room.currentState.setStateEvents([
+            new MatrixEvent({
+                type: ROOM_FEATURES_EVENT,
+                // replaces the chat's WhatsApp features from beforeEach
+                state_key: "server/whatsapp",
+                event_id: `$features-${Math.random()}`,
+                room_id: ROOM,
+                sender: "@telegrambot:server",
+                content,
+            }),
+        ]);
+    };
+    const reaction = (id: string, sender: string, key: string, ts = NOW): MatrixEvent =>
+        new MatrixEvent({
+            type: "m.reaction",
+            event_id: id,
+            room_id: ROOM,
+            sender,
+            origin_server_ts: ts,
+            content: { "m.relates_to": { rel_type: "m.annotation", event_id: "$msg", key } },
+        });
+    const OWNER = "@account_telegram_tg-447877300139:server";
+
+    it("offers in Telegram only the reactions the bridge lists, with or without variation selectors", () => {
+        // WhatsApp lists none: it takes any emoji
+        expect(cirqleReactionFilter(room)).toBeUndefined();
+
+        features({ reaction: 2, reaction_count: 1, allowed_reactions: TELEGRAM_REACTIONS });
+        const takes = cirqleReactionFilter(room)!;
+        expect(["👍", "👍️", "❤", "❤️", "🫡", "❤️‍🔥"].every(takes)).toBe(true);
+        // Element's quick reactions Telegram refuses, a skin tone, the emoji from the user's screenshot
+        expect(["😄", "😕", "🚀", "👍🏽", "🤟", "🤙"].some(takes)).toBe(false);
+
+        features({ reaction: 2, allowed_reactions: TELEGRAM_REACTIONS, custom_emoji_reactions: true });
+        expect(cirqleReactionFilter(room)).toBeUndefined();
+
+        features({ reaction: -2 });
+        expect(cirqleReactionFilter(room)!("👍")).toBe(false);
+
+        SdkConfig.reset();
+        expect(cirqleReactionFilter(room)).toBeUndefined();
+    });
+
+    it("says when our reaction did not reach the customer", () => {
+        const me = client.getSafeUserId();
+        const target = message("$msg", MINUTE, "@telegram_429896795:server");
+        room.addLiveEvents(
+            [
+                target,
+                reaction("$mine", me, "🤟"),
+                reaction("$number", OWNER, "🤟"),
+                // Staff's own reaction is always ignored: it travels as the number's
+                status("$mine", "FAIL_RETRIABLE", { reason: "m.event_not_handled" }),
+                status("$number", "FAIL_RETRIABLE", {
+                    reason: "com.beeper.unsupported_event",
+                    message: "Unsupported reaction",
+                }),
+            ],
+            { addToState: false },
+        );
+        const failure = deliveryFailure(room, target)!;
+        expect(failure.what).toBe("reaction");
+        expect(failure.key).toBe("🤟");
+        expect(deliveryText(failure, "Telegram")).toBe(
+            "Reaction 🤟 not delivered: Telegram takes only its standard reactions",
+        );
+    });
+
+    it("reads a status the SDK keeps only among the reaction's relations, not in the timeline", () => {
+        const target = message("$msg", MINUTE, "@telegram_429896795:server");
+        room.addLiveEvents([target, reaction("$number", OWNER, "🤑")], { addToState: false });
+        room.relations.aggregateChildEvent(
+            status("$number", "FAIL_RETRIABLE", { reason: "com.beeper.unsupported_event" }),
+            room.getUnfilteredTimelineSet(),
+        );
+        expect(
+            room
+                .getLiveTimeline()
+                .getEvents()
+                .some((event) => event.getType() === SEND_STATUS_EVENT),
+        ).toBe(false);
+        expect(deliveryFailure(room, target)?.key).toBe("🤑");
+    });
+
+    it("stays quiet when the number's reaction went through, or only staff's own was ignored", () => {
+        const me = client.getSafeUserId();
+        const target = message("$msg", MINUTE, "@telegram_429896795:server");
+        room.addLiveEvents(
+            [target, reaction("$mine", me, "👍"), status("$mine", "FAIL_RETRIABLE", { reason: "m.event_not_handled" })],
+            { addToState: false },
+        );
+        expect(deliveryFailure(room, target)).toBeUndefined();
+        room.addLiveEvents([reaction("$number", OWNER, "👍"), status("$number", "SUCCESS")], { addToState: false });
+        expect(deliveryFailure(room, target)).toBeUndefined();
+    });
+
+    it("passes on why else the bridge refused a reaction", () => {
+        const target = message("$msg", MINUTE, "@whatsapp_lid-1:server");
+        room.addLiveEvents(
+            [
+                target,
+                reaction("$number", "@account_whatsapp_wa-efa4b19c:server", "👍"),
+                status("$number", "FAIL_RETRIABLE", { message: "reaction target message not found" }),
+            ],
+            { addToState: false },
+        );
+        expect(deliveryText(deliveryFailure(room, target)!, "WhatsApp")).toBe(
+            "Reaction 👍 not delivered to WhatsApp: reaction target message not found",
         );
     });
 

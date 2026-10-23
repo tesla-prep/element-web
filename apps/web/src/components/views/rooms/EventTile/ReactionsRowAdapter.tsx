@@ -26,6 +26,7 @@ import { ReactionsRowButtonViewModel } from "../../../../viewmodels/room/timelin
 import { MAX_ITEMS_WHEN_LIMITED } from "../../../../viewmodels/room/timeline/event-tile/reactions/ReactionsRowViewModel";
 import { MatrixClientPeg } from "../../../../MatrixClientPeg";
 import { cirqleReactionGroups } from "../../../../cirqle/CirqleReactions";
+import { cirqleReactionFilter } from "../../../../cirqle/CirqleDelivery";
 
 /**
  * Props for the {@link ReactionsRowButtonAdapter} component.
@@ -228,6 +229,7 @@ export function ReactionsRowAdapter({
     const snapshot = useViewModel(vm);
     const customReactionImagesEnabled = SettingsStore.getValue("feature_render_reaction_images");
     const items = useMemo((): JSX.Element[] | undefined => {
+        const networkTakes = cirqleReactionFilter(roomContext.room); // CIRQLE
         const mappedItems = reactionGroups.map(({ content, events }) => {
             // Deduplicate reaction events by sender per Matrix spec.
             const deduplicatedEvents = uniqBy(events, (event: MatrixEvent) => event.getSender());
@@ -249,7 +251,8 @@ export function ReactionsRowAdapter({
                     customReactionImagesEnabled={customReactionImagesEnabled}
                     disabled={
                         !roomContext.canReact ||
-                        (myReactionEvent && !myReactionEvent.isRedacted() && !roomContext.canSelfRedact)
+                        (myReactionEvent && !myReactionEvent.isRedacted() && !roomContext.canSelfRedact) ||
+                        (!myReactionEvent && networkTakes?.(content) === false) // CIRQLE: a customer's emoji we can't send back
                     }
                 />
             );
@@ -267,6 +270,7 @@ export function ReactionsRowAdapter({
         customReactionImagesEnabled,
         roomContext.canReact,
         roomContext.canSelfRedact,
+        roomContext.room,
         snapshot.showAllButtonVisible,
     ]);
 

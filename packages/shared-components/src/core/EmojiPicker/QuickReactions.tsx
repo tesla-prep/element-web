@@ -44,12 +44,16 @@ interface IProps {
      * When omitted, a default mapping based on `KeyboardEvent.key` is used.
      */
     getAction?: RovingTabIndexProviderProps["getAction"];
+    /**
+     * Only the quick reactions this returns true for are shown. All are shown when omitted.
+     */
+    emojiFilter?: (unicode: string) => boolean;
 }
 
 /**
  * A row of quick reaction emojis at the bottom of the emoji picker.
  */
-export const QuickReactions: React.FC<IProps> = ({ selectedEmojis, onClick, getAction }) => {
+export const QuickReactions: React.FC<IProps> = ({ selectedEmojis, onClick, getAction, emojiFilter }) => {
     const [hover, setHover] = useState<IEmoji | undefined>(undefined);
 
     const onMouseEnter = useCallback((emoji: IEmoji): void => {
@@ -73,7 +77,7 @@ export const QuickReactions: React.FC<IProps> = ({ selectedEmojis, onClick, getA
                 )}
             </Heading>
             <Toolbar className={styles.list} aria-label={_t("emoji|quick_reactions")} getAction={getAction}>
-                {QUICK_REACTIONS.map((emoji) => (
+                {QUICK_REACTIONS.filter((emoji) => !emojiFilter || emojiFilter(emoji.unicode)).map((emoji) => (
                     <Emoji
                         key={emoji.hexcode}
                         emoji={emoji}

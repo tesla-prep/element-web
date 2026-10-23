@@ -127,6 +127,11 @@ export interface EmojiPickerProps {
      * Previews of emoji are displayed in the same bar as will also be hidden when this is false.
      */
     showQuickReactions?: boolean;
+    /**
+     * Only the emoji this returns true for are offered: in the categories, the
+     * recently used ones, search results and quick reactions. All are offered when omitted.
+     */
+    emojiFilter?: (unicode: string) => boolean;
 }
 
 /** Convert recent emoji characters to emoji data, removing unknowns and duplicates */
@@ -199,6 +204,7 @@ export function EmojiPicker({
     onRecordRecent,
     getAction,
     showQuickReactions = true,
+    emojiFilter,
 }: EmojiPickerProps): React.ReactNode {
     const [filter, setFilter] = useState("");
     const [previewEmoji, setPreviewEmoji] = useState<IEmoji | undefined>(undefined);
@@ -222,7 +228,11 @@ export function EmojiPicker({
         const enabledCategories: CategoryKey[] = [];
 
         for (const cat of CATEGORY_CONFIG) {
-            const emojis = filterEmojis(cat.id === "recent" ? recentlyUsed : DATA_BY_CATEGORY[cat.id], lcFilter);
+            const offered = cat.id === "recent" ? recentlyUsed : DATA_BY_CATEGORY[cat.id];
+            const emojis = filterEmojis(
+                emojiFilter ? offered.filter((emoji) => emojiFilter(emoji.unicode)) : offered,
+                lcFilter,
+            );
             dataByCategory[cat.id] = emojis;
             if (emojis.length > 0) {
                 enabledCategories.push(cat.id);
@@ -230,7 +240,7 @@ export function EmojiPicker({
         }
 
         return { dataByCategory, enabledCategories };
-    }, [lcFilter, recentlyUsed]);
+    }, [lcFilter, recentlyUsed, emojiFilter]);
 
     const [selectedCategory, setSelectedCategory] = useState<CategoryKey>(
         recentlyUsed.length > 0 ? "recent" : "people",
@@ -482,6 +492,7 @@ export function EmojiPicker({
                                 onClick={onClickEmoji}
                                 selectedEmojis={selectedEmojis}
                                 getAction={getAction}
+                                emojiFilter={emojiFilter}
                             />
                         ))}
                 </section>

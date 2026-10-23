@@ -126,6 +126,29 @@ describe("EmojiPicker", function () {
         expect(getVisibleEmojis()).toEqual(filtered);
     });
 
+    it("should offer only the emoji the filter lets through, quick reactions included", async () => {
+        const plain = (unicode: string | null): string => (unicode ?? "").replace(/\uFE0F/g, "");
+        const allowed = new Set(["👍", "❤", "😁"]);
+        const { container } = render(
+            <EmojiPicker
+                onChoose={() => false}
+                onFinished={vi.fn()}
+                recentEmojis={["🚀", "👍"]}
+                emojiFilter={(unicode) => allowed.has(plain(unicode))}
+            />,
+        );
+
+        await waitFor(() => {
+            expect(container.querySelector('[role="gridcell"] [role="button"]')).toBeInTheDocument();
+        });
+        const offered = [...container.querySelectorAll('[role="gridcell"] [role="button"]')].map((el) =>
+            plain(el.textContent),
+        );
+        expect(new Set(offered)).toEqual(allowed);
+        const quick = [...screen.getByRole("toolbar", { name: "Quick Reactions" }).querySelectorAll('[role="button"]')];
+        expect(quick.map((el) => plain(el.textContent))).toEqual(["👍", "❤"]);
+    });
+
     it("sort emojis by shortcode and size", function () {
         const sorted = filterEmojis(DATA_BY_CATEGORY.people, "heart");
 

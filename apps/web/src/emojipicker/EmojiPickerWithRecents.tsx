@@ -20,6 +20,7 @@ export function EmojiPickerWithRecents({
     onChoose,
     onFinished,
     isEmojiDisabled,
+    emojiFilter,
 }: Omit<EmojiPickerProps, "recentEmojis" | "onRecordRecent" | "getAction">): React.ReactNode {
     // There isn't anything for us to key the memoisation off here. This will just
     // update when the component mounts which is probably good enough.
@@ -31,6 +32,7 @@ export function EmojiPickerWithRecents({
             onChoose={onChoose}
             onFinished={onFinished}
             isEmojiDisabled={isEmojiDisabled}
+            emojiFilter={emojiFilter}
             getAction={getWebRovingAction}
             recentEmojis={recentEmojis}
             onRecordRecent={recent.add}
