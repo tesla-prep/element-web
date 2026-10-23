@@ -56,7 +56,7 @@ import { LocalRoom } from "../../../../models/LocalRoom.ts";
 import { useIsEncrypted } from "../../../../hooks/useIsEncrypted.ts";
 import { useUserStatus } from "../../../../hooks/useUserStatus.ts";
 import { SDKContext } from "../../../../contexts/SDKContext.ts";
-import { CirqleRoomHeaderButtons, CirqleRoomSubtitle } from "../../../../cirqle/CirqleRoomHeader";
+import { CirqleRoomBackButton, CirqleRoomHeaderButtons, CirqleRoomSubtitle } from "../../../../cirqle/CirqleRoomHeader";
 import { stripNetworkSuffix } from "../../../../cirqle/CirqleInboxes";
 
 function RoomHeaderButtons({ room, extraButtons }: { room: Room; extraButtons?: JSX.Element }): JSX.Element {
@@ -436,6 +436,7 @@ export default function RoomHeader({
     return (
         <CurrentRightPanelPhaseContextProvider roomId={room.roomId}>
             <Flex as="header" align="center" gap="var(--cpd-space-3x)" className="mx_RoomHeader light-panel">
+                <CirqleRoomBackButton /> {/* CIRQLE: phone width only */}
                 <WithPresenceIndicator room={room}>
                     {/* We hide this from the tabIndex list as it is a pointer shortcut and superfluous for a11y */}
                     {/* Disable on-click actions until the room is created */}

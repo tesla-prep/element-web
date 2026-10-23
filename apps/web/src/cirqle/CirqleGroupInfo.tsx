@@ -32,9 +32,16 @@ import { chatKind, formatPhone, inboxesOf, networkOf, stripNetworkSuffix } from 
 import { useCirqleInboxes } from "./useCirqleChats";
 
 const GHOST = /^@(whatsapp|telegram)_([^:]+):/;
-const ACCOUNT = /^@account_(whatsapp|telegram)_/;
+export const ACCOUNT = /^@account_(whatsapp|telegram)_/;
 
 /** Bridged groups and channels get this panel; private chats keep Element's room summary. */
+/** The people in the group on WhatsApp or Telegram: ghosts and our accounts, not staff. */
+export function groupPeople(members: RoomMember[]): RoomMember[] {
+    return members
+        .filter((m) => m.membership === KnownMembership.Join && (GHOST.test(m.userId) || ACCOUNT.test(m.userId)))
+        .sort((a, b) => Number(ACCOUNT.test(b.userId)) - Number(ACCOUNT.test(a.userId)) || a.name.localeCompare(b.name));
+}
+
 export function isCirqleGroupInfoRoom(room: Room): boolean {
     return !!networkOf(room) && chatKind(room) !== "chat";
 }
@@ -75,9 +82,7 @@ export function CirqleGroupInfo({ room }: { room: Room }): JSX.Element {
     const network = networkOf(room);
     const own = inboxesOf(room, inboxes);
 
-    const people = members
-        .filter((m) => m.membership === KnownMembership.Join && (GHOST.test(m.userId) || ACCOUNT.test(m.userId)))
-        .sort((a, b) => Number(ACCOUNT.test(b.userId)) - Number(ACCOUNT.test(a.userId)) || a.name.localeCompare(b.name));
+    const people = groupPeople(members);
     const me = room.getMember(client.getSafeUserId());
     const canRemove = (m: RoomMember): boolean =>
         !ACCOUNT.test(m.userId) &&
@@ -128,8 +133,9 @@ export function CirqleGroupInfo({ room }: { room: Room }): JSX.Element {
                 </button>
                 {people.map((m) => {
                     const isUs = ACCOUNT.test(m.userId);
-                    const label = isUs ? `${own[0]?.label ?? stripNetworkSuffix(m.name)} (us)` : stripNetworkSuffix(m.name);
-                    const subline = isUs ? (own[0]?.phone ?? "") : memberSub(m);
+                    const ours = inboxes.find((inbox) => inbox.accountName && m.userId.includes(`_${inbox.accountName}:`));
+                    const label = isUs ? `${ours?.label ?? stripNetworkSuffix(m.name)} (us)` : stripNetworkSuffix(m.name);
+                    const subline = isUs ? (ours?.phone ?? "") : memberSub(m);
                     return (
                         <div key={m.userId} className="cirqle_GroupInfo_row">
                             <MemberAvatar member={m} size="44px" />

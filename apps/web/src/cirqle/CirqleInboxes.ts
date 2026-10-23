@@ -147,7 +147,11 @@ export function contactNumber(room: Room): string | undefined {
     return fromName ? formatPhone(fromName[0]) : undefined;
 }
 
-/** "Anna (WA)" as "Anna": the bridge's suffix, which the number line already says. */
+/**
+ * A chat's name as staff read it: "Anna (WA)" as "Anna" (the number line already
+ * says WhatsApp), "+13026180314" as "+1 302 618 0314".
+ */
 export function stripNetworkSuffix(name: string): string {
-    return name.replace(/\s*\((WA|TG|Telegram)\)$/, "");
+    const bare = name.replace(/\s*\((WA|TG|Telegram)\)$/, "");
+    return /^\+\d{7,15}$/.test(bare) ? formatPhone(bare) : bare;
 }

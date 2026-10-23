@@ -10,7 +10,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 // right with the staff member's name; customers' messages come from the
 // bridges' ghost users and sit on the left.
 
-import { type MatrixClient, type MatrixEvent } from "matrix-js-sdk/src/matrix";
+import { EventType, type MatrixClient, type MatrixEvent } from "matrix-js-sdk/src/matrix";
 
 import { chatKind } from "./CirqleInboxes";
 
@@ -28,4 +28,13 @@ export function hideCustomerName(event: MatrixEvent, client: MatrixClient): bool
     if (isOurSide(event, client)) return false;
     const room = client.getRoom(event.getRoomId());
     return !!room && chatKind(room) === "chat";
+}
+
+/**
+ * Room state changes (joins, names, avatars, power levels) are the bridges' and
+ * the relay bot's plumbing: staff and service users join every chat. WhatsApp
+ * shows none of it. A tombstone stays, it points to the chat that continues.
+ */
+export function isPlumbingEvent(event: MatrixEvent): boolean {
+    return event.isState() && event.getType() !== EventType.RoomTombstone;
 }

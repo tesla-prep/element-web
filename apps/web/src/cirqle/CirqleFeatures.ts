@@ -19,6 +19,22 @@ const HIDDEN_COMPONENTS = new Set<string>([
     UIComponent.CreateSpaces,
 ]);
 
+/**
+ * Settings the CIRQLE look depends on, the same for everyone whatever they chose
+ * in the stock Element (which shares this browser storage at chat.cirqlecirqle.com/).
+ */
+export const CIRQLE_FORCED_SETTINGS: Record<string, unknown> = {
+    "layout": "bubble",
+    "alwaysShowTimestamps": true,
+    "showJoinLeaves": false,
+    "showAvatarChanges": false,
+    "showDisplaynameChanges": false,
+    "showReadReceipts": false,
+    "RoomList.showMessagePreview": true,
+    "RoomList.showSections": false,
+    "Spaces.allRoomsInHome": true,
+};
+
 /** The one theme the CIRQLE look is drawn on. */
 export const CIRQLE_THEME = "light";
 

@@ -15,14 +15,15 @@ import { SDKContext } from "../contexts/SDKContext";
 import { RightPanelPhases } from "../stores/right-panel/RightPanelStorePhases";
 import dis from "../dispatcher/dispatcher";
 import { Action } from "../dispatcher/actions";
-import { useRoomMemberCount } from "../hooks/useRoomMembers";
+import { useRoomMembers } from "../hooks/useRoomMembers";
+import { groupPeople } from "./CirqleGroupInfo";
 import { chatKind, contactNumber, inboxesOf, networkOf } from "./CirqleInboxes";
 import { useCirqleInboxes } from "./useCirqleChats";
-import { GroupIcon, KebabIcon, SearchIcon } from "./CirqleIcons";
+import { BackIcon, GroupIcon, KebabIcon, SearchIcon } from "./CirqleIcons";
 
 export function CirqleRoomSubtitle({ room }: { room: Room }): JSX.Element | null {
     const inboxes = useCirqleInboxes();
-    const memberCount = useRoomMemberCount(room);
+    const memberCount = groupPeople(useRoomMembers(room)).length;
     const kind = chatKind(room);
     const from = inboxesOf(room, inboxes)
         .map((inbox) => inbox.label)
@@ -81,5 +82,18 @@ export function CirqleRoomHeaderButtons({ room }: { room: Room }): JSX.Element {
                 />
             </Menu>
         </>
+    );
+}
+
+/** On a phone-wide window the chat covers the list; this goes back to it. */
+export function CirqleRoomBackButton(): JSX.Element {
+    return (
+        <button
+            className="cirqle_iconButton cirqle_iconButton_green cirqle_RoomHeader_back"
+            aria-label="Back to chats"
+            onClick={() => dis.fire(Action.ViewHomePage)}
+        >
+            <BackIcon />
+        </button>
     );
 }

@@ -26,7 +26,7 @@ import { getLastTimestamp } from "../stores/room-list-v3/skip-list/sorters/utils
 import { formatTime } from "../DateUtils";
 import RoomAvatar from "../components/views/avatars/RoomAvatar";
 import { CirqleNumberPicker } from "./CirqleNumberPicker";
-import { ChannelIcon, GroupIcon, KebabIcon, PencilIcon, SearchIcon, SettingsIcon } from "./CirqleIcons";
+import { ChannelIcon, GroupIcon, KebabIcon, PencilIcon, PlusIcon, SearchIcon, SettingsIcon } from "./CirqleIcons";
 import { type Inbox, numberLine, stripNetworkSuffix } from "./CirqleInboxes";
 import { CirqleUiStore, type CirqleSection } from "./CirqleUiStore";
 import { type CirqleChip, isUnreadChat, useCirqleInboxes, useCirqleRooms } from "./useCirqleChats";
@@ -180,7 +180,7 @@ export function CirqleChatList({ section }: { section: CirqleSection }): JSX.Ele
                         key={c}
                         role="tab"
                         aria-selected={chip === c}
-                        className="cirqle_chip"
+                        className={`cirqle_chip cirqle_chip_${c}`}
                         onClick={() => setChip(c)}
                     >
                         {label}
@@ -203,6 +203,14 @@ export function CirqleChatList({ section }: { section: CirqleSection }): JSX.Ele
                     </p>
                 )}
             </div>
+            <button
+                className="cirqle_ChatList_fab"
+                aria-label={section === "channels" ? "New channel" : "New chat, group or channel"}
+                onClick={() => (section === "channels" ? createChannel() : CirqleUiStore.openNewChat())}
+            >
+                <PlusIcon />
+                New
+            </button>
         </section>
     );
 }

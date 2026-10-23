@@ -57,7 +57,9 @@ slots by their data-testid.
     background: var(--cirqle-ground);
 }
 
-.mx_RoomView_body[data-layout="bubble"] {
+/* Shared components set these on each tile's root, so they are set there too */
+.mx_RoomView_body[data-layout="bubble"],
+[class*="_layoutBubble_"] {
     --event-tile-bubble-other-background: #ffffff;
     --event-tile-bubble-self-background: var(--cirqle-green-soft);
     --event-tile-bubble-hover-background: transparent;
@@ -165,27 +167,11 @@ slots by their data-testid.
     margin-bottom: 6px;
 }
 
-/* System notes (renames, joins): small and centered, as on WhatsApp */
+/* Joins, renames and power changes are the bridges' and the relay bot's
+   plumbing (staff and service users join every chat): not shown, as WhatsApp
+   shows none of it. */
+.mx_RoomView_body[data-layout="bubble"] .mx_GenericEventListSummary,
 [class*="_layoutBubble_"][class*="_stateInfo_"] {
-    text-align: center;
-    justify-content: center;
-}
-
-[class*="_layoutBubble_"][class*="_stateInfo_"] > [data-testid="event-tile-line"] {
-    width: fit-content;
-    max-width: 80%;
-    margin-inline: auto;
-    padding: 4px 12px;
-    border-radius: 8px;
-    background: rgba(255, 255, 255, 0.7);
-    box-shadow: none;
-    font-size: 12px;
-    line-height: 16px;
-    color: var(--cirqle-ink-3);
-}
-
-[class*="_layoutBubble_"][class*="_stateInfo_"] [data-testid="event-tile-slot-timestamp"],
-[class*="_layoutBubble_"][class*="_stateInfo_"] > [data-testid="event-tile-slot-avatar"] {
     display: none;
 }
 
@@ -210,12 +196,6 @@ slots by their data-testid.
     font-weight: 400;
     color: var(--cirqle-ink-2);
     box-shadow: 0 1px 1px rgba(20, 32, 25, 0.08);
-}
-
-.mx_GenericEventListSummary[data-layout="bubble"],
-[class*="_layoutBubble_"][class*="_stateInfo_"] {
-    font-size: 12px;
-    color: var(--cirqle-ink-3);
 }
 
 /* The "beginning of your conversation" card has no place in a WhatsApp chat */

@@ -131,3 +131,9 @@ export const LeaveIcon = (p: IconProps): JSX.Element => (
         <path d="M15 4h4v16h-4M10 8l-4 4 4 4M6 12h10" />
     </Stroke>
 );
+
+export const PlusIcon = (p: IconProps): JSX.Element => (
+    <Stroke size={20} {...p}>
+        <path d="M12 5v14M5 12h14" />
+    </Stroke>
+);
