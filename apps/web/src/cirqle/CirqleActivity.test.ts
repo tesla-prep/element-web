@@ -216,6 +216,31 @@ describe("CirqleActivityStore", () => {
         expect(client.createMessagesRequest).toHaveBeenCalledTimes(2);
     });
 
+    it("keeps the message itself for the preview, trimmed, across a reload", async () => {
+        vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+        const room = joinedRoom(client, []);
+        const long = "x".repeat(1000);
+        vi.mocked(client.createMessagesRequest).mockResolvedValue({
+            chunk: [
+                message(200, CUSTOMER, {
+                    body: long,
+                    format: "org.matrix.custom.html",
+                    formatted_body: "<b>x</b>",
+                }).getEffectiveEvent(),
+            ],
+            start: "t_before",
+        } as any);
+        expect(store.lastActivityEvent(room)).toBeUndefined();
+        await vi.waitFor(() => expect(store.lastActivityEvent(room)?.getTs()).toBe(200));
+        vi.advanceTimersByTime(1000);
+
+        const event = new CirqleActivityStore().lastActivityEvent(room)!;
+        expect(event.getSender()).toBe(CUSTOMER);
+        expect(event.getRoomId()).toBe(ROOM);
+        expect(event.getContent().body).toHaveLength(300);
+        expect(event.getContent().formatted_body).toBeUndefined();
+    });
+
     it("does not ask again after a failure until the loaded events change", async () => {
         const room = joinedRoom(client, []);
         vi.mocked(client.createMessagesRequest).mockRejectedValue(new Error("M_LIMIT_EXCEEDED"));

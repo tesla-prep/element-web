@@ -62,6 +62,10 @@ rooms at a time, and keeps the answer in `localStorage` (`cirqle_chat_activity`)
 until that room's loaded events change. Muted chats keep their place, as on
 WhatsApp; low priority chats still go to the bottom, as in stock Element.
 
+The line under a chat's name is that same message (`CirqlePreview`): "You: " for
+our own, a colleague's first name for theirs, the sender's short name in groups,
+nothing in a private chat, and an icon and a word for photos, voice and files.
+
 ## Build and deploy
 
 ```sh

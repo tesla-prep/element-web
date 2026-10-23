@@ -21,6 +21,8 @@ import {
     Direction,
     EventType,
     Filter,
+    type IEvent,
+    type IRoomEvent,
     M_POLL_START,
     MatrixEvent,
     RelationType,
@@ -45,7 +47,7 @@ const BOT_USER = /^@(whatsappbot|telegrambot|relay-bot):/;
 /** A chat's last activity turned out different from what the list sorted it by. */
 export const CIRQLE_ACTIVITY_UPDATE = "cirqle_activity_update";
 
-const STORAGE_KEY = "cirqle_chat_activity";
+const STORAGE_KEY = "cirqle_chat_activity_v2";
 const PAGE_SIZE = 50;
 const PAGES = 4;
 const PARALLEL = 4;
@@ -61,10 +63,25 @@ function creationTs(room: Room): number {
     return room.currentState.getStateEvents(EventType.RoomCreate, "")?.getTs() ?? 0;
 }
 
+/** What the chat list preview needs of a message, kept small for localStorage. */
+function trim(raw: IRoomEvent): Partial<IEvent> {
+    const { body, formatted_body: _html, ...content } = raw.content;
+    return {
+        event_id: raw.event_id,
+        type: raw.type,
+        sender: raw.sender,
+        origin_server_ts: raw.origin_server_ts,
+        content: { ...content, body: typeof body === "string" ? body.slice(0, 300) : body },
+        unsigned: raw.unsigned?.redacted_because ? { redacted_because: raw.unsigned.redacted_because } : undefined,
+    };
+}
+
 interface Known {
     /** The back-pagination token of the live timeline the answer is for */
     token: string;
     ts: number;
+    /** The message itself, for the chat list preview */
+    event?: Partial<IEvent>;
 }
 
 export class CirqleActivityStore extends TypedEventEmitter<
@@ -77,22 +94,42 @@ export class CirqleActivityStore extends TypedEventEmitter<
     private queued = new Set<string>();
     private running = 0;
     private saveTimer: number | undefined;
+    private events = new Map<string, MatrixEvent>();
 
     /** When the chat last had activity, 0 while the server is being asked. */
     public lastActivity(room: Room): number {
+        return this.latest(room).ts;
+    }
+
+    /** The message that last moved the chat, for its preview; undefined while unknown or when there is none. */
+    public lastActivityEvent(room: Room): MatrixEvent | undefined {
+        return this.latest(room).event;
+    }
+
+    private latest(room: Room): { ts: number; event?: MatrixEvent } {
         if (getEffectiveMembership(room.getMyMembership()) !== EffectiveMembership.Join) {
             const membership = room.currentState.getStateEvents(EventType.RoomMember, room.client.getSafeUserId());
-            if (membership) return membership.getTs();
+            if (membership) return { ts: membership.getTs() };
         }
         const events = room.getLiveTimeline().getEvents();
         for (let i = events.length - 1; i >= 0; i--) {
-            if (isChatActivity(events[i]) && events[i].getTs()) return events[i].getTs();
+            if (isChatActivity(events[i]) && events[i].getTs()) return { ts: events[i].getTs(), event: events[i] };
         }
         const token = room.getLiveTimeline().getPaginationToken(Direction.Backward);
-        if (!token) return creationTs(room);
+        if (!token) return { ts: creationTs(room) };
         const known = this.store()[room.roomId];
         if (known?.token !== token && this.failed.get(room.roomId) !== token) this.ask(room);
-        return known?.ts ?? 0;
+        return { ts: known?.ts ?? 0, event: known?.event && this.cachedEvent(room.roomId, known.event) };
+    }
+
+    private cachedEvent(roomId: string, raw: Partial<IEvent>): MatrixEvent {
+        const key = raw.event_id ?? "";
+        let event = this.events.get(key);
+        if (!event) {
+            event = new MatrixEvent({ ...raw, room_id: roomId });
+            this.events.set(key, event);
+        }
+        return event;
     }
 
     private store(): Record<string, Known> {
@@ -132,9 +169,9 @@ export class CirqleActivityStore extends TypedEventEmitter<
         const filter = new Filter(room.client.getSafeUserId());
         filter.setDefinition({ room: { timeline: { types: MESSAGE_TYPES } } });
         let from: string | undefined = token;
-        let ts: number | undefined;
+        let found: IRoomEvent | undefined;
         try {
-            for (let page = 0; page < PAGES && from && ts === undefined; page++) {
+            for (let page = 0; page < PAGES && from && !found; page++) {
                 const response = await room.client.createMessagesRequest(
                     room.roomId,
                     from,
@@ -142,10 +179,7 @@ export class CirqleActivityStore extends TypedEventEmitter<
                     Direction.Backward,
                     filter,
                 );
-                ts = response.chunk
-                    .map((raw) => new MatrixEvent(raw))
-                    .find(isChatActivity)
-                    ?.getTs();
+                found = response.chunk.find((raw) => isChatActivity(new MatrixEvent(raw)));
                 from = response.end;
             }
         } catch (error) {
@@ -154,10 +188,15 @@ export class CirqleActivityStore extends TypedEventEmitter<
             return;
         }
         const known = this.store();
-        const before = known[room.roomId]?.ts;
-        known[room.roomId] = { token, ts: ts ?? creationTs(room) };
+        const before = known[room.roomId];
+        known[room.roomId] = found
+            ? { token, ts: found.origin_server_ts, event: trim(found) }
+            : { token, ts: creationTs(room) };
         this.save();
-        if (known[room.roomId].ts !== before) this.emit(CIRQLE_ACTIVITY_UPDATE, room);
+        const after = known[room.roomId];
+        if (after.ts !== before?.ts || after.event?.event_id !== before?.event?.event_id) {
+            this.emit(CIRQLE_ACTIVITY_UPDATE, room);
+        }
     }
 
     private save(): void {

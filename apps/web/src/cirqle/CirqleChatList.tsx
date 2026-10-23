@@ -26,6 +26,7 @@ import { formatTime } from "../DateUtils";
 import RoomAvatar from "../components/views/avatars/RoomAvatar";
 import { CirqleNumberPicker } from "./CirqleNumberPicker";
 import { cirqleLastTimestamp } from "./CirqleActivity";
+import { chatPreview } from "./CirqlePreview";
 import { ChannelIcon, GroupIcon, KebabIcon, PencilIcon, PlusIcon, SearchIcon, SettingsIcon } from "./CirqleIcons";
 import { type Inbox, numberLine, stripNetworkSuffix } from "./CirqleInboxes";
 import { CirqleUiStore, type CirqleSection } from "./CirqleUiStore";
@@ -82,7 +83,7 @@ function ChatRow({ room, inboxes, selected }: { room: Room; inboxes: Inbox[]; se
                     </span>
                 </span>
                 <span className="cirqle_ChatRow_middle">
-                    <span className="cirqle_ChatRow_preview">{item.messagePreview ?? ""}</span>
+                    <span className="cirqle_ChatRow_preview">{chatPreview(room)}</span>
                     {unread && <span className="cirqle_badge">{count > 0 ? count : ""}</span>}
                 </span>
                 {line.text && (
