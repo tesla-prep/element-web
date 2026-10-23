@@ -21,15 +21,23 @@ interface ReactionGroup {
     events: MatrixEvent[];
 }
 
+/** Our side's latest reaction among these: the one the customer sees from the number. */
+export function latestOurReaction(reactions: Iterable<MatrixEvent>, client: MatrixClient): MatrixEvent | undefined {
+    let latest: MatrixEvent | undefined;
+    for (const event of reactions) {
+        if (!event.isRedacted() && isOurSide(event, client) && (!latest || event.getTs() > latest.getTs()))
+            latest = event;
+    }
+    return latest;
+}
+
 export function cirqleReactionGroups<G extends ReactionGroup>(groups: G[], client: MatrixClient | null): G[] {
     if (!isCirqleMessenger() || !client) return groups;
     const ours = (event: MatrixEvent): boolean => isOurSide(event, client);
-    let latest: MatrixEvent | undefined;
-    for (const group of groups) {
-        for (const event of group.events) {
-            if (!event.isRedacted() && ours(event) && (!latest || event.getTs() > latest.getTs())) latest = event;
-        }
-    }
+    const latest = latestOurReaction(
+        groups.flatMap((group) => group.events),
+        client,
+    );
     const ourKey = latest?.getRelation()?.key;
     return groups
         .map((group) => {

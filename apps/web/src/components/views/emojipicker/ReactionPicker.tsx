@@ -17,6 +17,7 @@ import RoomContext from "../../../contexts/RoomContext";
 import { type FocusComposerPayload } from "../../../dispatcher/payloads/FocusComposerPayload";
 import { EmojiPickerWithRecents } from "../../../emojipicker/EmojiPickerWithRecents";
 import { cirqleReplaceOwnReaction } from "../../../cirqle/CirqleReactions";
+import { cirqleReactionFilter } from "../../../cirqle/CirqleDelivery";
 
 interface IProps {
     mxEvent: MatrixEvent;
@@ -132,6 +133,7 @@ class ReactionPicker extends React.Component<IProps, IState> {
                 isEmojiDisabled={this.isEmojiDisabled}
                 onFinished={this.props.onFinished}
                 selectedEmojis={this.state.selectedEmojis}
+                emojiFilter={cirqleReactionFilter(MatrixClientPeg.safeGet().getRoom(this.props.mxEvent.getRoomId()))} // CIRQLE: only what the network takes
             />
         );
     }
