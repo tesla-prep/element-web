@@ -142,6 +142,7 @@ import { type IScreen } from "../../vector/routing.ts";
 import { type URLParams } from "../../vector/url_utils.ts";
 import { type QrLoginCredentials } from "../views/auth/LoginWithQR.tsx";
 import { configureFromCompletedOAuthLogin } from "../../Lifecycle";
+import { focusCirqleSearch, isCirqleMessenger } from "../../cirqle/CirqleFeatures";
 
 const AUTH_SCREENS = ["register", "mobile_register", "login", "forgot_password", "start_sso", "start_cas", "welcome"];
 
@@ -929,6 +930,10 @@ export default class MatrixChat extends React.PureComponent<IProps, IState> {
                 break;
             }
             case Action.OpenSpotlight:
+                if (isCirqleMessenger()) {
+                    focusCirqleSearch(); // CIRQLE
+                    break;
+                }
                 Modal.createDialog(
                     RovingSpotlightDialog,
                     {

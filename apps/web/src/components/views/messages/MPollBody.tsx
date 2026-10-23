@@ -38,6 +38,7 @@ import PollCreateDialog from "../elements/PollCreateDialog";
 import { MatrixClientPeg } from "../../../MatrixClientPeg";
 import Spinner from "../elements/Spinner";
 import { PollOption } from "../polls/PollOption";
+import { cirqlePollTotal, isCirqleMessenger } from "../../../cirqle/CirqleFeatures";
 
 interface IState {
     poll?: Poll;
@@ -223,6 +224,7 @@ export default class MPollBody extends React.Component<IBodyProps, IState> {
     };
 
     private selectOption(answerId: string): void {
+        if (isCirqleMessenger()) return; // CIRQLE: the bridge drops votes cast through the relay
         if (this.state.poll?.isEnded) {
             return;
         }
@@ -325,7 +327,7 @@ export default class MPollBody extends React.Component<IBodyProps, IState> {
 
         // Disclosed: votes are hidden until I vote or the poll ends
         // Undisclosed: votes are hidden until poll ends
-        const showResults = isEnded || (disclosed && myVote !== undefined);
+        const showResults = isEnded || isCirqleMessenger() || (disclosed && myVote !== undefined); // CIRQLE: votes shown
 
         let totalText: string;
         if (showResults && poll?.undecryptableRelationsCount) {
@@ -343,6 +345,7 @@ export default class MPollBody extends React.Component<IBodyProps, IState> {
         } else {
             totalText = _t("poll|total_n_votes_voted", { count: totalVotes });
         }
+        if (isCirqleMessenger() && !isEnded) totalText = cirqlePollTotal(totalVotes); // CIRQLE
 
         const editedSpan = this.props.mxEvent.replacingEvent() ? (
             <span className="mx_MPollBody_edited"> ({_t("common|edited")})</span>
@@ -376,7 +379,7 @@ export default class MPollBody extends React.Component<IBodyProps, IState> {
                                     answer={answer}
                                     optionNumber={index + 1}
                                     isChecked={checked}
-                                    isEnded={isEnded}
+                                    isEnded={isEnded || isCirqleMessenger()} // CIRQLE: no voting
                                     voteCount={answerVotes}
                                     totalVoteCount={totalVotes}
                                     displayVoteCount={showResults}

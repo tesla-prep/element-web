@@ -1,0 +1,141 @@
+/*
+Copyright 2026 CIRQLE.
+
+SPDX-License-Identifier: AGPL-3.0-only
+*/
+
+// @vitest-environment happy-dom
+
+import React from "react";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { MatrixEvent } from "matrix-js-sdk/src/matrix";
+import { render, screen } from "test-utils-rtl";
+import { stubClient } from "test-utils";
+import { ActionBarAction } from "@element-hq/web-shared-components";
+
+import SdkConfig from "../SdkConfig";
+import { getCommand } from "../slash-commands/SlashCommands";
+import { Tab } from "../components/structures/TabbedView";
+import { UserTab } from "../components/views/dialogs/UserTab";
+import { CIRQLE_BRAND, cirqlePollTotal, isCirqleHiddenCommand } from "./CirqleFeatures";
+import { cirqleActionBarActions, cirqleMayDelete } from "./CirqleMessages";
+import { cirqleUserTabs } from "./CirqleSettings";
+import { CirqleDeleteDialog } from "./CirqleDeleteDialog";
+
+const ROOM = "!room:server";
+
+function message(sender: string): MatrixEvent {
+    return new MatrixEvent({ type: "m.room.message", sender, room_id: ROOM, event_id: "$m", content: { body: "hi" } });
+}
+
+describe("CIRQLE without stock Element's extras", () => {
+    beforeEach(() => {
+        stubClient();
+        SdkConfig.put({ brand: CIRQLE_BRAND });
+    });
+
+    afterEach(() => {
+        SdkConfig.reset();
+    });
+
+    it("keeps only the slash commands that change how a message reads", () => {
+        for (const command of [
+            "roomname",
+            "topic",
+            "roomavatar",
+            "remove",
+            "op",
+            "devtools",
+            "converttodm",
+            "msg",
+            "join",
+            "part",
+            "invite",
+            "nick",
+            "me",
+            "help",
+        ]) {
+            expect(isCirqleHiddenCommand(command)).toBe(true);
+        }
+        for (const command of ["plain", "shrug", "tableflip", "unflip", "lenny"]) {
+            expect(isCirqleHiddenCommand(command)).toBe(false);
+        }
+        expect(getCommand(ROOM, "/roomname New name")).toEqual({});
+        expect(getCommand(ROOM, "/devtools")).toEqual({});
+        expect(getCommand(ROOM, "/shrug ok").cmd?.command).toBe("shrug");
+    });
+
+    it("leaves stock Element alone outside the CIRQLE build", () => {
+        SdkConfig.reset();
+        expect(isCirqleHiddenCommand("roomname")).toBe(false);
+        expect(getCommand(ROOM, "/roomname New name").cmd?.command).toBe("roomname");
+        const actions = [ActionBarAction.Reply, ActionBarAction.ReplyInThread];
+        expect(cirqleActionBarActions(actions)).toEqual(actions);
+        expect(cirqleMayDelete(stubClient(), message("@colleague:server"))).toBe(true);
+    });
+
+    it("deletes our own messages only", () => {
+        const client = stubClient();
+        expect(cirqleMayDelete(client, message(client.getSafeUserId()))).toBe(true);
+        expect(cirqleMayDelete(client, message("@whatsapp_lid-5000:server"))).toBe(false);
+        expect(cirqleMayDelete(client, message("@colleague:server"))).toBe(false);
+    });
+
+    it("has no Reply in thread or Pin on the hover bar", () => {
+        expect(
+            cirqleActionBarActions([
+                ActionBarAction.React,
+                ActionBarAction.Reply,
+                ActionBarAction.ReplyInThread,
+                ActionBarAction.Edit,
+                ActionBarAction.Pin,
+                ActionBarAction.Options,
+            ]),
+        ).toEqual([ActionBarAction.React, ActionBarAction.Reply, ActionBarAction.Edit, ActionBarAction.Options]);
+    });
+
+    it("shows the settings tabs staff need, with a short Preferences", () => {
+        const ids = [
+            UserTab.Account,
+            UserTab.SessionManager,
+            UserTab.Appearance,
+            UserTab.Notifications,
+            UserTab.Preferences,
+            UserTab.Keyboard,
+            UserTab.Sidebar,
+            UserTab.Security,
+            UserTab.Encryption,
+            UserTab.Labs,
+            UserTab.Help,
+        ];
+        const stock = ids.map((id) => new Tab(id, "common|preferences", null, <div key={id}>{id}</div>));
+        const tabs = cirqleUserTabs(stock);
+        expect(tabs.map((tab) => tab.id)).toEqual([
+            UserTab.Account,
+            UserTab.SessionManager,
+            UserTab.Notifications,
+            UserTab.Preferences,
+            UserTab.Keyboard,
+            UserTab.Help,
+        ]);
+
+        render(tabs.find((tab) => tab.id === UserTab.Preferences)!.body);
+        expect(screen.getByText("Typing")).toBeTruthy();
+        expect(screen.queryByText(UserTab.Preferences)).toBeNull();
+        expect(screen.queryByText(/read receipts/i)).toBeNull();
+        expect(screen.queryByText(/typing notifications/i)).toBeNull();
+        expect(screen.queryByText(/language/i)).toBeNull();
+    });
+
+    it("counts poll votes and sends voting to the phone", () => {
+        expect(cirqlePollTotal(1)).toBe("1 vote · Vote on the phone");
+        expect(cirqlePollTotal(0)).toBe("0 votes · Vote on the phone");
+    });
+
+    it("asks to delete for everyone, without a reason", () => {
+        render(<CirqleDeleteDialog event={message("@me:server")} onFinished={() => {}} />);
+        expect(screen.getByText("Delete for everyone?")).toBeTruthy();
+        expect(screen.getByRole("button", { name: "Delete for everyone" })).toBeTruthy();
+        expect(screen.queryByRole("textbox")).toBeNull();
+    });
+});

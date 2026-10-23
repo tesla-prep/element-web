@@ -28,6 +28,7 @@ import WebPlatform from "./platform/WebPlatform";
 import { initRageshake, initRageshakeStore } from "./rageshakesetup";
 import { ModuleApi } from "../modules/Api.ts";
 import { type URLParams } from "./url_utils.ts";
+import { CIRQLE_LANGUAGE, isCirqleMessenger } from "../cirqle/CirqleFeatures";
 
 export const rageshakePromise = initRageshake();
 
@@ -102,7 +103,9 @@ export async function loadConfig(): Promise<void> {
 }
 
 export async function loadLanguage(): Promise<void> {
-    const prefLang = SettingsStore.getValue("language", null, /*excludeDefault=*/ true);
+    const prefLang = isCirqleMessenger()
+        ? CIRQLE_LANGUAGE
+        : SettingsStore.getValue("language", null, /*excludeDefault=*/ true); // CIRQLE
     let langs: string[] = [];
 
     if (!prefLang) {

@@ -14,8 +14,10 @@ import { SettingLevel } from "../settings/SettingLevel";
 import { getLanguageRetry } from "./languages";
 import { getLanguageFromBrowser } from "./browser";
 import { registerCustomTranslations } from "./custom";
+import { CIRQLE_LANGUAGE, isCirqleMessenger } from "../cirqle/CirqleFeatures";
 
 export function getUserLanguage(): string {
+    if (isCirqleMessenger()) return CIRQLE_LANGUAGE; // CIRQLE
     const language = SettingsStore.getValue("language", null, /*excludeDefault:*/ true);
     if (typeof language === "string" && language !== "") {
         return language;

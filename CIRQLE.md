@@ -42,6 +42,21 @@ Hooks in upstream files (each one line or a small block):
 | `views/rooms/RoomHeader/RoomHeader.tsx` | name without "(WA)", subtitle, back arrow, search and menu |
 | `views/rooms/EventTile.tsx` | staff messages and the number's own ghost (what the owner sends from the phone) on our side; customer name hidden in private chats |
 | `views/rooms/MessageComposerButtons.tsx` | microphone beside the input |
+| `vector/init.tsx`, `i18n/settings.ts` | English for everyone |
+| `slash-commands/command.ts` | slash commands: only /plain, /shrug, /tableflip, /unflip, /lenny |
+| `autocomplete/NotifProvider.tsx` | no @room |
+| `utils/DialogOpener.ts` | room settings open the chat's info panel (header avatar included) |
+| `structures/MatrixChat.tsx` | Ctrl/Cmd+K focuses the chat list search, no Spotlight |
+| `views/dialogs/UserSettingsDialog.tsx` | settings tabs staff need, a short Preferences (`cirqle/CirqleSettings.tsx`) |
+| `settings/tabs/user/HelpUserSettingsTab.tsx` | no access token |
+| `views/messages/MPollBody.tsx` | polls show votes, voting is on the phone |
+| `context_menus/MessageContextMenu.tsx` | no thread, Share, Copy link, Report, View source; "Delete for everyone" for our own messages (`cirqle/CirqleMessages.ts`) |
+| `viewmodels/room/EventTileActionBarViewModel.ts` | hover bar without Reply in thread and Pin |
+| `views/dialogs/ConfirmRedactDialog.tsx` | "Delete for everyone?" without a reason |
+
+Hooks that take stock Element's own screens away (from `vector/init.tsx` down) are behind
+`isCirqleMessenger()` (`brand` in `cirqle/config.json`), so Element's own unit tests
+still test stock Element.
 
 ## How chats map to numbers
 

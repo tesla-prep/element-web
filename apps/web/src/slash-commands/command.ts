@@ -17,6 +17,7 @@ import { reject } from "./utils";
 import { _t, UserFriendlyError } from "../languageHandler";
 import { PosthogAnalytics } from "../PosthogAnalytics";
 import { CommandCategories, type RunResult } from "./interface";
+import { isCirqleHiddenCommand } from "../cirqle/CirqleFeatures";
 
 /**
  * The function signature for the run function of a {@link Command}
@@ -124,6 +125,7 @@ export class Command {
     }
 
     public isEnabled(cli: MatrixClient | null, roomId: string | null): boolean {
+        if (isCirqleHiddenCommand(this.command)) return false; // CIRQLE
         return this._isEnabled?.(cli, roomId) ?? true;
     }
 }

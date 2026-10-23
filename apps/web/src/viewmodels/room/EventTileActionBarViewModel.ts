@@ -44,6 +44,7 @@ import { _t } from "../../languageHandler";
 import Modal from "../../Modal";
 import ErrorDialog from "../../components/views/dialogs/ErrorDialog";
 import { ModuleApi } from "../../modules/Api";
+import { cirqleActionBarActions } from "../../cirqle/CirqleMessages";
 
 /** Props for the event-tile action bar view model. */
 export interface EventTileActionBarViewModelProps {
@@ -181,7 +182,7 @@ export class EventTileActionBarViewModel
 
         actions.push(ActionBarAction.Options);
 
-        return actions;
+        return cirqleActionBarActions(actions); // CIRQLE
     }
 
     private static getDerivedEventState(

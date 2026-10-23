@@ -15,6 +15,7 @@ import { PillCompletion } from "./Components";
 import { type ICompletion, type ISelectionRange } from "./Autocompleter";
 import RoomAvatar from "../components/views/avatars/RoomAvatar";
 import { type TimelineRenderingType } from "../contexts/RoomContext";
+import { isCirqleMessenger } from "../cirqle/CirqleFeatures";
 
 const AT_ROOM_REGEX = /@\S*/g;
 
@@ -34,6 +35,7 @@ export default class NotifProvider extends AutocompleteProvider {
     ): Promise<ICompletion[]> {
         const client = MatrixClientPeg.safeGet();
 
+        if (isCirqleMessenger()) return []; // CIRQLE: @room would notify a whole WhatsApp group
         if (!this.room.currentState.mayTriggerNotifOfType("room", client.getSafeUserId())) return [];
 
         const { command, range } = this.getCurrentCommand(query, selection, force);

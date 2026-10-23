@@ -25,6 +25,8 @@ import { type ButtonEvent } from "../components/views/elements/AccessibleButton"
 import PosthogTrackers from "../PosthogTrackers";
 import { showAddExistingSubspace, showCreateNewRoom } from "./space";
 import { SDKContextClass } from "../contexts/SDKContextClass";
+import { isCirqleMessenger } from "../cirqle/CirqleFeatures";
+import { openCirqleChatInfo } from "../cirqle/CirqleChatInfo";
 
 /**
  * Auxiliary class to listen for dialog opening over the dispatcher and
@@ -52,6 +54,10 @@ export class DialogOpener {
         if (!this.matrixClient) return;
         switch (payload.action) {
             case "open_room_settings":
+                if (isCirqleMessenger()) {
+                    openCirqleChatInfo(payload.room_id); // CIRQLE
+                    break;
+                }
                 Modal.createDialog(
                     RoomSettingsDialog,
                     {
