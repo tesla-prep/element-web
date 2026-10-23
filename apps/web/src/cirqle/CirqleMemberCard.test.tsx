@@ -43,6 +43,8 @@ const SLAVA_TEST: Inbox = {
     accountName: "wa-efa4b19c",
     childIds: new Set([GROUP, DM]),
     ownUsers: new Set([OWN_LID]),
+    connected: true,
+    contactPhones: new Map(),
 };
 const OTHER: Inbox = {
     spaceId: "!other:server",
@@ -52,6 +54,8 @@ const OTHER: Inbox = {
     accountName: "wa-01d17870",
     childIds: new Set([OTHER_DM, OTHER_GROUP]),
     ownUsers: new Set(),
+    connected: true,
+    contactPhones: new Map(),
 };
 const INBOXES = [SLAVA_TEST, OTHER];
 

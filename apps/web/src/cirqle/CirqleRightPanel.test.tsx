@@ -53,6 +53,8 @@ vi.mock("./useCirqleChats", () => ({
             accountName: "wa-efa4b19c",
             childIds: new Set([DM, GROUP, CHANNEL]),
             ownUsers: new Set(),
+            connected: true,
+            contactPhones: new Map(),
         },
     ],
 }));
