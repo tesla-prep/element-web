@@ -42,6 +42,11 @@ export function groupPeople(members: RoomMember[]): RoomMember[] {
         .sort((a, b) => Number(ACCOUNT.test(b.userId)) - Number(ACCOUNT.test(a.userId)) || a.name.localeCompare(b.name));
 }
 
+/** "1 member", "3 members" */
+export function membersLabel(count: number): string {
+    return count === 1 ? "1 member" : `${count} members`;
+}
+
 export function isCirqleGroupInfoRoom(room: Room): boolean {
     return !!networkOf(room) && chatKind(room) !== "chat";
 }
@@ -93,7 +98,7 @@ export function CirqleGroupInfo({ room }: { room: Room }): JSX.Element {
     const noun = kind === "channel" ? "channel" : "group";
     const sub = [
         `${network === "telegram" ? "Telegram" : "WhatsApp"} ${noun}`,
-        `${people.length} members`,
+        membersLabel(people.length),
         own.length ? `from ${own.map((inbox) => inbox.label).join(", ")}` : "",
     ]
         .filter(Boolean)
@@ -121,7 +126,7 @@ export function CirqleGroupInfo({ room }: { room: Room }): JSX.Element {
             </div>
 
             <div className="cirqle_GroupInfo_card">
-                <div className="cirqle_GroupInfo_section">{people.length} members</div>
+                <div className="cirqle_GroupInfo_section">{membersLabel(people.length)}</div>
                 <button
                     className="cirqle_GroupInfo_row cirqle_GroupInfo_add"
                     onClick={() => dis.dispatch({ action: "view_invite", roomId: room.roomId })}
