@@ -27,7 +27,7 @@ import RoomAvatar from "../components/views/avatars/RoomAvatar";
 import BaseAvatar from "../components/views/avatars/BaseAvatar";
 import RoomListStoreV3 from "../stores/room-list-v3/RoomListStoreV3";
 import { BackIcon, ChannelIcon, GroupIcon, SearchIcon } from "./CirqleIcons";
-import { chatKind, contactNumber, formatPhone, type Inbox, stripNetworkSuffix } from "./CirqleInboxes";
+import { chatKind, contactNumber, formatPhone, type Inbox, type Network, stripNetworkSuffix } from "./CirqleInboxes";
 import { CirqleUiStore } from "./CirqleUiStore";
 import { createChannel, createGroup } from "./CirqleChatList";
 import { useCirqleInboxes } from "./useCirqleChats";
@@ -46,10 +46,10 @@ function inboxOption(inbox: Inbox): string {
 }
 
 /** "+14695551234 · Main #1" or "Anna Petrova, +14695551234 · Main #1": the relay bot's label, without the inbox. */
-function splitLabel(displayName: string, inbox: Inbox): { name: string; sub: string } {
+function splitLabel(displayName: string, network: Network): { name: string; sub: string } {
     const person = displayName.replace(/\s·\s[^·]+$/, "");
     const [name, number] = person.split(/,\s(?=\+)/);
-    const messenger = inbox.network === "whatsapp" ? "On WhatsApp" : "On Telegram";
+    const messenger = network === "whatsapp" ? "On WhatsApp" : "On Telegram";
     const asNumber = (text: string): string => (/^\+\d{7,15}$/.test(text) ? formatPhone(text) : text);
     return number
         ? { name: asNumber(name), sub: `${formatPhone(number)} · ${messenger}` }
@@ -78,14 +78,18 @@ export function CirqleNewChat(): JSX.Element {
 
     useEffect(() => inputRef.current?.focus(), []);
 
+    // Keyed by the number, not the inbox object: inboxes are re-read on every room list
+    // update, and each search makes the relay bot look the contact up on WhatsApp/Telegram.
+    const fromNetwork = from?.network;
+    const fromAccount = from?.accountName;
     useEffect(() => {
         const term = query.trim();
-        if (!term || !from?.accountName) {
+        if (!term || !fromNetwork || !fromAccount) {
             setFound([]);
             return;
         }
         let stale = false;
-        const prefix = `@newchat_${from.network}_${from.accountName}_`;
+        const prefix = `@newchat_${fromNetwork}_${fromAccount}_`;
         const timer = window.setTimeout(() => {
             client
                 .searchUserDirectory({ term, limit: 30 })
@@ -97,7 +101,7 @@ export function CirqleNewChat(): JSX.Element {
                             .map((u) => ({
                                 userId: u.user_id,
                                 avatarUrl: u.avatar_url,
-                                ...splitLabel(u.display_name ?? u.user_id, from),
+                                ...splitLabel(u.display_name ?? u.user_id, fromNetwork),
                             })),
                     );
                 })
@@ -107,7 +111,7 @@ export function CirqleNewChat(): JSX.Element {
             stale = true;
             window.clearTimeout(timer);
         };
-    }, [client, query, from]);
+    }, [client, query, fromNetwork, fromAccount]);
 
     // The private chats this number already has, as its contacts
     const contacts = useMemo((): Room[] => {

@@ -295,6 +295,17 @@ slots by their data-testid.
     color: var(--cirqle-ink-2);
 }
 
+/* A chat that moved (its group was opened in WhatsApp) or one staff cannot post in:
+   the notice takes the row, it is not a round button */
+.mx_MessageComposer_row > .mx_MessageComposer_actions > .mx_MessageComposer_replaced_wrapper,
+.mx_MessageComposer_row > .mx_MessageComposer_actions > .mx_MessageComposer_noperm_error {
+    flex: 1 1 auto;
+    width: auto;
+    height: auto;
+    min-height: 44px;
+    border-radius: 0;
+}
+
 .mx_MessageComposer_row .mx_MessageComposer_button svg,
 .mx_MessageComposer_row [aria-label="Attachment"] svg {
     width: 22px;

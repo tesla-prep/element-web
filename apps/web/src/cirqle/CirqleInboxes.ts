@@ -14,6 +14,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 import { EventType, type MatrixClient, type Room } from "matrix-js-sdk/src/matrix";
 
 import DMRoomMap from "../utils/DMRoomMap";
+import { isLocalRoom } from "../utils/localRoom/isLocalRoom";
 
 export type Network = "whatsapp" | "telegram";
 export type ChatKind = "chat" | "group" | "channel";
@@ -146,6 +147,8 @@ export function inboxesOf(room: Room, inboxes: Inbox[]): Inbox[] {
 }
 
 export function chatKind(room: Room): ChatKind {
+    // New chat opens a local room until the first message: always a private chat
+    if (isLocalRoom(room)) return "chat";
     const bridge = bridgeContent(room);
     if (bridge?.channel?.id?.endsWith("@newsletter")) return "channel";
     if (bridge?.["com.beeper.room_type"] === "dm" || DMRoomMap.shared()?.getUserIdForRoomId(room.roomId)) {

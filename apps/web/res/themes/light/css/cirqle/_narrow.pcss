@@ -53,9 +53,11 @@ Element's resizable panels (the children of the panel group under
         gap: 10px;
     }
 
-    /* Group info covers the chat */
-    .mx_RightPanel:has(.cirqle_GroupInfo) {
-        position: absolute;
+    /* Group info (or contact info) covers the chat; Element's resizable wrapper around it
+       is positioned and sized inline */
+    .mx_RightPanel_ResizeWrapper,
+    .mx_RightPanel {
+        position: absolute !important;
         inset: 0;
         z-index: 20;
         width: 100% !important;
