@@ -28,13 +28,24 @@ export interface Inbox {
     /** "wa-01d17870": the relay bot's name for the inbox, from its account user in the space */
     accountName?: string;
     childIds: Set<string>;
+    /**
+     * The bridge's users that are this number or account itself: what its owner
+     * sends from the phone reaches Matrix from them. The bridge's ghost of the
+     * number, plus the ones the relay bot lists in the space (a WhatsApp number
+     * also writes as `@whatsapp_lid-…`, which nothing else here reveals).
+     */
+    ownUsers: Set<string>;
 }
+
+/** Space state the relay bot keeps: `{ "user_ids": [...] }`, the number's own bridge users. */
+export const NUMBER_USERS_EVENT = "com.cirqle.team_messenger.number_users";
 
 const NETWORK_PREFIXES: Record<Network, string> = { whatsapp: "WhatsApp · ", telegram: "Telegram · " };
 
 interface BridgeContent {
+    "bridgebot"?: string;
     "protocol"?: { id?: string };
-    "channel"?: { id?: string };
+    "channel"?: { "id"?: string; "fi.mau.receiver"?: string };
     "com.beeper.room_type"?: string;
     "com.beeper.room_type.v2"?: string;
 }
@@ -88,6 +99,11 @@ export function getInboxes(client: MatrixClient): Inbox[] {
             .getJoinedMembers()
             .map((member) => member.userId.match(/^@account_(?:whatsapp|telegram)_([^:]+):/)?.[1])
             .find(Boolean);
+        const receiver = bridge.channel?.["fi.mau.receiver"];
+        const listed = room.currentState.getStateEvents(NUMBER_USERS_EVENT, "")?.getContent()?.user_ids;
+        const ownUsers = new Set<string>(Array.isArray(listed) ? listed.filter((id) => typeof id === "string") : []);
+        const server = bridge.bridgebot?.split(":").slice(1).join(":");
+        if (receiver && server) ownUsers.add(`@${network}_${receiver}:${server}`);
         inboxes.push({
             spaceId: room.roomId,
             network,
@@ -95,12 +111,34 @@ export function getInboxes(client: MatrixClient): Inbox[] {
             phone: phoneMatch ? formatPhone(phoneMatch[1]) : undefined,
             accountName: account,
             childIds,
+            ownUsers,
         });
     }
     // WhatsApp numbers first, then Telegram accounts, each by name
     return inboxes.sort((a, b) =>
         a.network === b.network ? a.label.localeCompare(b.label) : a.network === "whatsapp" ? -1 : 1,
     );
+}
+
+/**
+ * The customer's bridge user in a private chat, from the chat's own bridge
+ * state: WhatsApp's "5000…@lid" is `@whatsapp_lid-5000…`, "1555…@s.whatsapp.net"
+ * is `@whatsapp_1555…`, Telegram's "user:4830…" is `@telegram_4830…`.
+ */
+export function privateChatContact(room: Room): string | undefined {
+    const bridge = bridgeContent(room);
+    const network = networkOf(room);
+    const id = bridge?.channel?.id;
+    const server = bridge?.bridgebot?.split(":").slice(1).join(":");
+    if (bridge?.["com.beeper.room_type"] !== "dm" || !network || !id || !server) return undefined;
+    const lid = id.match(/^(\d+)@lid$/)?.[1];
+    const ghost =
+        network === "telegram"
+            ? id.match(/^user:(\d+)$/)?.[1]
+            : lid
+              ? `lid-${lid}`
+              : id.match(/^(\d+)@s\.whatsapp\.net$/)?.[1];
+    return ghost ? `@${network}_${ghost}:${server}` : undefined;
 }
 
 export function inboxesOf(room: Room, inboxes: Inbox[]): Inbox[] {
