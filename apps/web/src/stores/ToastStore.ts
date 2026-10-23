@@ -13,6 +13,7 @@ import { type JSX } from "react";
 
 import type React from "react";
 import { type ComponentClass } from "../@types/common";
+import { isCirqleHiddenToast } from "../cirqle/CirqleFeatures";
 
 export interface IToast<C extends ComponentClass> {
     key: string;
@@ -60,6 +61,7 @@ export default class ToastStore extends EventEmitter {
      * @param {object} newToast The new toast
      */
     public addOrReplaceToast<C extends ComponentClass>(newToast: IToast<C>): void {
+        if (isCirqleHiddenToast(newToast.key)) return; // CIRQLE
         const oldIndex = this.toasts.findIndex((t) => t.key === newToast.key);
         if (oldIndex === -1) {
             logger.info(`Opening toast with key '${newToast.key}': title '${newToast.title}'`);

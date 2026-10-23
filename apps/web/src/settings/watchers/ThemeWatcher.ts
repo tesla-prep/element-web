@@ -16,6 +16,7 @@ import { Action } from "../../dispatcher/actions";
 import { findHighContrastTheme, getCustomTheme } from "../../theme";
 import { type ActionPayload } from "../../dispatcher/payloads";
 import { SettingLevel } from "../SettingLevel";
+import { CIRQLE_THEME } from "../../cirqle/CirqleFeatures";
 
 export enum ThemeWatcherEvent {
     Change = "change",
@@ -85,6 +86,7 @@ export default class ThemeWatcher extends TypedEventEmitter<ThemeWatcherEvent, T
     }
 
     public getEffectiveTheme(): string {
+        if (CIRQLE_THEME) return CIRQLE_THEME; // CIRQLE: one look for every staff member
         // Dev note: Much of this logic is replicated in the AppearanceUserSettingsTab
 
         // If the user has specifically enabled the system matching option (excluding default),

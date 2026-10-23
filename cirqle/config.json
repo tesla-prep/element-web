@@ -1,0 +1,33 @@
+{
+    "default_server_config": {
+        "m.homeserver": {
+            "base_url": "https://matrix.cirqlecirqle.com",
+            "server_name": "matrix.cirqlecirqle.com"
+        }
+    },
+    "disable_custom_urls": true,
+    "disable_guests": true,
+    "disable_3pid_login": true,
+    "brand": "CIRQLE Messenger",
+    "show_labs_settings": false,
+    "sso_redirect_options": {
+        "immediate": true
+    },
+    "setting_defaults": {
+        "RoomList.showMessagePreview": true,
+        "RoomList.showSections": false,
+        "UIFeature.voip": false,
+        "UIFeature.widgets": false,
+        "UIFeature.locationSharing": false,
+        "UIFeature.feedback": false,
+        "UIFeature.registration": false,
+        "UIFeature.passwordReset": false,
+        "UIFeature.deactivate": false,
+        "UIFeature.shareQrCode": false,
+        "UIFeature.shareSocial": false,
+        "UIFeature.identityServer": false,
+        "UIFeature.thirdPartyId": false,
+        "UIFeature.advancedSettings": false,
+        "UIFeature.advancedEncryption": false
+    }
+}
