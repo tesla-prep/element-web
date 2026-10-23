@@ -48,6 +48,15 @@ export function isCirqleMessenger(): boolean {
     return SdkConfig.get().brand === CIRQLE_BRAND;
 }
 
+/**
+ * "Read" and "typing" reach the customer from the number (the relay bot passes
+ * staff's public read receipts and typing on), so every staff member sends them.
+ */
+export const CIRQLE_PRESENCE: Record<string, unknown> = {
+    sendReadReceipts: true,
+    sendTypingNotifications: true,
+};
+
 /** One language for every staff member: CIRQLE's own screens are in English. */
 export const CIRQLE_LANGUAGE = "en";
 

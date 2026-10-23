@@ -12,9 +12,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 // only and are not listed. Add member and Remove… are Element's own invite and
 // remove (kick), which the relay bot and the bridges carry out on WhatsApp and
 // Telegram; a channel has subscribers, not members, so it has no Add member.
-// Leave group… waits for the number itself to leave (decision 5, option B):
-// Element's own leave only takes the staff member out, and the relay bot puts
-// them back.
+// Leave group… takes the number itself out of a WhatsApp group (decision 5,
+// option B, CirqleLeaveGroup); a channel or a Telegram group has no Leave.
 
 import React, { type JSX, useContext } from "react";
 import { KnownMembership, type Room, type RoomMember } from "matrix-js-sdk/src/matrix";
@@ -35,9 +34,9 @@ import { chatKind, inboxesOf, networkOf, stripNetworkSuffix } from "./CirqleInbo
 import { CirqleChatActions } from "./CirqleContactInfo";
 import { ACCOUNT, ghostPhone } from "./CirqleMemberCard";
 import { useCirqleInboxes } from "./useCirqleChats";
+import { canLeaveCirqleGroup, leaveCirqleGroup } from "./CirqleLeaveGroup";
 
 const GHOST = /^@(whatsapp|telegram)_([^:]+):/;
-const SHOW_LEAVE = false;
 
 /** The people in the group on WhatsApp or Telegram: ghosts and our accounts, not staff. */
 export function groupPeople(members: RoomMember[]): RoomMember[] {
@@ -182,15 +181,15 @@ export function CirqleGroupInfo({ room }: { room: Room }): JSX.Element {
                 })}
             </div>
 
-            {SHOW_LEAVE && (
+            {canLeaveCirqleGroup(room) && (
                 <div className="cirqle_GroupInfo_card">
                     <button
                         type="button"
                         className="cirqle_GroupInfo_leave"
-                        onClick={() => dis.dispatch({ action: "leave_room", room_id: room.roomId })}
+                        onClick={() => void leaveCirqleGroup(client, room, own)}
                     >
                         <LeaveIcon />
-                        {kind === "channel" ? "Leave channel…" : "Leave group…"}
+                        Leave group…
                     </button>
                 </div>
             )}
