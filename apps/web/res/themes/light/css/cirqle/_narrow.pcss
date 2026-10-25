@@ -171,6 +171,48 @@ Element's resizable panels (the children of the panel group under
     .cirqle_Empty {
         display: none;
     }
+
+    /* Settings and Profile, opened from the list's menu, take the whole screen */
+    .mx_Dialog_border:has(> .mx_Dialog > .mx_UserSettingsDialog) {
+        position: fixed;
+        inset: 0;
+        box-sizing: border-box;
+        width: 100%;
+        height: 100%;
+        max-width: none;
+        max-height: none;
+        padding: 0;
+        border-radius: 0;
+    }
+
+    .mx_Dialog:has(> .mx_UserSettingsDialog) {
+        width: 100%;
+        max-width: none;
+        height: 100%;
+        max-height: none;
+        border-radius: 0;
+        padding: calc(16px + env(safe-area-inset-top, 0px)) calc(12px + env(safe-area-inset-right, 0px))
+            calc(12px + env(safe-area-inset-bottom, 0px)) calc(12px + env(safe-area-inset-left, 0px));
+    }
+
+    .mx_UserSettingsDialog.mx_Dialog_fixedWidth {
+        width: 100%;
+        max-width: none;
+        height: 100%;
+    }
+
+    .mx_UserSettingsDialog .mx_TabbedView .mx_SettingsTab {
+        min-width: 0;
+        padding-right: 2px;
+    }
+
+    .mx_UserSettingsDialog .mx_TabbedView_tabPanel {
+        min-width: 0;
+    }
+
+    .mx_UserSettingsDialog .mx_UserProfileSettings_profile_buttons {
+        flex-wrap: wrap;
+    }
 }
 
 /* Touch screens. Safari zooms into any field with text under 16 px and keeps the
