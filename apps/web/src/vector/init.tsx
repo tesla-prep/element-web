@@ -29,6 +29,7 @@ import { initRageshake, initRageshakeStore } from "./rageshakesetup";
 import { ModuleApi } from "../modules/Api.ts";
 import { type URLParams } from "./url_utils.ts";
 import { CIRQLE_LANGUAGE, isCirqleMessenger } from "../cirqle/CirqleFeatures";
+import { startCirqleMobile } from "../cirqle/CirqleMobile";
 
 export const rageshakePromise = initRageshake();
 
@@ -136,6 +137,7 @@ export async function loadApp(urlParams: URLParams): Promise<void> {
         window.matrixChat = matrixChat;
     }
     const app = await module.loadApp(urlParams, setWindowMatrixChat);
+    startCirqleMobile(); // CIRQLE: keyboard and long press on phones
     getRoot().render(app);
 }
 

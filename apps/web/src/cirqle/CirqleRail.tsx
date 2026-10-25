@@ -26,7 +26,7 @@ import QuestionDialog from "../components/views/dialogs/QuestionDialog";
 import { useMatrixClientContext } from "../contexts/MatrixClientContext";
 import { watchCirqleInviteRefusals } from "./CirqleInviteRefusals";
 
-function confirmSignOut(): void {
+export function confirmSignOut(): void {
     const { finished } = Modal.createDialog(QuestionDialog, {
         title: "Sign out…",
         description: "You will need to sign in again to read and answer chats.",

@@ -56,7 +56,12 @@ Hooks in upstream files (each one line or a small block):
 | `views/dialogs/UserSettingsDialog.tsx` | settings tabs staff need, a short Preferences (`cirqle/CirqleSettings.tsx`) |
 | `settings/tabs/user/HelpUserSettingsTab.tsx` | no access token |
 | `views/messages/MPollBody.tsx` | polls show votes, voting is on the phone |
-| `context_menus/MessageContextMenu.tsx` | no thread, Share, Copy link, Report, View source; "Delete for everyone" for our own messages (`cirqle/CirqleMessages.ts`) |
+| `context_menus/MessageContextMenu.tsx` | no thread, Share, Copy link, Report, View source; "Delete for everyone" for our own messages (`cirqle/CirqleMessages.ts`); a row of reactions on top and Copy for the whole text (`cirqle/CirqleMessageMenu.tsx`); the emoji picker it opens is a sheet on phones |
+| `SupportedBrowser.ts` | phones are a supported browser (`cirqle/CirqleMobile.ts`) |
+| `viewmodels/structures/ResizerViewModel.ts` | the chat list never collapses: no auto-collapse under 768 px, the saved `RoomList.isPanelCollapsed` ignored |
+| `viewmodels/room/timeline/event-tile/DisambiguatedProfileViewModel.ts` | a sender's name without the Matrix ID, even when two have the same name |
+| `vector/init.tsx` (second line) | on touch screens the app follows the keyboard and a long press opens a message's menu (`cirqle/CirqleMobile.ts`) |
+| `vector/index.html` | `interactive-widget=resizes-content` in the viewport |
 | `viewmodels/room/EventTileActionBarViewModel.ts` | hover bar without Reply in thread and Pin |
 | `views/dialogs/ConfirmRedactDialog.tsx` | "Delete for everyone?" without a reason |
 | `views/dialogs/InviteDialog.tsx` | Add member offers the contacts of the group's own number only (`cirqle/CirqleInviteRefusals.ts`) |
@@ -94,6 +99,22 @@ The relay bot also keeps, in each number's space:
 - `com.cirqle.team_messenger.contact_phones` `{ "phones": { "<chat's bridge id>":
   "+7…" } }`: customers' numbers WhatsApp hides behind LIDs, shown beside a
   private chat's name when another chat in the list has the same name.
+
+## Phones
+
+The same app on a phone, laid out like WhatsApp there (`_narrow.pcss`, `cirqle/CirqleMobile.ts`):
+
+- under 768 px, and on a phone turned sideways (a coarse pointer, under 500 px tall), the
+  list fills the screen and an open chat covers it, with a back arrow; a tablet keeps the
+  computer layout, and the list never collapses there;
+- the ⋮ menu of the list holds what the rail holds on a computer: New group, Channels,
+  Settings, Profile, Sign out;
+- every field has 16 px text on a touch screen (iOS zooms into smaller ones), and the app
+  is as tall as the visual viewport, so the keyboard raises the composer instead of
+  scrolling the page away;
+- a long press on a message opens its menu (reactions, Copy, Reply, Forward, Delete) as a
+  sheet at the bottom; the desktop hover bar does not show on a tap;
+- no "does not support this browser" on phones.
 
 ## Leave group
 

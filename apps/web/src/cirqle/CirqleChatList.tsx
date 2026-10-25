@@ -27,7 +27,22 @@ import RoomAvatar from "../components/views/avatars/RoomAvatar";
 import { CirqleNumberPicker } from "./CirqleNumberPicker";
 import { cirqleLastTimestamp } from "./CirqleActivity";
 import { chatPreview } from "./CirqlePreview";
-import { GroupIcon, KebabIcon, PencilIcon, PlusIcon, SearchIcon, SettingsIcon } from "./CirqleIcons";
+import {
+    ChannelIcon,
+    ChatsIcon,
+    GroupIcon,
+    KebabIcon,
+    LeaveIcon,
+    PencilIcon,
+    PlusIcon,
+    ProfileIcon,
+    SearchIcon,
+    SettingsIcon,
+} from "./CirqleIcons";
+import { confirmSignOut } from "./CirqleRail";
+import { useCirqlePhone } from "./CirqleMobile";
+import { UserTab } from "../components/views/dialogs/UserTab";
+import { type OpenToTabPayload } from "../dispatcher/payloads/OpenToTabPayload";
 import { contactPhone, type Inbox, numberLine, repeatedNames, stripNetworkSuffix } from "./CirqleInboxes";
 import { CirqleUiStore, type CirqleSection } from "./CirqleUiStore";
 import {
@@ -35,6 +50,7 @@ import {
     isUnreadChat,
     pickedInbox,
     sectionChips,
+    useCirqleHasChannels,
     useCirqleInboxes,
     useCirqleRooms,
 } from "./useCirqleChats";
@@ -122,6 +138,8 @@ export function CirqleChatList({ section }: { section: CirqleSection }): JSX.Ele
     const chip = chips.includes(pickedChip) ? pickedChip : "all";
     const [query, setQuery] = useState("");
     const [menuOpen, setMenuOpen] = useState(false);
+    const phone = useCirqlePhone();
+    const channels = useCirqleHasChannels();
     const [shown, setShown] = useState(PAGE);
     const { rooms, unread } = useCirqleRooms(inboxes, section, chip, query);
     const picked = pickedInbox(inboxes);
@@ -168,7 +186,31 @@ export function CirqleChatList({ section }: { section: CirqleSection }): JSX.Ele
                     }
                 >
                     <MenuItem Icon={GroupIcon} label="New group" onSelect={() => CirqleUiStore.openNewGroup()} />
+                    {/* A phone has no rail: what it holds is here, as in WhatsApp's menu */}
+                    {phone && section === "chats" && channels && (
+                        <MenuItem
+                            Icon={ChannelIcon}
+                            label="Channels"
+                            onSelect={() => CirqleUiStore.showSection("channels")}
+                        />
+                    )}
+                    {phone && section === "channels" && (
+                        <MenuItem Icon={ChatsIcon} label="Chats" onSelect={() => CirqleUiStore.showSection("chats")} />
+                    )}
                     <MenuItem Icon={SettingsIcon} label="Settings" onSelect={() => dis.fire(Action.ViewUserSettings)} />
+                    {phone && (
+                        <MenuItem
+                            Icon={ProfileIcon}
+                            label="Profile"
+                            onSelect={() =>
+                                dis.dispatch<OpenToTabPayload>({
+                                    action: Action.ViewUserSettings,
+                                    initialTabId: UserTab.Account,
+                                })
+                            }
+                        />
+                    )}
+                    {phone && <MenuItem Icon={LeaveIcon} label="Sign out…" kind="critical" onSelect={confirmSignOut} />}
                 </Menu>
             </div>
             <div className="cirqle_ChatList_search">
