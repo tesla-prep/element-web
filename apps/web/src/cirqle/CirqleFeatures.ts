@@ -48,6 +48,28 @@ export function isCirqleMessenger(): boolean {
     return SdkConfig.get().brand === CIRQLE_BRAND;
 }
 
+/** Web Push (CirqlePush): `cirqle_push` in config.json, filled in by cirqle/deploy.sh. */
+export interface CirqlePushConfig {
+    /** Sygnal behind the homeserver's nginx: https://matrix.cirqlecirqle.com/_matrix/push/v1/notify */
+    gatewayUrl: string;
+    appId: string;
+    /** The VAPID public key, base64url, from the server's data/sygnal/vapid_public_key.txt */
+    vapidPublicKey: string;
+    /** Message text in notifications (lock screens included), or just "New message" */
+    showMessageText: boolean;
+}
+
+/** Without the server's key (or outside CIRQLE) there is no push: every part of it hides. */
+export function cirqlePushConfig(): CirqlePushConfig | undefined {
+    if (!isCirqleMessenger()) return undefined;
+    const raw = (SdkConfig.get() as { cirqle_push?: Record<string, unknown> }).cirqle_push;
+    const { gateway_url: gatewayUrl, app_id: appId, vapid_public_key: vapidPublicKey } = raw ?? {};
+    if (typeof gatewayUrl !== "string" || typeof appId !== "string" || typeof vapidPublicKey !== "string")
+        return undefined;
+    if (!gatewayUrl || !appId || !vapidPublicKey) return undefined;
+    return { gatewayUrl, appId, vapidPublicKey, showMessageText: raw?.show_message_text !== false };
+}
+
 /**
  * "Read" and "typing" reach the customer from the number (the relay bot passes
  * staff's public read receipts and typing on), so every staff member sends them.
@@ -79,6 +101,8 @@ export const CIRQLE_MOBILE_GUIDE_REDIRECT = false;
 export const CIRQLE_THEME = "light";
 
 export function isCirqleHiddenToast(key: string): boolean {
+    // Element's "Enable desktop notifications" turns on notifications for an open tab only; ours (CirqlePush) take its place
+    if (key === "desktopnotifications" && cirqlePushConfig()) return true;
     return HIDDEN_TOAST_PREFIXES.some((prefix) => key.startsWith(prefix));
 }
 

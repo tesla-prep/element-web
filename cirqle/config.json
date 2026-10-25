@@ -9,6 +9,12 @@
     "disable_guests": true,
     "disable_3pid_login": true,
     "brand": "CIRQLE Messenger",
+    "cirqle_push": {
+        "gateway_url": "https://matrix.cirqlecirqle.com/_matrix/push/v1/notify",
+        "app_id": "com.cirqlecirqle.chat.web",
+        "vapid_public_key": "",
+        "show_message_text": true
+    },
     "show_labs_settings": false,
     "sso_redirect_options": {
         "immediate": true

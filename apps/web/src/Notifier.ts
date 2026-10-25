@@ -47,6 +47,7 @@ import ToastStore from "./stores/ToastStore";
 import { stripPlainReply } from "./utils/Reply";
 import { BackgroundAudio } from "./audio/BackgroundAudio";
 import { type MatrixDispatcher } from "./dispatcher/dispatcher.ts";
+import { isCirqlePushOn } from "./cirqle/CirqlePush";
 
 /*
  * Dispatches:
@@ -570,6 +571,7 @@ export default class Notifier extends TypedEventEmitter<keyof EmittedEvents, Emi
 
         if (actions?.notify) {
             this.performCustomEventHandling(ev);
+            if (isCirqlePushOn()) return; // CIRQLE: this device gets Web Push, the service worker shows it
 
             const store = this.sdkContext.roomViewStore;
             const isViewingRoom = store.getRoomId() === room.roomId;

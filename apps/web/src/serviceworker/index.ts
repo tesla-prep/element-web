@@ -8,6 +8,7 @@ Please see LICENSE files in the repository root for full details.
 import { idbLoad } from "../utils/StorageAccess";
 import { ACCESS_TOKEN_NAME, tryDecryptToken } from "../utils/tokens/tokens";
 import { buildAndEncodePickleKey } from "../utils/tokens/pickling";
+import { type CirqleWorkerScope, installCirqlePush } from "../cirqle/CirqleServiceWorker";
 
 const serverSupportMap: {
     [serverUrl: string]: {
@@ -21,6 +22,8 @@ global.addEventListener("install", (event) => {
     // @ts-expect-error - service worker types are not available. See 'fetch' event handler.
     event.waitUntil(skipWaiting());
 });
+
+installCirqlePush(global as unknown as CirqleWorkerScope); // CIRQLE: Web Push notifications
 
 global.addEventListener("activate", (event) => {
     // We force all clients to be under our control, immediately. This could be old tabs.

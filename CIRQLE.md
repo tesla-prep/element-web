@@ -72,6 +72,9 @@ Hooks in upstream files (each one line or a small block):
 | `views/rooms/EventTile/ReactionsRowAdapter.tsx` | our number's reaction counted once, its latest shown (`cirqle/CirqleReactions.ts`) |
 | `emojipicker/ReactionPicker.tsx`, `reactions/ReactionsRowButtonViewModel.ts` | a new reaction takes our previous one back, as WhatsApp replaces it |
 | `autocomplete/UserProvider.tsx` | @ offers the customers, not colleagues, service users or our own number |
+| `serviceworker/index.ts` | Web Push: shows customers' messages, opens the chat on a click (`cirqle/CirqleServiceWorker.ts`) |
+| `Notifier.ts` | no Element notification or sound while this device gets Web Push: the service worker shows it |
+| `Lifecycle.ts` | sign out drops this device's push subscription (`cirqle/CirqlePush.ts`) |
 | `views/rooms/EventTile.tsx` | under a message the network refused: "Not delivered to WhatsApp: …" (`com.beeper.message_send_status`, `cirqle/CirqleDelivery.tsx`); also when our reaction did not get through ("Reaction 🤟 not delivered: Telegram takes only its standard reactions") |
 | `emojipicker/ReactionPicker.tsx`, `views/rooms/EventTile/ReactionsRowAdapter.tsx` | reactions limited to what the network takes (`allowed_reactions` in `com.beeper.room_features`): Telegram's standard set; a customer's other emoji can't be added to |
 | `packages/shared-components/.../EmojiPicker.tsx`, `QuickReactions.tsx`, `emojipicker/EmojiPickerWithRecents.tsx` | `emojiFilter` prop: only the emoji it lets through are offered (generic, used by the line above) |
@@ -166,6 +169,37 @@ WhatsApp; low priority chats still go to the bottom, as in stock Element.
 The line under a chat's name is that same message (`CirqlePreview`): "You: " for
 our own, a colleague's first name for theirs, the sender's short name in groups,
 nothing in a private chat, and an icon and a word for photos, voice and files.
+
+## Notifications (Web Push)
+
+Customers' new messages reach a device even with CIRQLE Messenger closed, on
+phones from the Home Screen (iPhone: Share → Add to Home Screen first). Settings →
+Notifications has "Notifications on this device" (`cirqle/CirqleNotificationsTab.tsx`);
+a toast offers it once ("Get new messages on this phone", in place of Element's
+"Enable desktop notifications"). The browser asks for the permission only on that
+click.
+
+```text
+CIRQLE Messenger ── PushManager.subscribe(VAPID key) ──> browser's push service (FCM, Apple, Mozilla, Windows)
+   └─ POST /pushers/set (pushkey = p256dh; endpoint, auth, events_only) ──> tuwunel
+tuwunel ── customer's message ──> matrix.cirqlecirqle.com/_matrix/push/v1/notify ── nginx ──> Sygnal ──> push service ──> sw.js
+```
+
+- `cirqle_push` in `cirqle/config.json`: gateway, app id, `show_message_text` (false: "New
+  message" only) and the VAPID public key, which `cirqle/deploy.sh` reads from the server
+  (`data/sygnal/vapid_public_key.txt`, made by cirqle-agents `deploy/team-messenger/sygnal-keys.sh`).
+  Without the key every part of it hides and Element's own Notifications tab stays.
+- Who notifies is the account's push rules (`cirqle/CirqlePushRules.ts`), which the client
+  keeps: `com.cirqle.customer.*` (underride) notify for bridge ghosts' messages, stickers
+  and polls, `com.cirqle.ours` after them keeps everyone else quiet (staff, service users,
+  bots), and `com.cirqle.own.<ghost>` (override) the numbers' own ghosts. Element's mutes,
+  notices, edits and reactions rules still come first. The homeserver counts unread
+  messages with the same rules, so a chat a colleague or the number answered is not unread.
+- The service worker has no client state: the app keeps a chat map (number, group) in
+  IndexedDB `cirqle-push`. One notification per chat (tag = room id) with its last four
+  messages and "via Main #1 · WhatsApp"; none while that chat is open in the window in
+  front. A chat's notifications close once it is read anywhere, on every device where
+  the app is running (a closed app cannot hear of it).
 
 ## Build and deploy
 
