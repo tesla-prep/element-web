@@ -116,6 +116,7 @@ import { shouldHideEventTile } from "../../../viewmodels/room/timeline/event-til
 import { UnreadNotificationBadgeViewModel } from "../../../viewmodels/room/notification-badge/UnreadNotificationBadgeViewModel";
 import { hideCustomerName, isOurSide } from "../../../cirqle/CirqleTimeline";
 import { CirqleDeliveryNotice } from "../../../cirqle/CirqleDelivery";
+import { CirqleSenderAvatar, showsSenderAvatar } from "../../../cirqle/CirqleSenderAvatar";
 
 /** Relation lookup type retained for EventTile consumers. */
 export type { GetRelationsForEvent } from "../../../viewmodels/room/timeline/event-tile/reactions/EventTileReactionState";
@@ -1195,7 +1196,15 @@ export class UnwrappedEventTile extends React.Component<EventTileProps, IState> 
                 line={eventTileRenderState.line}
                 classNames={eventTileRenderState.classNames}
                 slots={{
-                    avatar,
+                    avatar: showsSenderAvatar(this.props.mxEvent) ? ( // CIRQLE: senders' avatars in groups
+                        <CirqleSenderAvatar
+                            member={avatarMember}
+                            event={this.props.mxEvent}
+                            continuation={this.props.continuation}
+                        />
+                    ) : (
+                        avatar
+                    ),
                     sender,
                     // CIRQLE: under a message the network refused, why
                     body: (

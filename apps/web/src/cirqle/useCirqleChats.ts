@@ -5,7 +5,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 */
 
 // Element's own room list store, read the CIRQLE way: one list of every chat,
-// newest first, narrowed by the picked number and the chips. A number's chats
+// newest first, narrowed by the picked numbers and the chips. A number's chats
 // are the ones its space lists, not Element's space (which also pulls in private
 // chats with anyone in the space), so the list, the chips, the picker and the
 // rail count the same chats.
@@ -24,7 +24,7 @@ import {
 import { getMarkedUnreadState } from "../utils/notifications";
 import { useMatrixClientContext } from "../contexts/MatrixClientContext";
 import { chatKind, getInboxes, type Inbox, networkOf, numberChats } from "./CirqleInboxes";
-import { type CirqleSection } from "./CirqleUiStore";
+import { CIRQLE_UI_CHANGED, type CirqleSection, CirqleUiStore } from "./CirqleUiStore";
 
 export type CirqleChip = "all" | "unread" | "favourites" | "groups";
 
@@ -41,7 +41,7 @@ export function sectionChips(section: CirqleSection): CirqleChip[] {
     return section === "channels" ? ["all", "unread", "favourites"] : ["all", "unread", "favourites", "groups"];
 }
 
-/** Re-render whenever the room list, the spaces or the unread counts change. */
+/** Re-render whenever the room list, the spaces, the picked numbers or the unread counts change. */
 function useListVersion(): number {
     const [version, setVersion] = useState(0);
     useEffect(() => {
@@ -50,11 +50,13 @@ function useListVersion(): number {
         SDKContextClass.instance.spaceStore.on(UPDATE_TOP_LEVEL_SPACES, bump);
         SDKContextClass.instance.spaceStore.on(UPDATE_SELECTED_SPACE, bump);
         RoomNotificationStateStore.instance.on(UPDATE_STATUS_INDICATOR, bump);
+        CirqleUiStore.on(CIRQLE_UI_CHANGED, bump);
         return () => {
             RoomListStoreV3.instance.off(LISTS_UPDATE_EVENT, bump);
             SDKContextClass.instance.spaceStore.off(UPDATE_TOP_LEVEL_SPACES, bump);
             SDKContextClass.instance.spaceStore.off(UPDATE_SELECTED_SPACE, bump);
             RoomNotificationStateStore.instance.off(UPDATE_STATUS_INDICATOR, bump);
+            CirqleUiStore.off(CIRQLE_UI_CHANGED, bump);
         };
     }, []);
     return version;
@@ -78,21 +80,21 @@ function inSection(room: Room, section: CirqleSection): boolean {
     return (chatKind(room) === "channel") === (section === "channels");
 }
 
-/** The number picked in the number picker; undefined is All numbers. */
-export function pickedInbox(inboxes: Inbox[]): Inbox | undefined {
-    const active = SDKContextClass.instance.spaceStore.activeSpace;
-    return inboxes.find((inbox) => inbox.spaceId === active);
+/** The numbers picked in the number picker; none is All numbers. */
+export function pickedInboxes(inboxes: Inbox[]): Inbox[] {
+    const picked = CirqleUiStore.pickedNumbers;
+    return inboxes.filter((inbox) => picked.includes(inbox.spaceId));
 }
 
-/** A number's chats (All numbers when undefined) in a section, newest first. */
-function sectionChats(inboxes: Inbox[], picked: Inbox | undefined, section: CirqleSection): Room[] {
+/** The picked numbers' chats (All numbers when none) in a section, newest first. */
+function sectionChats(inboxes: Inbox[], picked: Inbox[], section: CirqleSection): Room[] {
     return numberChats(RoomListStoreV3.instance.getSortedRooms(), inboxes, picked).filter((room) =>
         inSection(room, section),
     );
 }
 
-/** Whether a number (any connected number when undefined) has a channel: the rail shows Channels only then. */
-export function hasChannels(rooms: Room[], inboxes: Inbox[], picked: Inbox | undefined): boolean {
+/** Whether the picked numbers (any connected number when none) have a channel: the rail shows Channels only then. */
+export function hasChannels(rooms: Room[], inboxes: Inbox[], picked: Inbox[]): boolean {
     return numberChats(rooms, inboxes, picked).some((room) => inSection(room, "channels"));
 }
 
@@ -101,15 +103,15 @@ export function useCirqleHasChannels(): boolean {
     const version = useListVersion();
     const read = useCallback(() => {
         const inboxes = getInboxes(client);
-        return hasChannels(RoomListStoreV3.instance.getSortedRooms(), inboxes, pickedInbox(inboxes));
+        return hasChannels(RoomListStoreV3.instance.getSortedRooms(), inboxes, pickedInboxes(inboxes));
     }, [client]);
     const [has, setHas] = useState(read);
     useEffect(() => setHas(read()), [read, version]);
     return has;
 }
 
-/** Unread chats of a number (All numbers when undefined) in a section. */
-export function countUnread(inboxes: Inbox[], picked: Inbox | undefined, section: CirqleSection): number {
+/** Unread chats of the given numbers (All numbers when none) in a section. */
+export function countUnread(inboxes: Inbox[], picked: Inbox[], section: CirqleSection): number {
     return sectionChats(inboxes, picked, section).filter(isUnreadChat).length;
 }
 
@@ -117,7 +119,7 @@ export function countUnread(inboxes: Inbox[], picked: Inbox | undefined, section
 export function useCirqleUnreadChats(): number {
     const client = useMatrixClientContext();
     const version = useListVersion();
-    const count = useCallback(() => countUnread(getInboxes(client), undefined, "chats"), [client]);
+    const count = useCallback(() => countUnread(getInboxes(client), [], "chats"), [client]);
     const [unread, setUnread] = useState(count);
     useEffect(() => setUnread(count()), [count, version]);
     return unread;
@@ -125,14 +127,14 @@ export function useCirqleUnreadChats(): number {
 
 export interface CirqleRooms {
     rooms: Room[];
-    /** Unread chats in the picked number, for the Unread chip */
+    /** Unread chats in the picked numbers, for the Unread chip */
     unread: number;
 }
 
 export function useCirqleRooms(inboxes: Inbox[], section: CirqleSection, chip: CirqleChip, query: string): CirqleRooms {
     const version = useListVersion();
     const read = useCallback((): CirqleRooms => {
-        const all = sectionChats(inboxes, pickedInbox(inboxes), section);
+        const all = sectionChats(inboxes, pickedInboxes(inboxes), section);
         const shown = all.filter(CHIP_MATCHES[chip]);
         const needle = query.trim().toLocaleLowerCase();
         const digits = needle.replace(/[^\d]/g, "");

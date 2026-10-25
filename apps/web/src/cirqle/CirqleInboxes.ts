@@ -9,9 +9,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 // Every connected WhatsApp number or Telegram account ("inbox") has a space the
 // bridge made ("personal filtering space", renamed by the relay bot to
 // "WhatsApp · Main #1"); its topic ends with the number. A chat belongs to the
-// inboxes whose spaces list it as a child, or list the WhatsApp community it is in.
+// inboxes whose spaces list it as a child, or list the WhatsApp community it is in,
+// and a group to every inbox whose account is in it: the bridge lists a
+// community's groups only under the community, which a number that is in a
+// group but not in the community itself (its announcements, "CIRQLE | Frisco")
+// never gets.
 
-import { EventType, type MatrixClient, type Room } from "matrix-js-sdk/src/matrix";
+import { EventType, type MatrixClient, type Room, type RoomMember } from "matrix-js-sdk/src/matrix";
 
 import DMRoomMap from "../utils/DMRoomMap";
 import { isLocalRoom } from "../utils/localRoom/isLocalRoom";
@@ -28,6 +32,8 @@ export interface Inbox {
     phone?: string;
     /** "wa-01d17870": the relay bot's name for the inbox, from its account user in the space */
     accountName?: string;
+    /** "@account_whatsapp_wa-01d17870:server": the account user, a member of every chat of the number */
+    accountUserId?: string;
     childIds: Set<string>;
     /** False once the relay bot says the number's bridge login is gone (no phone behind it) */
     connected: boolean;
@@ -138,10 +144,10 @@ export function getInboxes(client: MatrixClient): Inbox[] {
                 if (typeof phone === "string") contactPhones.set(id, phone);
             }
         }
-        const account = room
+        const accountUserId = room
             .getJoinedMembers()
-            .map((member) => member.userId.match(/^@account_(?:whatsapp|telegram)_([^:]+):/)?.[1])
-            .find(Boolean);
+            .map((member) => member.userId)
+            .find((userId) => ACCOUNT_USER.test(userId));
         const receiver = bridge.channel?.["fi.mau.receiver"];
         const listed = room.currentState.getStateEvents(NUMBER_USERS_EVENT, "")?.getContent()?.user_ids;
         const ownUsers = new Set<string>(Array.isArray(listed) ? listed.filter((id) => typeof id === "string") : []);
@@ -152,13 +158,15 @@ export function getInboxes(client: MatrixClient): Inbox[] {
             network,
             label,
             phone: phoneMatch ? formatPhone(phoneMatch[1]) : undefined,
-            accountName: account,
+            accountName: accountUserId?.match(ACCOUNT_USER)?.[1],
+            accountUserId,
             childIds,
             connected: room.currentState.getStateEvents(INBOX_STATE_EVENT, "")?.getContent()?.connected !== false,
             contactPhones,
             ownUsers,
         });
     }
+    addGroupsOfAccounts(client, inboxes);
     // WhatsApp numbers first, then Telegram accounts, each by name
     return inboxes.sort((a, b) =>
         a.network === b.network ? a.label.localeCompare(b.label) : a.network === "whatsapp" ? -1 : 1,
@@ -186,18 +194,37 @@ export function privateChatContact(room: Room): string | undefined {
     return ghost ? `@${network}_${ghost}:${server}` : undefined;
 }
 
+const ACCOUNT_USER = /^@account_(?:whatsapp|telegram)_([^:]+):/;
+
+/** Every bridged group a number's account is in is that number's, listed under its community or not. */
+function addGroupsOfAccounts(client: MatrixClient, inboxes: Inbox[]): void {
+    const accounts = inboxes.filter((inbox) => inbox.accountUserId);
+    if (!accounts.length) return;
+    for (const room of client.getRooms()) {
+        if (room.isSpaceRoom() || room.getMyMembership() !== "join") continue;
+        const bridge = bridgeContent(room);
+        const network = networkOf(room);
+        if (!bridge || !network || bridge["com.beeper.room_type"] === "dm") continue;
+        for (const inbox of accounts) {
+            if (inbox.network !== network || inbox.childIds.has(room.roomId)) continue;
+            if (room.getMember(inbox.accountUserId!)?.membership === "join") inbox.childIds.add(room.roomId);
+        }
+    }
+}
+
 export function inboxesOf(room: Room, inboxes: Inbox[]): Inbox[] {
     return inboxes.filter((inbox) => inbox.childIds.has(room.roomId));
 }
 
 /**
- * The chats a picked number shows: only its own. All numbers is every connected
- * number's chats, and the chats no number lists. WhatsApp's Status never shows.
+ * The chats the picked numbers show: only their own. None picked is All numbers:
+ * every connected number's chats, and the chats no number lists. WhatsApp's
+ * Status never shows.
  */
-export function numberChats(rooms: Room[], inboxes: Inbox[], picked: Inbox | undefined): Room[] {
+export function numberChats(rooms: Room[], inboxes: Inbox[], picked: Inbox[]): Room[] {
     return rooms.filter((room) => {
         if (isStatusBroadcast(room)) return false;
-        if (picked) return picked.childIds.has(room.roomId);
+        if (picked.length) return picked.some((inbox) => inbox.childIds.has(room.roomId));
         const own = inboxesOf(room, inboxes);
         return own.length === 0 || own.some((inbox) => inbox.connected);
     });
@@ -271,6 +298,14 @@ export function contactNumber(room: Room): string | undefined {
     }
     const fromName = room.name.match(/\+\d{7,15}/);
     return fromName ? formatPhone(fromName[0]) : undefined;
+}
+
+/**
+ * Someone's name without Element's "(@whatsapp_lid-…:server)", which it adds when
+ * two people share a name: a bridge's Matrix ID means nothing to staff.
+ */
+export function memberName(member: RoomMember): string {
+    return member.rawDisplayName && member.rawDisplayName !== member.userId ? member.rawDisplayName : member.name;
 }
 
 /**

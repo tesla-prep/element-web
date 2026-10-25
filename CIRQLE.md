@@ -35,13 +35,15 @@ Hooks in upstream files (each one line or a small block):
 | `stores/room-list-v3/skip-list/sorters/RecencySorter.ts` | muted chats keep their place by recency |
 | `stores/ToastStore.ts` | no key backup, verification or analytics toasts |
 | `customisations/helpers/UIComponents.ts` | no room directory, integrations, space creation |
-| `shouldHideEvent.ts` | room state events (joins, renames) hidden, tombstones kept |
+| `shouldHideEvent.ts` | room state events (joins, renames) hidden, tombstones kept; messages a staff member deleted "for me" hidden (`cirqle/CirqleMessages.ts`) |
+| `structures/TimelinePanel.tsx` | the timeline redraws when a message is deleted "for me" |
+| `hooks/usePermalink.ts` | a mention or "In reply to" pill names the person without their Matrix ID |
 | `structures/LoggedInView.tsx` | rail in place of the space bar, list 360 px |
 | `structures/LeftPanel.tsx` | chat list in place of the room list |
 | `structures/HomePage.tsx` | empty side |
 | `structures/RightPanel.tsx` | Contact info and Group info for bridged chats in place of the room summary and People; the member card in place of user info everywhere (`cirqle/CirqleRightPanel.tsx`) |
 | `views/rooms/RoomHeader/RoomHeader.tsx` | name without "(WA)", subtitle, back arrow, search and menu |
-| `views/rooms/EventTile.tsx` | staff messages and the number's own ghost (what the owner sends from the phone) on our side; customer name hidden in private chats |
+| `views/rooms/EventTile.tsx` | staff messages and the number's own ghost (what the owner sends from the phone) on our side; customer name hidden in private chats; in groups the sender's avatar beside the first bubble of a run, which opens their card (`cirqle/CirqleSenderAvatar.tsx`) |
 | `views/rooms/MessageComposerButtons.tsx`, `views/rooms/MessageComposer.tsx` | microphone beside the input, on phones too |
 | `views/rooms/VoiceRecordComposerTile.tsx` | recording a voice message takes the whole row, WhatsApp Web style: delete, red dot and time, waveform, pause; paused, it plays back and continues (`cirqle/CirqleVoiceRecorder.tsx`) |
 | `audio/VoiceRecording.ts`, `audio/VoiceMessageRecording.ts` | pause and resume: the encoder flushes and the audio context is suspended, so the clock and the length stand still |
@@ -57,7 +59,7 @@ Hooks in upstream files (each one line or a small block):
 | `views/dialogs/UserSettingsDialog.tsx` | settings tabs staff need, a short Preferences (`cirqle/CirqleSettings.tsx`) |
 | `settings/tabs/user/HelpUserSettingsTab.tsx` | no access token |
 | `views/messages/MPollBody.tsx` | polls show votes, voting is on the phone |
-| `context_menus/MessageContextMenu.tsx` | no thread, Share, Copy link, Report, View source; "Delete for everyone" for our own messages (`cirqle/CirqleMessages.ts`); a row of reactions on top and Copy for the whole text (`cirqle/CirqleMessageMenu.tsx`); the emoji picker it opens is a sheet on phones |
+| `context_menus/MessageContextMenu.tsx` | no thread, Share, Copy link, Report, View source; "Delete for everyone" for our own messages, "Delete" for anyone else's with WhatsApp's "Delete for everyone" (in a group where our number is an admin and staff may redact) or "Delete for me" (`cirqle/CirqleMessages.ts`, `cirqle/CirqleDeleteDialog.tsx`); a row of reactions on top and Copy for the whole text (`cirqle/CirqleMessageMenu.tsx`); the emoji picker it opens is a sheet on phones |
 | `SupportedBrowser.ts` | phones are a supported browser (`cirqle/CirqleMobile.ts`) |
 | `viewmodels/structures/ResizerViewModel.ts` | the chat list never collapses: no auto-collapse under 768 px, the saved `RoomList.isPanelCollapsed` ignored |
 | `viewmodels/room/timeline/event-tile/DisambiguatedProfileViewModel.ts` | a sender's name without the Matrix ID, even when two have the same name |
@@ -88,11 +90,15 @@ still test stock Element.
 Each connected WhatsApp number or Telegram account has the bridge's personal
 filtering space, renamed by the relay bot "WhatsApp · Main #1"; its topic ends
 with the number and the account user `@account_<bridge>_<name>` is a member.
-The number picker makes that space Element's active space ("All numbers" is
-Home), but the list reads the chats that space lists itself, plus the groups of a
-WhatsApp community listed in it, not Element's space, which also pulls in private
-chats with anyone in the space. A chat's number line names the spaces that list
-it. WhatsApp's Status (`status@broadcast`) is never a chat.
+The number picker picks one number, or several with the round ticks ("3 numbers";
+kept in this browser as `cirqle_picked_numbers`); one picked number is also
+Element's active space, several or none is Home ("All numbers"). The list reads
+the chats each picked space lists itself, plus the groups of a WhatsApp community
+listed in it, plus every bridged group the number's account user is in (a number
+in a community's announcements, "CIRQLE | Frisco", but not in the community
+itself never gets that group in its space); not Element's space, which also
+pulls in private chats with anyone in the space. A chat's number line names the
+numbers it belongs to. WhatsApp's Status (`status@broadcast`) is never a chat.
 
 The relay bot also keeps, in each number's space:
 
@@ -144,6 +150,36 @@ Leave group… in Group info (WhatsApp groups only) takes the number itself out 
 the group, for everyone at CIRQLE, after a confirmation: the relay bot's
 `POST /_matrix/client/unstable/com.cirqle/leave_group` (`cirqle/CirqleLeaveGroup.ts`).
 It needs that endpoint deployed (cirqle-agents#174) before this client.
+
+## Group admins and members
+
+Group info marks WhatsApp's admins "Group admin" (power level 50, the creator 75).
+Where our number is an admin, each member has a menu, as on WhatsApp: Make group
+admin or Dismiss as admin (WhatsApp groups; not for the creator or our own
+numbers) and Remove. Make and Dismiss go through the relay bot's
+`POST /_matrix/client/unstable/com.cirqle/group_admin` `{room_id, user_id, admin}`
+(`cirqle/CirqleGroupAdmin.ts`), which has our bridge build promote or demote the
+person on WhatsApp (cirqle-agents#180, tesla-prep/mautrix-whatsapp#5); before
+that is deployed the client says the server needs an update. Matrix power levels
+can't do it: an admin's 50 may not lower another admin's 50. A member opens their
+card. Our number's own ghost (what its phone sends as) is not listed twice.
+
+## Deleting someone else's message
+
+"Delete" on a customer's or colleague's message asks, as WhatsApp does: Delete for
+everyone, only in a group where our number is an admin, within the network's time
+limit, and only when the staff member's power level lets them redact (the relay
+bot raises staff there; the bridge then deletes it as the admin), or Delete for me,
+which hides it from this staff member alone, in every window: room account data
+`com.cirqle.hidden_events` `{event_ids}`, the latest 500 per chat. Our own messages
+keep "Delete for everyone".
+
+## Channels
+
+The rail shows Channels while a picked number has one. New channel (⋮, or ✎ inside
+Channels) asks for the WhatsApp number and the name, and creates a public room in
+that number's space, which the relay bot answers with the real channel; WhatsApp's
+refusal on numbers that can't have channels is shown as the bot words it.
 
 ## What the networks refuse
 

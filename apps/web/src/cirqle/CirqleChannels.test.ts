@@ -86,7 +86,7 @@ describe("Channels on the rail", () => {
         ]);
     });
 
-    const inbox = (label: string) => getInboxes(client).find((i) => i.label === label);
+    const inbox = (label: string) => getInboxes(client).filter((i) => i.label === label);
 
     it("shows Channels only for a number that has a channel", () => {
         const inboxes = getInboxes(client);
@@ -95,7 +95,7 @@ describe("Channels on the rail", () => {
     });
 
     it("under All numbers, counts the channels of connected numbers only", () => {
-        expect(hasChannels(rooms, getInboxes(client), undefined)).toBe(false);
+        expect(hasChannels(rooms, getInboxes(client), [])).toBe(false);
 
         setRooms([
             ...rooms.filter((room) => room.roomId !== "!slava:server"),
@@ -105,7 +105,7 @@ describe("Channels on the rail", () => {
             ]),
             mkRoom(client, "!slava-news:server", "Deals", [bridge({ id: "120363000000000001@newsletter" })]),
         ]);
-        expect(hasChannels(rooms, getInboxes(client), undefined)).toBe(true);
+        expect(hasChannels(rooms, getInboxes(client), [])).toBe(true);
     });
 
     it("has no Groups chip inside Channels", () => {

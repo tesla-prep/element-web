@@ -71,9 +71,29 @@ slots by their data-testid.
     --event-tile-bubble-line-margin-inline-end: 0px;
 }
 
-/* No avatars beside bubbles, as on WhatsApp */
-[class*="_layoutBubble_"] > [data-testid="event-tile-slot-avatar"] {
+/* No avatars beside bubbles, as on WhatsApp, except senders' in groups
+   (CirqleSenderAvatar): beside the first bubble of a run, and the run keeps its indent */
+[class*="_layoutBubble_"] > [data-testid="event-tile-slot-avatar"]:not(:has(.cirqle_SenderAvatar:not(.cirqle_SenderAvatar_run))) {
     display: none;
+}
+
+[class*="_layoutBubble_"]:has(> [data-testid="event-tile-slot-avatar"] .cirqle_SenderAvatar) {
+    --event-tile-bubble-margin-inline-start: max(56px, calc(5% + 40px));
+}
+
+[class*="_layoutBubble_"] > [data-testid="event-tile-slot-avatar"]:has(.cirqle_SenderAvatar) {
+    inset-block-start: 0;
+    inset-inline-start: -42px;
+    border: 0;
+}
+
+[class*="_layoutBubble_"] > [data-testid="event-tile-slot-avatar"]:has(.cirqle_SenderAvatar) * {
+    box-shadow: none;
+}
+
+.cirqle_SenderAvatar {
+    display: block;
+    cursor: pointer;
 }
 
 [class*="_layoutBubble_"] > [data-testid="event-tile-line"] {

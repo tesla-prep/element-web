@@ -443,25 +443,80 @@ Rail, chat list and number picker (concept artboards Main, Empty, NumberPicker).
     gap: 2px;
 }
 
+/* A row: the number (picks only it) and its round tick (adds it to the pick or takes it out) */
+.cirqle_NumberPicker_item {
+    display: flex;
+    align-items: center;
+    border-radius: 10px;
+    background: #ffffff;
+}
+
+.cirqle_NumberPicker_item:hover {
+    background: #f7f6f2;
+}
+
+.cirqle_NumberPicker_item[aria-selected="true"] {
+    background: var(--cirqle-green-selected);
+}
+
 .cirqle_NumberPicker_option {
+    flex: 1 1 auto;
+    min-width: 0;
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 10px;
+    padding: 10px 6px 10px 10px;
     border: 0;
     border-radius: 10px;
-    background: #ffffff;
+    background: transparent;
     font: inherit;
     text-align: left;
     cursor: pointer;
 }
 
-.cirqle_NumberPicker_option:hover {
-    background: #f7f6f2;
+.cirqle_NumberPicker_tick {
+    position: relative;
+    flex: 0 0 40px;
+    height: 40px;
+    margin-right: 4px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
 }
 
-.cirqle_NumberPicker_option[aria-selected="true"] {
-    background: var(--cirqle-green-selected);
+/* The round tick itself; the button around it is a finger-sized target */
+.cirqle_NumberPicker_tick::before {
+    content: "";
+    position: absolute;
+    inset: 9px;
+    box-sizing: border-box;
+    border-radius: 50%;
+    border: 2px solid var(--cirqle-ink-3);
+    background: #ffffff;
+}
+
+.cirqle_NumberPicker_tick > svg {
+    position: relative;
+}
+
+.cirqle_NumberPicker_tick_on::before {
+    border-color: var(--cirqle-green);
+    background: var(--cirqle-green);
+}
+
+/* All numbers has a plain check, not a tick: it is "none picked" */
+.cirqle_NumberPicker_tick_all {
+    color: var(--cirqle-green);
+    cursor: default;
+}
+
+.cirqle_NumberPicker_tick_all::before {
+    content: none;
 }
 
 .cirqle_NumberPicker_icon {
@@ -516,15 +571,6 @@ Rail, chat list and number picker (concept artboards Main, Empty, NumberPicker).
     margin-left: 6px;
     font-weight: 600;
     color: var(--cirqle-danger);
-}
-
-.cirqle_NumberPicker_check {
-    flex: 0 0 18px;
-    height: 18px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--cirqle-green);
 }
 
 .cirqle_NumberPicker_count {
