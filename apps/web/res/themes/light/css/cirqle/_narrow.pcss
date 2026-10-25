@@ -301,3 +301,18 @@ Element's resizable panels (the children of the panel group under
         display: none;
     }
 }
+
+/* Installed on the home screen (viewport-fit=cover in index.html): the app keeps
+   clear of the notch, the home indicator and, on a phone turned sideways, the
+   rounded corners; the strips are the app's white. With the keyboard up, the
+   home indicator is under it, so nothing is kept below the composer. */
+#matrixchat {
+    box-sizing: border-box;
+    padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px)
+        env(safe-area-inset-left, 0px);
+    background: #ffffff;
+}
+
+.cirqle_keyboard #matrixchat {
+    padding-bottom: 0;
+}
