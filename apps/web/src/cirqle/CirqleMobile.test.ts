@@ -102,11 +102,21 @@ describe("CIRQLE on phones", () => {
 
     it("sizes the app to what the keyboard leaves, and not while zoomed in", () => {
         const root = document.createElement("div");
-        syncCirqleViewport(root, { height: 412.4, offsetTop: 120, scale: 1 });
+        const tallest = new Map<number, number>();
+        syncCirqleViewport(root, { width: 390, height: 844, offsetTop: 0, scale: 1 }, tallest);
+        expect(root.classList.contains("cirqle_keyboard")).toBe(false);
+        syncCirqleViewport(root, { width: 390, height: 412.4, offsetTop: 120, scale: 1 }, tallest);
         expect(root.style.getPropertyValue("--cirqle-app-height")).toBe("412px");
         expect(root.style.getPropertyValue("--cirqle-app-top")).toBe("120px");
-        syncCirqleViewport(root, { height: 200, offsetTop: 300, scale: 2 });
+        expect(root.classList.contains("cirqle_keyboard")).toBe(true);
+        syncCirqleViewport(root, { width: 390, height: 200, offsetTop: 300, scale: 2 }, tallest);
         expect(root.style.getPropertyValue("--cirqle-app-height")).toBe("412px");
+        // Safari's toolbar hiding is not a keyboard
+        syncCirqleViewport(root, { width: 390, height: 780, offsetTop: 0, scale: 1 }, tallest);
+        expect(root.classList.contains("cirqle_keyboard")).toBe(false);
+        // Turned sideways: a new full height
+        syncCirqleViewport(root, { width: 844, height: 360, offsetTop: 0, scale: 1 }, tallest);
+        expect(root.classList.contains("cirqle_keyboard")).toBe(false);
     });
 
     it("opens a message's menu on a long press, not on a link or outside the timeline", () => {

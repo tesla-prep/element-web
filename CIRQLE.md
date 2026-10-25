@@ -19,7 +19,8 @@ Everything lives in two places; upstream files only get one-line hooks marked
 | `apps/web/src/cirqle/` | rail (Channels only while a number has a channel), chat list and its order, number picker, New chat, New group, Group info, Contact info, member card, header, empty side, composer buttons, timeline sides, forced settings |
 | `apps/web/res/themes/light/css/cirqle/` | the look, imported unlayered at the end of `light.pcss` so it wins over Element's layered CSS |
 | `apps/web/res/fonts/Source_Serif_4/`, `apps/web/res/img/cirqle/` | heading font (OFL) and the shield logo |
-| `cirqle/` | `config.json`, `deploy.sh`, `nginx-next.conf` |
+| `cirqle/` | `config.json`, `manifest.json`, `deploy.sh`, `nginx-next.conf` |
+| `apps/web/res/cirqle-icons/` | home screen icons (any and maskable), the iOS icon, favicon, notification badge, iOS launch screens |
 
 Hooks in upstream files (each one line or a small block):
 
@@ -61,7 +62,8 @@ Hooks in upstream files (each one line or a small block):
 | `viewmodels/structures/ResizerViewModel.ts` | the chat list never collapses: no auto-collapse under 768 px, the saved `RoomList.isPanelCollapsed` ignored |
 | `viewmodels/room/timeline/event-tile/DisambiguatedProfileViewModel.ts` | a sender's name without the Matrix ID, even when two have the same name |
 | `vector/init.tsx` (second line) | on touch screens the app follows the keyboard and a long press opens a message's menu (`cirqle/CirqleMobile.ts`) |
-| `vector/index.html` | `interactive-widget=resizes-content` in the viewport |
+| `vector/index.html` | `interactive-widget=resizes-content` and `viewport-fit=cover` in the viewport; CIRQLE's title, icons, iOS home screen tags and launch screens |
+| `webpack.config.ts` | copies `cirqle/manifest.json` as `manifest.json` and `res/cirqle-icons/` |
 | `viewmodels/room/EventTileActionBarViewModel.ts` | hover bar without Reply in thread and Pin |
 | `views/dialogs/ConfirmRedactDialog.tsx` | "Delete for everyone?" without a reason |
 | `views/dialogs/InviteDialog.tsx` | Add member offers the contacts of the group's own number only (`cirqle/CirqleInviteRefusals.ts`) |
@@ -115,6 +117,23 @@ The same app on a phone, laid out like WhatsApp there (`_narrow.pcss`, `cirqle/C
 - a long press on a message opens its menu (reactions, Copy, Reply, Forward, Delete) as a
   sheet at the bottom; the desktop hover bar does not show on a tap;
 - no "does not support this browser" on phones.
+
+## On the home screen
+
+CIRQLE Messenger installs as an app: Android Chrome offers "Install app", iPhone
+Safari has Share → Add to Home Screen. It opens full screen as "CIRQLE" with the
+shield icon (`cirqle/manifest.json`: `start_url` `/`, `display` standalone, white
+`theme_color` like the header, green `background_color` for Android's launch
+screen; `index.html`: `apple-touch-icon`, `apple-mobile-web-app-*` and an
+`apple-touch-startup-image` per iPhone size). With `viewport-fit=cover` the app
+pads itself by `env(safe-area-inset-*)` (notch, home indicator, a phone turned
+sideways) and drops the bottom one while the keyboard is up (`cirqle_keyboard`,
+`CirqleMobile.ts`). Every screen staff reach on a phone has its own back arrow or
+close button, so nothing needs the browser's. An installed iPhone app keeps its own
+storage, separate from Safari: staff sign in once more inside it.
+
+The icons are drawn from `res/img/cirqle/cirqle-shield-outlined-marble.svg` on
+CIRQLE green; to redraw them, render that SVG at the sizes in `res/cirqle-icons/`.
 
 ## Leave group
 

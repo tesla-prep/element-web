@@ -49,18 +49,35 @@ export function useCirqlePhone(): boolean {
     );
 }
 
+/** Opened from the home screen icon, not in a browser tab. */
+export function isCirqleInstalled(): boolean {
+    return (
+        window.matchMedia("(display-mode: standalone)").matches ||
+        (navigator as Navigator & { standalone?: boolean }).standalone === true
+    );
+}
+
 /**
  * Sizes the app to the visual viewport: with the keyboard up, what is left above
  * it; Safari's pan to the focused field is followed, so the header stays at the
  * top and only the composer rises. Left alone while the person pinch-zooms.
+ *
+ * `tallest` keeps, per width, the tallest the viewport has been: the screen
+ * without a keyboard. A keyboard takes more than a fifth of it (the browser's
+ * own bars come and go by less), and then the home indicator is under it.
  */
 export function syncCirqleViewport(
     root: HTMLElement,
-    viewport: Pick<VisualViewport, "height" | "offsetTop" | "scale">,
+    viewport: Pick<VisualViewport, "width" | "height" | "offsetTop" | "scale">,
+    tallest = new Map<number, number>(),
 ): void {
     if (viewport.scale > 1.01) return;
+    const width = Math.round(viewport.width);
+    const full = Math.max(tallest.get(width) ?? 0, viewport.height);
+    tallest.set(width, full);
     root.style.setProperty("--cirqle-app-height", `${Math.round(viewport.height)}px`);
     root.style.setProperty("--cirqle-app-top", `${Math.round(viewport.offsetTop)}px`);
+    root.classList.toggle("cirqle_keyboard", viewport.height < full * 0.8);
 }
 
 /** The element a long press on `target` opens the menu of: a message's line (a link keeps its own menu). */
@@ -150,14 +167,17 @@ export function watchCirqleLongPress(doc: Document = document): () => void {
 
 /** Once the config is loaded: on touch screens, the app follows the keyboard and a long press opens a message's menu. */
 export function startCirqleMobile(): void {
-    if (!isCirqleMessenger() || !window.matchMedia(TOUCH_QUERY).matches) return;
+    if (!isCirqleMessenger()) return;
     const root = document.documentElement;
+    root.classList.toggle("cirqle_installed", isCirqleInstalled());
+    if (!window.matchMedia(TOUCH_QUERY).matches) return;
     root.classList.add("cirqle_touch");
     // oxlint-disable-next-line no-restricted-properties -- UIStore knows the window, not what the keyboard leaves of it
     const viewport = window.visualViewport;
     if (viewport) {
         root.classList.add("cirqle_viewport");
-        const sync = (): void => syncCirqleViewport(root, viewport);
+        const tallest = new Map<number, number>();
+        const sync = (): void => syncCirqleViewport(root, viewport, tallest);
         viewport.addEventListener("resize", sync);
         viewport.addEventListener("scroll", sync);
         sync();

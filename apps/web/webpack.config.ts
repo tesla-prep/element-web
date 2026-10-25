@@ -655,9 +655,10 @@ export default (env: string, argv: Record<string, any>): webpack.Configuration =
                     { from: ".well-known/**", context: path.resolve(__dirname, "res") },
                     "res/jitsi_external_api.min.js",
                     "res/jitsi_external_api.min.js.LICENSE.txt",
-                    "res/manifest.json",
+                    { from: "../../cirqle/manifest.json", to: "manifest.json" }, // CIRQLE: name, icons, start_url
                     { from: "themes/**", context: path.resolve(__dirname, "res") },
                     { from: "vector-icons/**", context: path.resolve(__dirname, "res") },
+                    { from: "cirqle-icons/**", context: path.resolve(__dirname, "res") }, // CIRQLE
                     { from: "decoder-ring/**", context: path.resolve(__dirname, "res") },
                     { from: "media/**", context: path.resolve(__dirname, "res/") },
                     { from: "config.json", noErrorOnMissing: true },
