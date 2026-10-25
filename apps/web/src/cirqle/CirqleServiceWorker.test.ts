@@ -99,7 +99,7 @@ describe("Web Push in the service worker", () => {
             tag: ROOM,
             renotify: true,
             icon: "https://chat.example/cirqle-icons/icon-192.png",
-            badge: "https://chat.example/cirqle-icons/badge-72.png",
+            badge: "https://chat.example/cirqle-icons/badge-96.png",
             data: { roomId: ROOM },
         });
     });

@@ -114,7 +114,7 @@ export async function showCirqlePush(scope: CirqleWorkerScope, payload: CirqlePu
         tag: roomId,
         renotify: !!roomId,
         icon: asset("cirqle-icons/icon-192.png"),
-        badge: asset("cirqle-icons/badge-72.png"),
+        badge: asset("cirqle-icons/badge-96.png"),
         timestamp: Date.now(),
         data: { roomId, lines },
     } as NotificationOptions);
