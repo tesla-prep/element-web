@@ -25,6 +25,7 @@ import Modal from "../Modal";
 import QuestionDialog from "../components/views/dialogs/QuestionDialog";
 import { useMatrixClientContext } from "../contexts/MatrixClientContext";
 import { watchCirqleInviteRefusals } from "./CirqleInviteRefusals";
+import { watchCirqlePush } from "./CirqlePush";
 
 function confirmSignOut(): void {
     const { finished } = Modal.createDialog(QuestionDialog, {
@@ -50,6 +51,7 @@ export function CirqleRail(): JSX.Element {
     }));
 
     useEffect(() => watchCirqleInviteRefusals(client), [client]);
+    useEffect(() => watchCirqlePush(client), [client]);
     useEffect(() => {
         if (!channels && CirqleUiStore.section === "channels") CirqleUiStore.showSection("chats");
     }, [channels]);

@@ -69,6 +69,7 @@ import { clearUploadedMediaCache } from "./utils/UploadedMediaCache";
 import { CallStatusListener } from "./CallStatusListener.ts";
 import { CallStore } from "./stores/CallStore.ts";
 import { ModuleApi } from "./modules/Api.ts";
+import { cirqlePushSignOut } from "./cirqle/CirqlePush";
 
 const HOMESERVER_URL_KEY = "mx_hs_url";
 const ID_SERVER_URL_KEY = "mx_is_url";
@@ -971,6 +972,7 @@ export async function logout(): Promise<void> {
     _isLoggingOut = true;
     void PlatformPeg.get()?.destroyPickleKey(client.getSafeUserId(), client.getDeviceId() ?? "");
 
+    await cirqlePushSignOut(client); // CIRQLE: this device's Web Push subscription
     try {
         await client.logout(true);
     } catch (err) {

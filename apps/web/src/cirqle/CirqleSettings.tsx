@@ -20,7 +20,8 @@ import { SettingsSubsection } from "../components/views/settings/shared/Settings
 import SettingsFlag from "../components/views/elements/SettingsFlag";
 import { SettingLevel } from "../settings/SettingLevel";
 import { type BooleanSettingKey } from "../settings/Settings";
-import { isCirqleMessenger } from "./CirqleFeatures";
+import { cirqlePushConfig, isCirqleMessenger } from "./CirqleFeatures";
+import { CirqleNotificationsTab } from "./CirqleNotificationsTab";
 
 const SHOWN_TABS = new Set<string>([
     UserTab.Account,
@@ -61,20 +62,19 @@ export function CirqlePreferencesTab(): JSX.Element {
     );
 }
 
+/** Our own tabs in place of Element's: Preferences always, Notifications while Web Push is set up (CirqlePush). */
+function cirqleTab(tab: Tab<UserTab>): JSX.Element | undefined {
+    if (tab.id === UserTab.Preferences) return <CirqlePreferencesTab key="preferences" />;
+    if (tab.id === UserTab.Notifications && cirqlePushConfig()) return <CirqleNotificationsTab key="notifications" />;
+    return undefined;
+}
+
 export function cirqleUserTabs(tabs: Tab<UserTab>[]): Tab<UserTab>[] {
     if (!isCirqleMessenger()) return tabs;
     return tabs
         .filter((tab) => SHOWN_TABS.has(tab.id))
-        .map((tab) =>
-            tab.id === UserTab.Preferences
-                ? new Tab(
-                      tab.id,
-                      tab.label,
-                      tab.icon,
-                      <CirqlePreferencesTab key="preferences" />,
-                      tab.screenName,
-                      tab.labelClassName,
-                  )
-                : tab,
-        );
+        .map((tab) => {
+            const body = cirqleTab(tab);
+            return body ? new Tab(tab.id, tab.label, tab.icon, body, tab.screenName, tab.labelClassName) : tab;
+        });
 }
