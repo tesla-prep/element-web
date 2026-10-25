@@ -1,0 +1,39 @@
+{
+    "id": "/",
+    "name": "CIRQLE Messenger",
+    "short_name": "CIRQLE",
+    "description": "CIRQLE's WhatsApp and Telegram chats",
+    "lang": "en",
+    "start_url": "/",
+    "scope": "/",
+    "display": "standalone",
+    "orientation": "any",
+    "theme_color": "#ffffff",
+    "background_color": "#0e3b2e",
+    "icons": [
+        {
+            "src": "cirqle-icons/icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "cirqle-icons/icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "cirqle-icons/maskable-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "maskable"
+        },
+        {
+            "src": "cirqle-icons/maskable-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable"
+        }
+    ]
+}

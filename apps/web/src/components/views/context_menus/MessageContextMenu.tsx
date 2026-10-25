@@ -77,6 +77,7 @@ import PinningUtils from "../../../utils/PinningUtils";
 import PosthogTrackers from "../../../PosthogTrackers.ts";
 import { cirqleMayDelete } from "../../../cirqle/CirqleMessages";
 import { isCirqleMessenger } from "../../../cirqle/CirqleFeatures";
+import { CirqleQuickReactions, cirqleCopyText } from "../../../cirqle/CirqleMessageMenu";
 
 interface IReplyInThreadButton {
     mxEvent: MatrixEvent;
@@ -318,7 +319,7 @@ export default class MessageContextMenu extends React.Component<IProps, IState> 
     };
 
     private onCopyClick = (): void => {
-        void copyPlaintext(getSelectedText());
+        void copyPlaintext(getSelectedText() || cirqleCopyText(this.props.mxEvent) || ""); // CIRQLE: the message's text
         this.closeMenu();
     };
 
@@ -615,7 +616,8 @@ export default class MessageContextMenu extends React.Component<IProps, IState> 
         const selectedText = getSelectedText();
 
         let copyButton: JSX.Element | undefined;
-        if (rightClick && selectedText) {
+        if (rightClick && (selectedText || cirqleCopyText(mxEvent))) {
+            // CIRQLE: Copy for the whole text too (a long press on a phone selects nothing)
             copyButton = (
                 <IconizedContextMenuOption
                     icon={<CopyIcon />}
@@ -753,7 +755,13 @@ export default class MessageContextMenu extends React.Component<IProps, IState> 
         if (this.state.reactionPickerDisplayed) {
             const buttonRect = (this.reactButtonRef.current as HTMLElement)?.getBoundingClientRect();
             reactionPicker = (
-                <ContextMenu {...toRightOf(buttonRect)} onFinished={this.closeMenu} managed={false} focusLock>
+                <ContextMenu
+                    {...toRightOf(buttonRect)}
+                    onFinished={this.closeMenu}
+                    managed={false}
+                    focusLock
+                    wrapperClassName="cirqle_ReactionPickerMenu" // CIRQLE: a sheet on phones
+                >
                     <ReactionPicker mxEvent={mxEvent} onFinished={this.onCloseReactionPicker} reactions={reactions} />
                 </ContextMenu>
             );
@@ -767,6 +775,16 @@ export default class MessageContextMenu extends React.Component<IProps, IState> 
                     compact={true}
                     data-testid="mx_MessageContextMenu"
                 >
+                    {rightClick && contentActionable && canReact && isCirqleMessenger() && (
+                        <CirqleQuickReactions
+                            client={cli}
+                            mxEvent={mxEvent}
+                            reactions={reactions}
+                            canRedact={this.context.canSelfRedact}
+                            onMore={this.onReactClick}
+                            onFinished={this.closeMenu}
+                        />
+                    )}
                     {nativeItemsList}
                     {quickItemsList}
                     {commonItemsList}
