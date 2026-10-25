@@ -97,7 +97,7 @@ slots by their data-testid.
    cell that is as wide as the bubble. Staff names show on our side too. */
 [class*="_layoutBubble_"]:has(> [data-testid="event-tile-slot-sender"] *) {
     display: grid;
-    grid-template-columns: fit-content(62%);
+    grid-template-columns: fit-content(var(--event-tile-bubble-line-max-width));
     justify-content: start;
 }
 
@@ -137,6 +137,14 @@ slots by their data-testid.
 [class*="_layoutBubble_"] > [data-testid="event-tile-slot-sender"] * {
     font-size: 12px;
     line-height: 16px;
+}
+
+/* One line, as on WhatsApp: a long name ends in "…" rather than wrapping over the text */
+[class*="_layoutBubble_"] > [data-testid="event-tile-slot-sender"] .mx_DisambiguatedProfile {
+    display: block;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
 }
 
 [class*="_layoutBubble_"][class*="_stateOwnEvent_"] > [data-testid="event-tile-slot-sender"] * {
@@ -731,4 +739,39 @@ slots by their data-testid.
 .cirqle_DeliveryNotice::before {
     content: "! ";
     font-weight: 700;
+}
+
+/* A message's menu opens with a row of reactions, as on WhatsApp (CirqleMessageMenu.tsx) */
+.cirqle_QuickReactions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 4px;
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--cpd-color-border-interactive-secondary);
+}
+
+.cirqle_QuickReactions button {
+    flex: 0 0 auto;
+    width: 40px;
+    height: 40px;
+    border: 0;
+    border-radius: 20px;
+    background: transparent;
+    font-size: 24px;
+    line-height: 40px;
+    padding: 0;
+    cursor: pointer;
+}
+
+.cirqle_QuickReactions button:hover,
+.cirqle_QuickReactions button:focus-visible,
+.cirqle_QuickReactions button[aria-pressed="true"] {
+    background: var(--cirqle-green-soft);
+}
+
+.cirqle_QuickReactions .cirqle_QuickReactions_more {
+    background: var(--cpd-color-bg-subtle-secondary);
+    color: var(--cpd-color-text-secondary);
+    font-size: 22px;
 }

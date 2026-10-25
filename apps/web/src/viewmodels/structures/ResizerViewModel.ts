@@ -21,10 +21,12 @@ import SettingsStore from "../../settings/SettingsStore";
 import { SettingLevel } from "../../settings/SettingLevel";
 import { AutoCollapse } from "./auto-collapse/AutoCollapse";
 import { type CallStore } from "../../stores/CallStore";
+import { isCirqleMessenger } from "../../cirqle/CirqleFeatures";
 
 function getInitialState(): ResizerViewSnapshot {
     const shouldStartCollapsed =
-        SettingsStore.getValue("RoomList.isPanelCollapsed") || AutoCollapse.shouldStartCollapsed();
+        !isCirqleMessenger() && // CIRQLE: the chat list has no collapsed form; phones get the phone layout
+        (SettingsStore.getValue("RoomList.isPanelCollapsed") || AutoCollapse.shouldStartCollapsed());
     if (shouldStartCollapsed) {
         return {
             isCollapsed: true,
@@ -73,6 +75,7 @@ export class ResizerViewModel
             new AutoCollapse(
                 this.onSeparatorClick,
                 () => {
+                    if (isCirqleMessenger()) return; // CIRQLE: never collapsed (see getInitialState)
                     this.panelHandle?.collapse();
                     this.snapshot.merge({ isCollapsed: true });
                 },
@@ -127,6 +130,7 @@ export class ResizerViewModel
 
     public onDoubleClick = (): void => {
         // When the panel is expanded, double click should collapse.
+        if (isCirqleMessenger()) return; // CIRQLE: never collapsed (see getInitialState)
         if (!this.panelHandle?.isCollapsed()) this.panelHandle?.collapse();
     };
 

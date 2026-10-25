@@ -15,6 +15,7 @@ import { type MouseEvent } from "react";
 
 import { _t } from "../../../../languageHandler";
 import { getUserNameColorClass } from "../../../../utils/FormattingUtils";
+import { isCirqleMessenger } from "../../../../cirqle/CirqleFeatures";
 
 /**
  * Information about a member for disambiguation purposes.
@@ -102,7 +103,8 @@ export class DisambiguatedProfileViewModel
 
         if (mxid) {
             // Only show identifier if disambiguation is needed
-            if (member?.disambiguate) {
+            if (member?.disambiguate && !isCirqleMessenger()) {
+                // CIRQLE: a name only; a bridge's Matrix ID means nothing to staff
                 displayIdentifier = mxid;
             }
 

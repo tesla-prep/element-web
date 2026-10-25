@@ -16,6 +16,7 @@ import ToastStore from "./stores/ToastStore";
 import { GenericToast } from "@element-hq/web-shared-components";
 import { _t } from "./languageHandler";
 import SdkConfig from "./SdkConfig";
+import { cirqleSupportsDevice } from "./cirqle/CirqleMobile";
 
 export const LOCAL_STORAGE_KEY = "mx_accepts_unsupported_browser";
 const TOAST_KEY = "unsupportedbrowser";
@@ -52,6 +53,7 @@ function calculateBrowserSupport(): boolean {
     }
 
     const details = parseUserAgent(navigator.userAgent);
+    if (cirqleSupportsDevice(details.deviceType)) return true; // CIRQLE: staff answer chats on their phones too
 
     if (!details.client) {
         logger.warn("Browser unsupported, unknown client", navigator.userAgent);

@@ -89,6 +89,13 @@ export const GroupIcon = (p: IconProps): JSX.Element => (
     </Stroke>
 );
 
+export const ProfileIcon = (p: IconProps): JSX.Element => (
+    <Stroke {...p}>
+        <circle cx="12" cy="8" r="4" />
+        <path d="M4 21a8 8 0 0 1 16 0" />
+    </Stroke>
+);
+
 export const AddMemberIcon = (p: IconProps): JSX.Element => (
     <Stroke size={20} {...p}>
         <circle cx="9" cy="8" r="3.5" />
