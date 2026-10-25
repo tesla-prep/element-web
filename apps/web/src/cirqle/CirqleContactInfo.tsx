@@ -11,7 +11,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 // rules), as Element's own are; Media, links and docs is Element's file panel,
 // whose back arrow returns here.
 
-import React, { type JSX, useContext } from "react";
+import React, { type JSX, useContext, useEffect, useState } from "react";
 import { type Room, RoomEvent } from "matrix-js-sdk/src/matrix";
 
 import { SDKContext } from "../contexts/SDKContext";
@@ -24,7 +24,8 @@ import { DefaultTagID } from "../stores/room-list-v3/skip-list/tag";
 import { getTagsForRoom } from "../utils/room/getTagsForRoom";
 import { tagRoom } from "../utils/room/tagRoom";
 import RoomAvatar from "../components/views/avatars/RoomAvatar";
-import { BellOffIcon, CloseIcon, MediaIcon, StarIcon } from "./CirqleIcons";
+import { copyPlaintext } from "../utils/strings";
+import { BellOffIcon, CloseIcon, CopyIcon, MediaIcon, StarIcon } from "./CirqleIcons";
 import { chatKind, contactPhone, inboxesOf, networkOf, stripNetworkSuffix } from "./CirqleInboxes";
 import { useCirqleInboxes } from "./useCirqleChats";
 
@@ -78,6 +79,30 @@ export function CirqleChatActions({ room }: { room: Room }): JSX.Element {
     );
 }
 
+/** The customer's number under their name, with Copy, as in WhatsApp's contact info. */
+export function CirqlePhoneLine({ phone }: { phone: string }): JSX.Element {
+    const [copied, setCopied] = useState(false);
+    useEffect(() => {
+        if (!copied) return;
+        const timer = window.setTimeout(() => setCopied(false), 2000);
+        return () => window.clearTimeout(timer);
+    }, [copied]);
+    return (
+        <span className="cirqle_GroupInfo_phoneLine">
+            <span className="cirqle_GroupInfo_phone">{phone}</span>
+            <button
+                type="button"
+                className="cirqle_GroupInfo_copy"
+                aria-label={`Copy ${phone}`}
+                onClick={() => void copyPlaintext(phone.replace(/\s/g, "")).then(setCopied)}
+            >
+                <CopyIcon />
+                {copied ? "Copied" : "Copy"}
+            </button>
+        </span>
+    );
+}
+
 export function CirqleContactInfo({ room }: { room: Room }): JSX.Element {
     const sdkContext = useContext(SDKContext);
     const inboxes = useCirqleInboxes();
@@ -111,7 +136,7 @@ export function CirqleContactInfo({ room }: { room: Room }): JSX.Element {
                 <h2 id="cirqle_ContactInfo_title" className="cirqle_GroupInfo_name">
                     {name}
                 </h2>
-                {phone && phone !== name && <span className="cirqle_GroupInfo_phone">{phone}</span>}
+                {phone && <CirqlePhoneLine phone={phone} />}
                 <span className="cirqle_GroupInfo_sub">{sub}</span>
             </div>
 

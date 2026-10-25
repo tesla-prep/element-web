@@ -15,6 +15,7 @@ import { MessagePreviewStore } from "../stores/message-preview/MessagePreviewSto
 import { CirqleActivity } from "./CirqleActivity";
 import { chatKind, stripNetworkSuffix } from "./CirqleInboxes";
 import { isOurSide } from "./CirqleTimeline";
+import { isHiddenForMe } from "./CirqleMessages";
 
 function withCaption(label: string, content: Record<string, any>): string {
     const caption = content.filename && content.body !== content.filename ? content.body : undefined;
@@ -60,6 +61,7 @@ function shortName(room: Room, userId: string): string | undefined {
 export function chatPreview(room: Room): string {
     const event = CirqleActivity.lastActivityEvent(room);
     if (!event) return "";
+    if (isHiddenForMe(room.client, event)) return "🚫 You deleted this message for yourself";
     const text = previewText(event);
     const sender = event.getSender() ?? "";
     if (sender === room.client.getUserId()) return `You: ${text}`;

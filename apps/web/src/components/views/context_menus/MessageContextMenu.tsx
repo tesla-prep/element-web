@@ -75,7 +75,8 @@ import { type ShowThreadPayload } from "../../../dispatcher/payloads/ShowThreadP
 import { CardContext } from "../right_panel/context";
 import PinningUtils from "../../../utils/PinningUtils";
 import PosthogTrackers from "../../../PosthogTrackers.ts";
-import { cirqleMayDelete } from "../../../cirqle/CirqleMessages";
+import { cirqleMayDelete, cirqleMayDeleteForMe } from "../../../cirqle/CirqleMessages";
+import { deleteSomeoneElsesMessage } from "../../../cirqle/CirqleDeleteDialog";
 import { isCirqleMessenger } from "../../../cirqle/CirqleFeatures";
 import { CirqleQuickReactions, cirqleCopyText } from "../../../cirqle/CirqleMessageMenu";
 
@@ -139,6 +140,8 @@ interface IProps extends MenuProps {
 
 interface IState {
     canRedact: boolean;
+    /** CIRQLE: "Delete for me" for someone else's message */
+    canHideForMe?: boolean;
     canPin: boolean;
     reactionPickerDisplayed: boolean;
 }
@@ -185,14 +188,16 @@ export default class MessageContextMenu extends React.Component<IProps, IState> 
         // to obliterate the room - https://github.com/matrix-org/synapse/issues/4042
         // Similarly for encryption events, since redacting them "breaks everything"
         const canRedact =
-            cirqleMayDelete(cli, this.props.mxEvent) && // CIRQLE: our own messages only
+            cirqleMayDelete(cli, this.props.mxEvent) && // CIRQLE: as the network takes it
             !!room?.currentState.maySendRedactionForEvent(this.props.mxEvent, cli.getSafeUserId()) &&
             this.props.mxEvent.getType() !== EventType.RoomServerAcl &&
             this.props.mxEvent.getType() !== EventType.RoomEncryption;
 
         const canPin = PinningUtils.canPin(cli, this.props.mxEvent) || PinningUtils.canUnpin(cli, this.props.mxEvent);
 
-        this.setState({ canRedact, canPin });
+        const canHideForMe = cirqleMayDeleteForMe(cli, this.props.mxEvent); // CIRQLE
+
+        this.setState({ canRedact, canHideForMe, canPin });
     };
 
     private canEndPoll(mxEvent: MatrixEvent): boolean {
@@ -264,6 +269,12 @@ export default class MessageContextMenu extends React.Component<IProps, IState> 
 
     private onRedactClick = (): void => {
         const { mxEvent, onCloseDialog } = this.props;
+        if (this.state.canHideForMe) {
+            // CIRQLE: someone else's message, "Delete for everyone" or "Delete for me" as on WhatsApp
+            deleteSomeoneElsesMessage(MatrixClientPeg.safeGet(), mxEvent, this.state.canRedact);
+            this.closeMenu();
+            return;
+        }
         createRedactEventDialog({
             mxEvent,
             onCloseDialog,
@@ -440,11 +451,18 @@ export default class MessageContextMenu extends React.Component<IProps, IState> 
         }
 
         let redactButton: JSX.Element | undefined;
-        if (isSent && this.state.canRedact) {
+        if (isSent && (this.state.canRedact || this.state.canHideForMe)) {
             redactButton = (
                 <IconizedContextMenuOption
                     icon={<DeleteIcon />}
-                    label={isCirqleMessenger() ? "Delete for everyone" : _t("action|remove")} // CIRQLE: as on WhatsApp
+                    label={
+                        // CIRQLE: as on WhatsApp
+                        this.state.canHideForMe
+                            ? "Delete"
+                            : isCirqleMessenger()
+                              ? "Delete for everyone"
+                              : _t("action|remove")
+                    }
                     onClick={this.onRedactClick}
                 />
             );

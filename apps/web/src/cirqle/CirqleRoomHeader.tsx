@@ -23,7 +23,7 @@ import { BackIcon, GroupIcon, KebabIcon, SearchIcon } from "./CirqleIcons";
 
 export function CirqleRoomSubtitle({ room }: { room: Room }): JSX.Element | null {
     const inboxes = useCirqleInboxes();
-    const memberCount = groupPeople(useRoomMembers(room)).length;
+    const memberCount = groupPeople(useRoomMembers(room), inboxes).length;
     const kind = chatKind(room);
     const from = inboxesOf(room, inboxes)
         .map((inbox) => inbox.label)

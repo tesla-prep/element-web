@@ -9,41 +9,54 @@ SPDX-License-Identifier: AGPL-3.0-only
 //
 // Members are the people in the group on WhatsApp or Telegram: the bridge's
 // ghost users and our number's own account. Staff and service users are Matrix
-// only and are not listed. Add member and Remove… are Element's own invite and
-// remove (kick), which the relay bot and the bridges carry out on WhatsApp and
-// Telegram; a channel has subscribers, not members, so it has no Add member.
+// only and are not listed. A member opens their card; where our number is a
+// group admin, each member's menu has Make group admin or Dismiss as admin
+// (WhatsApp, CirqleGroupAdmin) and Remove, as in WhatsApp. Add member and Remove
+// are Element's own invite and remove (kick), which the relay bot and the
+// bridges carry out on WhatsApp and Telegram; a channel has subscribers, not
+// members, so it has no Add member.
 // Leave group… takes the number itself out of a WhatsApp group (decision 5,
 // option B, CirqleLeaveGroup); a channel or a Telegram group has no Leave.
 
 import React, { type JSX, useContext } from "react";
 import { KnownMembership, type Room, type RoomMember } from "matrix-js-sdk/src/matrix";
 import { logger } from "matrix-js-sdk/src/logger";
+import { Menu, MenuItem } from "@vector-im/compound-web";
 
 import { useMatrixClientContext } from "../contexts/MatrixClientContext";
 import { SDKContext } from "../contexts/SDKContext";
 import { useRoomMembers } from "../hooks/useRoomMembers";
 import { useRoomName } from "../hooks/useRoomName";
 import dis from "../dispatcher/dispatcher";
+import { Action } from "../dispatcher/actions";
 import Modal from "../Modal";
-import ConfirmUserActionDialog from "../components/views/dialogs/ConfirmUserActionDialog";
+import QuestionDialog from "../components/views/dialogs/QuestionDialog";
 import ErrorDialog from "../components/views/dialogs/ErrorDialog";
 import RoomAvatar from "../components/views/avatars/RoomAvatar";
 import MemberAvatar from "../components/views/avatars/MemberAvatar";
-import { AddMemberIcon, CloseIcon, LeaveIcon } from "./CirqleIcons";
-import { chatKind, inboxesOf, networkOf, stripNetworkSuffix } from "./CirqleInboxes";
+import { AddMemberIcon, ChevronDownIcon, CloseIcon, LeaveIcon } from "./CirqleIcons";
+import { chatKind, type Inbox, inboxesOf, memberName, networkOf, stripNetworkSuffix } from "./CirqleInboxes";
 import { CirqleChatActions } from "./CirqleContactInfo";
 import { ACCOUNT, ghostPhone } from "./CirqleMemberCard";
 import { useCirqleInboxes } from "./useCirqleChats";
 import { canLeaveCirqleGroup, leaveCirqleGroup } from "./CirqleLeaveGroup";
+import { canChangeGroupAdmin, isGroupAdmin, ourAdminNumber, setGroupAdmin } from "./CirqleGroupAdmin";
 
 const GHOST = /^@(whatsapp|telegram)_([^:]+):/;
 
-/** The people in the group on WhatsApp or Telegram: ghosts and our accounts, not staff. */
-export function groupPeople(members: RoomMember[]): RoomMember[] {
+/**
+ * The people in the group on WhatsApp or Telegram: ghosts and our accounts, not
+ * staff. Our number's own ghost (what its phone sends as) is the same person as
+ * its account, listed once as "(us)".
+ */
+export function groupPeople(members: RoomMember[], inboxes: Inbox[] = []): RoomMember[] {
     return members
         .filter((m) => m.membership === KnownMembership.Join && (GHOST.test(m.userId) || ACCOUNT.test(m.userId)))
+        .filter((m) => !inboxes.some((inbox) => inbox.ownUsers.has(m.userId)))
         .sort(
-            (a, b) => Number(ACCOUNT.test(b.userId)) - Number(ACCOUNT.test(a.userId)) || a.name.localeCompare(b.name),
+            (a, b) =>
+                Number(ACCOUNT.test(b.userId)) - Number(ACCOUNT.test(a.userId)) ||
+                memberName(a).localeCompare(memberName(b)),
         );
 }
 
@@ -62,11 +75,12 @@ async function removeMember(
     member: RoomMember,
     client: ReturnType<typeof useMatrixClientContext>,
 ): Promise<void> {
-    const { finished } = Modal.createDialog(ConfirmUserActionDialog, {
-        member,
-        action: "Remove",
-        title: `Remove ${stripNetworkSuffix(member.name)} from ${stripNetworkSuffix(room.name)}?`,
-        askReason: false,
+    const name = stripNetworkSuffix(memberName(member));
+    const group = stripNetworkSuffix(room.name);
+    const { finished } = Modal.createDialog(QuestionDialog, {
+        title: `Remove ${name} from ${group}?`,
+        description: `${name} will be removed from “${group}” on ${networkOf(room) === "telegram" ? "Telegram" : "WhatsApp"}.`,
+        button: "Remove",
         danger: true,
     });
     const [proceed] = await finished;
@@ -92,9 +106,12 @@ export function CirqleGroupInfo({ room }: { room: Room }): JSX.Element {
     const network = networkOf(room);
     const own = inboxesOf(room, inboxes);
 
-    const people = groupPeople(members);
+    const people = groupPeople(members, inboxes);
     const me = room.getMember(client.getSafeUserId());
+    // Like WhatsApp: only a group admin removes people, so only where our number is one
+    const adminNumber = ourAdminNumber(room, inboxes);
     const canRemove = (m: RoomMember): boolean =>
+        !!adminNumber &&
         !ACCOUNT.test(m.userId) &&
         !!me &&
         room.currentState.hasSufficientPowerLevelFor("kick", me.powerLevel) &&
@@ -147,38 +164,17 @@ export function CirqleGroupInfo({ room }: { room: Room }): JSX.Element {
                         <span className="cirqle_GroupInfo_addLabel">Add member</span>
                     </button>
                 )}
-                {people.map((m) => {
-                    const isUs = ACCOUNT.test(m.userId);
-                    const ours = inboxes.find(
-                        (inbox) => inbox.accountName && m.userId.includes(`_${inbox.accountName}:`),
-                    );
-                    const label = isUs
-                        ? `${ours?.label ?? stripNetworkSuffix(m.name)} (us)`
-                        : stripNetworkSuffix(m.name);
-                    const subline = isUs ? ours?.phone : ghostPhone(m.userId);
-                    return (
-                        <div key={m.userId} className="cirqle_GroupInfo_row">
-                            <MemberAvatar member={m} size="44px" />
-                            <span className="cirqle_GroupInfo_text">
-                                <span className="cirqle_GroupInfo_memberName">{label}</span>
-                                {subline && <span className="cirqle_GroupInfo_memberSub">{subline}</span>}
-                            </span>
-                            {m.powerLevel >= 100 && !canRemove(m) && (
-                                <span className="cirqle_GroupInfo_admin">Admin</span>
-                            )}
-                            {canRemove(m) && (
-                                <button
-                                    type="button"
-                                    className="cirqle_GroupInfo_remove"
-                                    aria-label={`Remove ${label}`}
-                                    onClick={() => void removeMember(room, m, client)}
-                                >
-                                    Remove…
-                                </button>
-                            )}
-                        </div>
-                    );
-                })}
+                {people.map((m) => (
+                    <MemberRow
+                        key={m.userId}
+                        room={room}
+                        member={m}
+                        inboxes={inboxes}
+                        canRemove={canRemove(m)}
+                        onRemove={() => void removeMember(room, m, client)}
+                        onAdmin={(admin) => void setGroupAdmin(client, room, m, admin)}
+                    />
+                ))}
             </div>
 
             {canLeaveCirqleGroup(room) && (
@@ -194,5 +190,74 @@ export function CirqleGroupInfo({ room }: { room: Room }): JSX.Element {
                 </div>
             )}
         </aside>
+    );
+}
+
+function MemberRow({
+    room,
+    member,
+    inboxes,
+    canRemove,
+    onRemove,
+    onAdmin,
+}: {
+    room: Room;
+    member: RoomMember;
+    inboxes: Inbox[];
+    canRemove: boolean;
+    onRemove: () => void;
+    onAdmin: (admin: boolean) => void;
+}): JSX.Element {
+    const [menuOpen, setMenuOpen] = React.useState(false);
+    const isUs = ACCOUNT.test(member.userId);
+    const ours = inboxes.find((inbox) => inbox.accountName && member.userId.includes(`_${inbox.accountName}:`));
+    const name = stripNetworkSuffix(memberName(member));
+    const label = isUs ? `${ours?.label ?? name} (us)` : name;
+    const subline = isUs ? ours?.phone : ghostPhone(member.userId, inboxes);
+    const admin = isGroupAdmin(member);
+    const changeAdmin = canChangeGroupAdmin(room, member, inboxes);
+
+    return (
+        <div className="cirqle_GroupInfo_row cirqle_GroupInfo_member">
+            <button
+                type="button"
+                className="cirqle_GroupInfo_memberOpen"
+                onClick={() => dis.dispatch({ action: Action.ViewUser, member })}
+            >
+                <MemberAvatar member={member} size="44px" />
+                <span className="cirqle_GroupInfo_text">
+                    <span className="cirqle_GroupInfo_memberName">{label}</span>
+                    {subline && <span className="cirqle_GroupInfo_memberSub">{subline}</span>}
+                </span>
+                {admin && <span className="cirqle_GroupInfo_admin">Group admin</span>}
+            </button>
+            {(changeAdmin || canRemove) && (
+                <Menu
+                    open={menuOpen}
+                    onOpenChange={setMenuOpen}
+                    title={label}
+                    showTitle={false}
+                    side="bottom"
+                    align="end"
+                    trigger={
+                        <button
+                            type="button"
+                            className="cirqle_iconButton cirqle_GroupInfo_memberMenu"
+                            aria-label={`Options for ${label}`}
+                        >
+                            <ChevronDownIcon />
+                        </button>
+                    }
+                >
+                    {changeAdmin && (
+                        <MenuItem
+                            label={admin ? "Dismiss as admin" : "Make group admin"}
+                            onSelect={() => onAdmin(!admin)}
+                        />
+                    )}
+                    {canRemove && <MenuItem label="Remove" kind="critical" onSelect={onRemove} />}
+                </Menu>
+            )}
+        </div>
     );
 }

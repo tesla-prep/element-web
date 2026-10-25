@@ -408,6 +408,32 @@ Contact info and the member card share Group info's look.
     color: var(--cirqle-ink-2);
 }
 
+.cirqle_GroupInfo_phoneLine {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.cirqle_GroupInfo_copy {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    height: 26px;
+    padding: 0 10px;
+    border-radius: 13px;
+    border: 1px solid var(--cirqle-pill-line);
+    background: #ffffff;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--cirqle-green-hover);
+    cursor: pointer;
+}
+
+.cirqle_GroupInfo_copy:hover {
+    background: var(--cirqle-green-soft);
+}
+
 .cirqle_GroupInfo_message {
     margin-top: 10px;
     height: 36px;
@@ -540,17 +566,35 @@ Contact info and the member card share Group info's look.
     padding: 3px 8px;
 }
 
-.cirqle_GroupInfo_remove {
-    flex: 0 0 auto;
-    height: 34px;
-    padding: 0 12px;
-    border-radius: 17px;
-    border: 1px solid var(--cirqle-pill-line);
-    background: #ffffff;
+/* A member: the row opens their card; the arrow beside it, where our number is
+   a group admin, opens Make group admin / Dismiss as admin / Remove, as in WhatsApp */
+.cirqle_GroupInfo_member {
+    padding: 0 8px 0 0;
+    gap: 0;
+}
+
+.cirqle_GroupInfo_memberOpen {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 8px 8px 8px 20px;
+    border: 0;
+    background: transparent;
     font: inherit;
-    font-size: 13px;
-    color: var(--cirqle-danger);
+    text-align: left;
+    color: inherit;
     cursor: pointer;
+}
+
+.cirqle_GroupInfo_member:hover {
+    background: #f7f6f2;
+}
+
+.cirqle_GroupInfo_memberMenu {
+    flex: 0 0 auto;
+    color: var(--cirqle-ink-3);
 }
 
 .cirqle_GroupInfo_leave {
@@ -565,4 +609,44 @@ Contact info and the member card share Group info's look.
     color: var(--cirqle-danger);
     text-align: left;
     cursor: pointer;
+}
+
+/* "Delete message from Anna?": WhatsApp's stacked choices, right-aligned (CirqleDeleteDialog) */
+.cirqle_DeleteDialog_text {
+    margin: 0 0 20px;
+    color: var(--cirqle-ink-2);
+}
+
+.cirqle_DeleteDialog_buttons {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 10px;
+}
+
+.cirqle_DeleteDialog_button {
+    min-width: 180px;
+    height: 40px;
+    padding: 0 20px;
+    border-radius: 20px;
+    border: 1px solid var(--cirqle-pill-line);
+    background: #ffffff;
+    font: inherit;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--cirqle-green-hover);
+    cursor: pointer;
+}
+
+.cirqle_DeleteDialog_button:hover {
+    background: var(--cirqle-green-soft);
+}
+
+.cirqle_DeleteDialog_cancel {
+    border-color: transparent;
+    color: var(--cirqle-ink-2);
+}
+
+.cirqle_DeleteDialog {
+    max-width: 480px;
 }

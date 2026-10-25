@@ -58,6 +58,7 @@ import { buildLegacyCallEventGroupers } from "./LegacyCallEventGrouper";
 import { type ViewRoomPayload } from "../../dispatcher/payloads/ViewRoomPayload";
 import { getKeyBindingsManager } from "../../KeyBindingsManager";
 import { KeyBindingAction } from "../../accessibility/KeyboardShortcuts";
+import { HIDDEN_EVENTS_TYPE } from "../../cirqle/CirqleMessages";
 import { haveRendererForEvent } from "../../events/EventTileFactory";
 
 // These pagination sizes are higher than they may possibly need be
@@ -874,6 +875,9 @@ class TimelinePanel extends React.Component<IProps, IState> {
 
         // ignore events for other rooms
         if (room !== this.props.timelineSet.room) return;
+
+        // CIRQLE: a message deleted "for me" leaves the timeline
+        if (ev.getType() === HIDDEN_EVENTS_TYPE) return this.forceUpdate();
 
         if (ev.getType() !== EventType.FullyRead) return;
 

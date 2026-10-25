@@ -48,7 +48,7 @@ import { CirqleUiStore, type CirqleSection } from "./CirqleUiStore";
 import {
     type CirqleChip,
     isUnreadChat,
-    pickedInbox,
+    pickedInboxes,
     sectionChips,
     useCirqleHasChannels,
     useCirqleInboxes,
@@ -142,7 +142,9 @@ export function CirqleChatList({ section }: { section: CirqleSection }): JSX.Ele
     const channels = useCirqleHasChannels();
     const [shown, setShown] = useState(PAGE);
     const { rooms, unread } = useCirqleRooms(inboxes, section, chip, query);
-    const picked = pickedInbox(inboxes);
+    const disconnected = pickedInboxes(inboxes).filter((inbox) => !inbox.connected);
+    // Channels are WhatsApp's: New channel needs a connected WhatsApp number
+    const whatsApp = inboxes.some((inbox) => inbox.network === "whatsapp" && inbox.connected);
     const repeated = useMemo(() => repeatedNames(rooms), [rooms]);
     const currentRoomId = useEventEmitterState(sdkContext.roomViewStore, UPDATE_EVENT, () =>
         sdkContext.roomViewStore.getRoomId(),
@@ -173,6 +175,16 @@ export function CirqleChatList({ section }: { section: CirqleSection }): JSX.Ele
                         <PencilIcon />
                     </button>
                 )}
+                {section === "channels" && whatsApp && (
+                    <button
+                        type="button"
+                        className="cirqle_iconButton cirqle_iconButton_green"
+                        aria-label="New channel"
+                        onClick={() => CirqleUiStore.openNewChannel()}
+                    >
+                        <PencilIcon />
+                    </button>
+                )}
                 <Menu
                     open={menuOpen}
                     onOpenChange={setMenuOpen}
@@ -186,6 +198,13 @@ export function CirqleChatList({ section }: { section: CirqleSection }): JSX.Ele
                     }
                 >
                     <MenuItem Icon={GroupIcon} label="New group" onSelect={() => CirqleUiStore.openNewGroup()} />
+                    {whatsApp && (
+                        <MenuItem
+                            Icon={ChannelIcon}
+                            label="New channel"
+                            onSelect={() => CirqleUiStore.openNewChannel()}
+                        />
+                    )}
                     {/* A phone has no rail: what it holds is here, as in WhatsApp's menu */}
                     {phone && section === "chats" && channels && (
                         <MenuItem
@@ -246,9 +265,11 @@ export function CirqleChatList({ section }: { section: CirqleSection }): JSX.Ele
                     </button>
                 ))}
             </div>
-            {picked && !picked.connected && (
+            {disconnected.length > 0 && (
                 <p className="cirqle_ChatList_disconnected" role="status">
-                    {picked.label} is disconnected: you can read its chats, but not write from it.
+                    {disconnected.length === 1
+                        ? `${disconnected[0].label} is disconnected: you can read its chats, but not write from it.`
+                        : `${disconnected.map((inbox) => inbox.label).join(", ")} are disconnected: you can read their chats, but not write from them.`}
                 </p>
             )}
             <div className="cirqle_ChatList_rows" onScroll={onScroll}>

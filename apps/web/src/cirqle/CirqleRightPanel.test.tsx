@@ -171,16 +171,26 @@ describe("CIRQLE right panel", () => {
             expect(screen.getByText("WhatsApp · from slava test")).toBeInTheDocument();
         });
 
+        it("copies the customer's number without spaces", async () => {
+            const writeText = vi.fn().mockResolvedValue(undefined);
+            Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
+            panel(<CirqleContactInfo room={dm} />);
+            fireEvent.click(screen.getByRole("button", { name: "Copy +1 555 709 3423" }));
+            expect(writeText).toHaveBeenCalledWith("+15557093423");
+            expect(await screen.findByText("Copied")).toBeInTheDocument();
+        });
+
         it("does not take a Telegram id for a phone number", () => {
             panel(<CirqleContactInfo room={tgDm} />);
             expect(screen.queryByText(/429896795/)).not.toBeInTheDocument();
             expect(screen.getByText("Telegram")).toBeInTheDocument();
         });
 
-        it("offers only favourite, mute and media", () => {
+        it("offers only copying the number, favourite, mute and media", () => {
             panel(<CirqleContactInfo room={dm} />);
             expect(buttons()).toEqual([
                 "Close contact info",
+                "Copy +1 555 709 3423",
                 "Add to favourites",
                 "Mute notifications",
                 "Media, links and docs",

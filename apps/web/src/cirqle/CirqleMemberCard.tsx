@@ -23,17 +23,30 @@ import { Action } from "../dispatcher/actions";
 import { type ViewRoomPayload } from "../dispatcher/payloads/ViewRoomPayload";
 import MemberAvatar from "../components/views/avatars/MemberAvatar";
 import { CloseIcon } from "./CirqleIcons";
-import { formatPhone, type Inbox, inboxesOf, privateChatContact, stripNetworkSuffix } from "./CirqleInboxes";
+import {
+    formatPhone,
+    type Inbox,
+    inboxesOf,
+    memberName,
+    privateChatContact,
+    stripNetworkSuffix,
+} from "./CirqleInboxes";
 import { useCirqleInboxes } from "./useCirqleChats";
 
 const GHOST = /^@(whatsapp|telegram)_/;
 export const ACCOUNT = /^@account_(whatsapp|telegram)_/;
 const SERVICE = /^@(relay-bot|learning-center|whatsappbot|telegrambot|newchat_[^:]*):/;
 
-/** "+1 555 709 3423" for a WhatsApp ghost keyed by its number; LID ghosts and Telegram ids carry none. */
-export function ghostPhone(userId: string): string | undefined {
+/**
+ * "+1 555 709 3423" for a WhatsApp ghost keyed by its number, or for a LID ghost
+ * whose number the relay bot lists for one of our numbers; Telegram ids carry none.
+ */
+export function ghostPhone(userId: string, inboxes: Inbox[] = []): string | undefined {
     const digits = userId.match(/^@whatsapp_(\d{7,15}):/)?.[1];
-    return digits ? formatPhone(digits) : undefined;
+    if (digits) return formatPhone(digits);
+    const lid = userId.match(/^@whatsapp_lid-(\d+):/)?.[1];
+    const listed = lid && inboxes.map((inbox) => inbox.contactPhones.get(`${lid}@lid`)).find(Boolean);
+    return listed ? formatPhone(listed) : undefined;
 }
 
 export interface MemberCardInfo {
@@ -56,7 +69,7 @@ export function describeMember(
     if (ours || ACCOUNT.test(userId)) return { kind: "us", name: `${ours?.label ?? name} (us)`, sub: ours?.phone };
     if (SERVICE.test(userId)) return { kind: "service", name, sub: "Service account" };
     if (GHOST.test(userId)) {
-        const phone = ghostPhone(userId);
+        const phone = ghostPhone(userId, inboxes);
         const network = userId.startsWith("@telegram_") ? "Telegram" : "WhatsApp";
         return { kind: "customer", name, sub: phone && phone !== name ? phone : network };
     }
@@ -91,7 +104,7 @@ export function CirqleMemberCard({
     const client = useMatrixClientContext();
     const inboxes = useCirqleInboxes();
     const roomMember = member instanceof RoomMember ? member : (room?.getMember(member.userId) ?? null);
-    const displayName = roomMember?.name ?? (member as User).displayName ?? member.userId;
+    const displayName = roomMember ? memberName(roomMember) : ((member as User).displayName ?? member.userId);
     const info = describeMember(member.userId, displayName, inboxes, client.getSafeUserId());
     const chat = info.kind === "customer" ? customerChat(member.userId, client, inboxes, room) : undefined;
 

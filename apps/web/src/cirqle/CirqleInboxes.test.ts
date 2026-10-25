@@ -157,17 +157,56 @@ describe("numbers and their chats", () => {
     it("shows a picked number's own chats only, a disconnected one's too", () => {
         const [main1, slava] = getInboxes(client);
         const inboxes = [main1, slava];
-        expect(ids(numberChats(chats(), inboxes, main1))).toEqual([
+        expect(ids(numberChats(chats(), inboxes, [main1]))).toEqual([
             "!anna-main1:server",
             "!frisco-news:server",
             "!community:server",
         ]);
-        expect(ids(numberChats(chats(), inboxes, slava))).toEqual(["!tanya-1:server", "!tanya-2:server"]);
+        expect(ids(numberChats(chats(), inboxes, [slava]))).toEqual(["!tanya-1:server", "!tanya-2:server"]);
+    });
+
+    it("shows the chats of every picked number together", () => {
+        const [main1, slava] = getInboxes(client);
+        expect(ids(numberChats(chats(), [main1, slava], [main1, slava]))).toEqual([
+            "!anna-main1:server",
+            "!frisco-news:server",
+            "!community:server",
+            "!tanya-1:server",
+            "!tanya-2:server",
+        ]);
+    });
+
+    it("gives a number the community groups its account is in, though the community is not in its space", () => {
+        // Andrey - Personal is in "CIRQLE | Frisco" (the community's announcements) but not in the community
+        const join = (userId: string): State => ({
+            type: "m.room.member",
+            state_key: userId,
+            content: { membership: "join" },
+        });
+        const andrey = "@account_whatsapp_wa-bba81064:server";
+        rooms = [
+            ...rooms.filter((r) => r.roomId !== "!frisco-news:server"),
+            mkInboxSpace(client, "!andrey:server", "Andrey - Personal", "13026180314", [join(andrey)]),
+            mkRoom(client, "!frisco-news:server", "CIRQLE | Frisco", [
+                bridge({ id: "120363409561477405@g.us" }),
+                join(andrey),
+            ]),
+            mkRoom(client, "!andrey-dm:server", "Someone (WA)", [dm("444"), join(andrey)]),
+        ];
+        vi.mocked(client.getRooms).mockReturnValue(rooms);
+        const andreyInbox = getInboxes(client).find((inbox) => inbox.label === "Andrey - Personal")!;
+        expect(andreyInbox.accountUserId).toBe(andrey);
+        expect(andreyInbox.childIds.has("!frisco-news:server")).toBe(true);
+        // A private chat is a number's only when its space lists it
+        expect(andreyInbox.childIds.has("!andrey-dm:server")).toBe(false);
+        expect(numberLine(room("!frisco-news:server"), getInboxes(client)).text).toBe(
+            "Group · Andrey - Personal, Main #1",
+        );
     });
 
     it("leaves disconnected numbers and WhatsApp's Status out of All numbers", () => {
         const inboxes = getInboxes(client);
-        expect(ids(numberChats(chats(), inboxes, undefined))).toEqual([
+        expect(ids(numberChats(chats(), inboxes, []))).toEqual([
             "!tanya-1:server",
             "!tanya-2:server",
             "!unlisted:server",
