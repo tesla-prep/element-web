@@ -68,7 +68,8 @@ Hooks in upstream files (each one line or a small block):
 | `webpack.config.ts` | copies `cirqle/manifest.json` as `manifest.json` and `res/cirqle-icons/` |
 | `viewmodels/room/EventTileActionBarViewModel.ts` | hover bar without Reply in thread and Pin |
 | `views/dialogs/ConfirmRedactDialog.tsx` | "Delete for everyone?" without a reason |
-| `views/dialogs/InviteDialog.tsx` | Add member offers the contacts of the group's own number only (`cirqle/CirqleInviteRefusals.ts`) |
+| `views/dialogs/InviteDialog.tsx` | Add member offers the contacts of the group's own number only (`cirqle/CirqleInviteRefusals.ts`); worded "Add to <group>", names contacts by name or number, and asks "Add +7 918 188 8877 to <group>?" in place of Element's "Invite new contacts to this room?" identity warning (`cirqle/CirqleAddMember.ts`) |
+| `views/dialogs/invite/DMRoomTile.tsx` | a suggestion shows the contact's name and number, not the relay bot's Matrix ID |
 | `utils/EventUtils.ts` | Edit only while the network takes it (`com.beeper.room_features`, `cirqle/CirqleMessages.ts`) |
 | `views/dialogs/ForwardDialog.tsx` | Forward only to chats of the same number, after "Forward to …?" (`cirqle/CirqleForward.ts`) |
 | `views/rooms/EventTile/ReactionsRowAdapter.tsx` | our number's reaction counted once, its latest shown (`cirqle/CirqleReactions.ts`) |

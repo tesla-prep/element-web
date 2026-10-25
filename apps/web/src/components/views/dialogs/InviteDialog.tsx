@@ -63,6 +63,8 @@ import { logErrorAndShowErrorDialog } from "../../../utils/ErrorUtils.tsx";
 import UnknownIdentityUsersWarningDialog from "./invite/UnknownIdentityUsersWarningDialog.tsx";
 import { AddressType, getAddressType } from "../../../UserAddress.ts";
 import { isCirqleInvitable } from "../../../cirqle/CirqleInviteRefusals";
+import { addMemberLabel, addMemberTexts, confirmAddMember } from "../../../cirqle/CirqleAddMember";
+import { isCirqleMessenger } from "../../../cirqle/CirqleFeatures";
 
 interface Result {
     userId: string;
@@ -92,7 +94,7 @@ class DMUserTile extends React.PureComponent<IDMUserTileProps> {
         const avatar = <SearchResultAvatar user={this.props.member} size={avatarSize} />;
 
         return (
-            <Pill label={this.props.member.name} onClick={this.onRemove}>
+            <Pill label={addMemberLabel(this.props.member)?.name ?? this.props.member.name} onClick={this.onRemove}>
                 {avatar}
             </Pill>
         );
@@ -1153,6 +1155,15 @@ export default class InviteDialog extends React.PureComponent<Props, IInviteDial
      * We check if any of the users lack a known cryptographic identity, and show a warning if so.
      */
     private async onGoButtonPressed(): Promise<void> {
+        if (isCirqleMessenger()) {
+            // CIRQLE: bridged contacts have no Matrix identity to warn about; ask "Add … to the group?" instead
+            const cli = MatrixClientPeg.safeGet();
+            const room = this.props.kind === InviteKind.Invite ? cli.getRoom(this.props.roomId) : null;
+            if (room && !(await confirmAddMember(cli, room, this.convertFilter()))) return;
+            this.setBusy(true);
+            await this.startDmOrSendInvites();
+            return;
+        }
         this.setBusy(true);
 
         const targets = this.convertFilter();
@@ -1273,6 +1284,12 @@ export default class InviteDialog extends React.PureComponent<Props, IInviteDial
             throw new Error("Unknown InviteDialog kind: " + this.props.kind);
         }
 
+        const cirqleTexts = this.props.kind === InviteKind.Invite ? addMemberTexts(cli, this.props.roomId) : undefined; // CIRQLE
+        if (cirqleTexts) {
+            helpText = cirqleTexts.help;
+            buttonText = cirqleTexts.button;
+        }
+
         const onGoButtonPressed = (): void => {
             this.onGoButtonPressed().catch((e) => logErrorAndShowErrorDialog("Error processing invites", e));
         };
@@ -1353,6 +1370,10 @@ export default class InviteDialog extends React.PureComponent<Props, IInviteDial
                 : _t("invite|to_room", {
                       roomName: room?.name || _t("common|unnamed_room"),
                   });
+        }
+
+        if (this.props.kind === InviteKind.Invite) {
+            title = addMemberTexts(MatrixClientPeg.safeGet(), this.props.roomId)?.title ?? title; // CIRQLE
         }
 
         return (

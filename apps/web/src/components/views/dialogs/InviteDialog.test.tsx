@@ -38,6 +38,9 @@ import { SDKContextClass } from "../../../contexts/SDKContextClass";
 import { type IProfileInfo } from "../../../hooks/useProfileInfo";
 import { DirectoryMember, startDmOnFirstMessage } from "../../../utils/direct-messages";
 import { MatrixClientPeg } from "../../../MatrixClientPeg.ts";
+import Modal from "../../../Modal";
+import QuestionDialog from "./QuestionDialog";
+import { CIRQLE_BRAND } from "../../../cirqle/CirqleFeatures";
 
 const mockGetAccessToken = vi.fn().mockResolvedValue("getAccessToken");
 vi.mock("../../../IdentityAuthClient", () => ({
@@ -589,6 +592,63 @@ describe("InviteDialog", () => {
                 // We shouldn't call getUserVerificationStatus on an email address
                 expect(vi.mocked(mockClient.getCrypto()!.getUserVerificationStatus)).not.toHaveBeenCalled();
             });
+        });
+    });
+
+    describe("in CIRQLE Messenger", () => {
+        const contact = "@newchat_whatsapp_wa-bba81064_=79181888877:example.org";
+
+        beforeEach(() => {
+            SdkConfig.put({
+                brand: CIRQLE_BRAND,
+                validated_server_config: {} as ValidatedServerConfig,
+            } as IConfigOptions);
+            room.name = "CIRQ-21 test";
+            mockClient.getProfileInfo.mockResolvedValue({ displayname: "+79181888877 · Andrey - Personal" });
+            vi.mocked(mockClient.getCrypto()!.getUserVerificationStatus).mockResolvedValue(
+                new UserVerificationStatus(false, false, false, false),
+            );
+        });
+
+        afterEach(() => {
+            SdkConfig.reset();
+        });
+
+        const question = (answer: boolean) =>
+            vi
+                .spyOn(Modal, "createDialog")
+                .mockReturnValue({ finished: Promise.resolve([answer]), close: vi.fn() } as unknown as ReturnType<
+                    typeof Modal.createDialog
+                >);
+
+        it("adds a contact after asking in its own words, without Element's identity warning or a Matrix ID", async () => {
+            const createDialog = question(true);
+            render(<InviteDialog kind={InviteKind.Invite} roomId={roomId} onFinished={vi.fn()} />);
+            await enterIntoSearchField(contact);
+            await userEvent.click(screen.getByRole("button", { name: "Invite" }));
+            await flushPromises();
+
+            expect(createDialog).toHaveBeenCalledWith(
+                QuestionDialog,
+                expect.objectContaining({ title: "Add +7 918 188 8877 to CIRQ-21 test?", button: "Add" }),
+            );
+            expect(mockClient.invite.mock.calls[0].slice(0, 2)).toEqual([roomId, contact]);
+            // The chosen contact's pill is named by the number too
+            expect(screen.getByText("+7 918 188 8877")).toBeInTheDocument();
+            expect(screen.queryByText(contact)).toBeNull();
+            expect(vi.mocked(mockClient.getCrypto()!.getUserVerificationStatus)).not.toHaveBeenCalled();
+            expect(screen.queryByText("Confirm inviting them", { exact: false })).toBeNull();
+        });
+
+        it("adds nobody when the question is cancelled", async () => {
+            question(false);
+            render(<InviteDialog kind={InviteKind.Invite} roomId={roomId} onFinished={vi.fn()} />);
+            await enterIntoSearchField(contact);
+            await userEvent.click(screen.getByRole("button", { name: "Invite" }));
+            await flushPromises();
+
+            expect(mockClient.invite).not.toHaveBeenCalled();
+            expect(screen.getByRole("button", { name: "Invite" })).toBeEnabled();
         });
     });
 });
