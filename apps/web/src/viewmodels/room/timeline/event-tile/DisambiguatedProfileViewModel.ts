@@ -16,7 +16,7 @@ import { type MouseEvent } from "react";
 import { _t } from "../../../../languageHandler";
 import { getUserNameColorClass } from "../../../../utils/FormattingUtils";
 import { isCirqleMessenger } from "../../../../cirqle/CirqleFeatures";
-import { cirqleSenderPhone } from "../../../../cirqle/CirqleSenderPhone";
+import { cirqleMentionName, cirqleSenderPhone } from "../../../../cirqle/CirqleSenderPhone";
 
 /**
  * Information about a member for disambiguation purposes.
@@ -89,8 +89,9 @@ export class DisambiguatedProfileViewModel
         const { member, fallbackName, colored, emphasizeDisplayName, withTooltip, userStatus } = props;
 
         // Compute display name
-        const displayName = member?.rawDisplayName || fallbackName;
+        let displayName = member?.rawDisplayName || fallbackName;
         const mxid = member?.userId;
+        if (isCirqleMessenger()) displayName = cirqleMentionName(displayName, mxid ?? fallbackName); // CIRQLE: no "(WA)", never a bridge's Matrix ID
 
         // Compute color class if coloring is enabled
         let colorClass: string | undefined;

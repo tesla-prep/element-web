@@ -83,6 +83,13 @@ Element's resizable panels (the children of the panel group under
         max-width: none !important;
     }
 
+    /* The timeline's floating buttons (to the first unread, to the bottom) sit at
+       z-index 1000 and showed through the info panel */
+    .mx_MainSplit:has(.mx_RightPanel) .mx_JumpToBottomButton,
+    .mx_MainSplit:has(.mx_RightPanel) .mx_TopUnreadMessagesBar {
+        display: none;
+    }
+
     .cirqle_ChatList {
         position: relative;
         border-right: 0;

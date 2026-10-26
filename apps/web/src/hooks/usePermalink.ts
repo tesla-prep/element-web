@@ -19,6 +19,7 @@ import { usePermalinkTargetRoom } from "./usePermalinkTargetRoom";
 import { usePermalinkEvent } from "./usePermalinkEvent";
 import { usePermalinkMember } from "./usePermalinkMember";
 import { isCirqleMessenger } from "../cirqle/CirqleFeatures";
+import { cirqleMentionName } from "../cirqle/CirqleSenderPhone";
 
 interface Args {
     /** Room in which the permalink should be displayed. */
@@ -144,7 +145,7 @@ export const usePermalink: (args: Args) => HookResult = ({
     if (type === PillType.AtRoomMention && permalinkRoom) {
         text = "@room";
     } else if (type === PillType.UserMention && member) {
-        text = (isCirqleMessenger() ? member.rawDisplayName : member.name) || resourceId; // CIRQLE: a name, never a Matrix ID
+        text = isCirqleMessenger() ? cirqleMentionName(member.rawDisplayName, resourceId ?? member.userId) : member.name || resourceId; // CIRQLE: a name, never a Matrix ID
         onClick = (e: ButtonEvent): void => {
             e.preventDefault();
             e.stopPropagation();
@@ -153,6 +154,8 @@ export const usePermalink: (args: Args) => HookResult = ({
                 member: member,
             });
         };
+    } else if (type === PillType.UserMention && isCirqleMessenger()) {
+        text = resourceId && cirqleMentionName(undefined, resourceId); // CIRQLE: not loaded yet: the number, not the bridge's Matrix ID
     } else if (type === PillType.RoomMention) {
         if (targetRoom) {
             text = targetRoom.name || resourceId;

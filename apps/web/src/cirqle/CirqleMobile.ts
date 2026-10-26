@@ -218,6 +218,14 @@ export function watchCirqleLongPress(doc: Document = document): () => void {
 }
 
 /** Once the config is loaded: on touch screens, the app follows the keyboard and a long press opens a message's menu. */
+/**
+ * On a phone a chat opens on its messages, as in WhatsApp. Element reopens the
+ * info panel left open in that chat, and on a phone the panel covers the chat.
+ */
+export function cirqleChatOpensOnMessages(): boolean {
+    return isCirqleMessenger() && window.matchMedia(CIRQLE_PHONE_QUERY).matches;
+}
+
 export function startCirqleMobile(): void {
     if (!isCirqleMessenger()) return;
     const root = document.documentElement;

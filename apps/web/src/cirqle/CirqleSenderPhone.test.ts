@@ -15,7 +15,7 @@ import SdkConfig from "../SdkConfig";
 import { DisambiguatedProfileViewModel } from "../viewmodels/room/timeline/event-tile/DisambiguatedProfileViewModel";
 import { CIRQLE_BRAND } from "./CirqleFeatures";
 import { CONTACT_PHONES_EVENT, NUMBER_USERS_EVENT } from "./CirqleInboxes";
-import { cirqleSenderPhone } from "./CirqleSenderPhone";
+import { cirqleFallbackName, cirqleMentionName, cirqleSenderPhone } from "./CirqleSenderPhone";
 
 const SERVER = "matrix.cirqlecirqle.com";
 const SPACE = `!space:${SERVER}`;
@@ -116,5 +116,24 @@ describe("the sender's number over a bubble in a group", () => {
         expect(vm.getSnapshot().displayIdentifier).toBe("+1 929 991 7911");
         vm.setMember(STAFF, { userId: STAFF, roomId: GROUP, rawDisplayName: "Andrey", disambiguate: true });
         expect(vm.getSnapshot().displayIdentifier).toBeUndefined();
+    });
+
+    it("names someone not loaded yet by their number, never by the bridge's Matrix ID", () => {
+        expect(cirqleFallbackName(NELLIE)).toBe("+1 929 991 7911");
+        expect(cirqleFallbackName(STRANGER)).toBe("WhatsApp contact");
+        expect(cirqleFallbackName(TG_CUSTOMER)).toBe("Telegram user");
+        expect(cirqleFallbackName(STAFF)).toBeUndefined();
+        const vm = new DisambiguatedProfileViewModel({ fallbackName: NELLIE, member: null });
+        expect(vm.getSnapshot().displayName).toBe("+1 929 991 7911");
+        vm.setMember(OWN_NUMBER_GHOST, { userId: OWN_NUMBER_GHOST, roomId: GROUP, rawDisplayName: "Andrey (WA)", disambiguate: false });
+        expect(vm.getSnapshot().displayName).toBe("Andrey");
+    });
+
+    it("gives a mention pill the name without the bridge's (WA), else the number", () => {
+        expect(cirqleMentionName("+17548021097 (WA)", STRANGER)).toBe("+1 754 802 1097");
+        expect(cirqleMentionName("nishka rastogi (WA)", STRANGER)).toBe("nishka rastogi");
+        expect(cirqleMentionName(undefined, NELLIE)).toBe("+1 929 991 7911");
+        expect(cirqleMentionName(NELLIE, NELLIE)).toBe("+1 929 991 7911");
+        expect(cirqleMentionName("Andrey", STAFF)).toBe("Andrey");
     });
 });

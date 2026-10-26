@@ -17,7 +17,7 @@ import dis from "../dispatcher/dispatcher";
 import { Action } from "../dispatcher/actions";
 import { useRoomMembers } from "../hooks/useRoomMembers";
 import { groupPeople, membersLabel } from "./CirqleGroupInfo";
-import { chatKind, contactNumber, inboxesOf, networkOf } from "./CirqleInboxes";
+import { chatKind, contactNumber, contactPhone, inboxesOf, networkOf } from "./CirqleInboxes";
 import { useCirqleInboxes } from "./useCirqleChats";
 import { BackIcon, GroupIcon, KebabIcon, SearchIcon } from "./CirqleIcons";
 
@@ -32,7 +32,7 @@ export function CirqleRoomSubtitle({ room }: { room: Room }): JSX.Element | null
 
     const parts: string[] = [];
     if (kind === "chat") {
-        const number = contactNumber(room);
+        const number = contactPhone(room, inboxes) ?? contactNumber(room);
         if (number && !room.name.replace(/[^\d]/g, "").includes(number.replace(/[^\d]/g, ""))) parts.push(number);
         else if (network === "telegram") parts.push("Telegram");
     } else {

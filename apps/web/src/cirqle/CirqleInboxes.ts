@@ -300,7 +300,8 @@ export function repeatedNames(rooms: Room[]): Set<string> {
     return repeated;
 }
 
-const GHOST_NUMBER = /^@(?:whatsapp|telegram)_(\d{7,15}):/;
+/** WhatsApp ghosts carry the number; Telegram's `@telegram_<id>` carries a user id, not a phone. */
+const GHOST_NUMBER = /^@whatsapp_(\d{7,15}):/;
 
 /** The customer's number in a private chat, read from the bridge's ghost user or the chat name. */
 export function contactNumber(room: Room): string | undefined {

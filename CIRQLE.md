@@ -37,6 +37,7 @@ Hooks in upstream files (each one line or a small block):
 | `customisations/helpers/UIComponents.ts` | no room directory, integrations, space creation |
 | `shouldHideEvent.ts` | room state events (joins, renames) hidden, tombstones kept; messages a staff member deleted "for me" hidden (`cirqle/CirqleMessages.ts`) |
 | `structures/TimelinePanel.tsx` | the timeline redraws when a message is deleted "for me" |
+| `hooks/usePermalink.ts` (QA 27.10) | a mention of someone not loaded yet shows their number (or "WhatsApp contact"), and names lose the bridge's "(WA)" (`cirqleMentionName`) |
 | `hooks/usePermalink.ts` | a mention or "In reply to" pill names the person without their Matrix ID |
 | `structures/LoggedInView.tsx` | rail in place of the space bar, list 360 px |
 | `structures/LeftPanel.tsx` | chat list in place of the room list |
@@ -56,6 +57,7 @@ Hooks in upstream files (each one line or a small block):
 | `autocomplete/NotifProvider.tsx` | no @room |
 | `utils/DialogOpener.ts` | room settings open the chat's info panel (header avatar included) |
 | `structures/MatrixChat.tsx` | Ctrl/Cmd+K focuses the chat list search, no Spotlight |
+| `stores/right-panel/RightPanelStore.ts` | on a phone a chat opens on its messages, not on the info panel left open in it (`cirqleChatOpensOnMessages`) |
 | `cirqle/CirqleChatList.tsx` → `cirqle/CirqleWarmup.ts` | the top 12 chats of the list are paged back ahead of time (and the chat under the pointer first), so a chat opens without the 2-4 s spinner |
 | `MatrixClientPeg.ts` | no device dehydration at start: staff have no secret storage, and it cost two round trips before the first sync |
 | `views/dialogs/UserSettingsDialog.tsx` | settings tabs staff need, a short Preferences (`cirqle/CirqleSettings.tsx`) |

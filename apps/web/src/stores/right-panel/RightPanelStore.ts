@@ -29,6 +29,7 @@ import { type ActiveRoomChangedPayload } from "../../dispatcher/payloads/ActiveR
 import { type OpenPdfViewerPayload } from "../../dispatcher/payloads/OpenPdfViewerPayload";
 import { SDKContextClass } from "../../contexts/SDKContextClass";
 import { MatrixClientPeg } from "../../MatrixClientPeg";
+import { cirqleChatOpensOnMessages } from "../../cirqle/CirqleMobile"; // CIRQLE
 
 /**
  * @see RightPanelStore#generateHistoryForPhase
@@ -450,6 +451,8 @@ export default class RightPanelStore extends ReadyWatchingStore {
         this.viewedRoomId = newRoomId;
         // load values from byRoomCache with the viewedRoomId.
         this.loadCacheFromSettings();
+        const reopened = this.byRoom[newRoomId ?? ""];
+        if (reopened && cirqleChatOpensOnMessages()) reopened.isOpen = false; // CIRQLE: a phone opens a chat on its messages
 
         // when we're switching to a room, clear out any stale MemberInfo cards
         // in order to fix https://github.com/vector-im/element-web/issues/21487
