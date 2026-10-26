@@ -14,6 +14,7 @@ import {
 
 import { formatFullDate, formatTime, formatFullTime, formatRelativeTime } from "../../../../../DateUtils";
 import { objectHasDiff } from "../../../../../utils/objects";
+import { isCirqleTouch } from "../../../../../cirqle/CirqleMobile";
 
 export interface MessageTimestampViewModelProps {
     /**
@@ -95,7 +96,8 @@ export class MessageTimestampViewModel
             ts: timestamp,
             tsSentAt: sentAt,
             tsReceivedAt: receivedAt,
-            inhibitTooltip: props.inhibitTooltip,
+            // CIRQLE: no full-date tooltip on a touch screen, where a tap on the message opened it
+            inhibitTooltip: isCirqleTouch() ? true : props.inhibitTooltip,
             href: props.href,
         };
     };

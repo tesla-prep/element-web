@@ -38,6 +38,12 @@ import { createVoiceMessageContent } from "../../../utils/createVoiceMessageCont
 import AccessibleButton from "../elements/AccessibleButton";
 import { isCirqleMessenger } from "../../../cirqle/CirqleFeatures";
 import { CirqleVoiceRecorder } from "../../../cirqle/CirqleVoiceRecorder";
+import {
+    cirqleMicProblem,
+    isSilentRecording,
+    prepareCirqleRecorderContext,
+    SILENT_MIC,
+} from "../../../cirqle/CirqleMic";
 
 interface IProps {
     room: Room;
@@ -97,6 +103,13 @@ export default class VoiceRecordComposerTile extends React.PureComponent<IProps,
         const { replyToEvent, relation } = this.props;
 
         await this.state.recorder.stop();
+
+        if (isCirqleMessenger() && isSilentRecording(this.state.recorder.amplitudes)) {
+            // CIRQLE: a voice message nobody can hear is not sent (CirqleMic.ts)
+            Modal.createDialog(ErrorDialog, SILENT_MIC);
+            await this.disposeRecording();
+            return;
+        }
 
         let upload: IUpload;
         try {
@@ -175,12 +188,20 @@ export default class VoiceRecordComposerTile extends React.PureComponent<IProps,
             return;
         }
 
+        // CIRQLE: the audio context is made in the tap itself, before any await (CirqleMic.ts)
+        prepareCirqleRecorderContext();
+
         // The "microphone access error" dialogs are used a lot, so let's functionify them
-        const accessError = (): void => {
-            Modal.createDialog(ErrorDialog, {
-                title: _t("voip|unable_to_access_audio_input_title"),
-                description: <p>{_t("voip|unable_to_access_audio_input_description")}</p>,
-            });
+        const accessError = (e: unknown): void => {
+            Modal.createDialog(
+                ErrorDialog,
+                isCirqleMessenger()
+                    ? cirqleMicProblem(e)
+                    : {
+                          title: _t("voip|unable_to_access_audio_input_title"),
+                          description: <p>{_t("voip|unable_to_access_audio_input_description")}</p>,
+                      },
+            );
         };
 
         // Do a sanity test to ensure we're about to grab a valid microphone reference. Things might
@@ -197,7 +218,7 @@ export default class VoiceRecordComposerTile extends React.PureComponent<IProps,
             // else we probably have a device that is good enough
         } catch (e) {
             logger.error("Error getting devices: ", e);
-            accessError();
+            accessError(e);
             return;
         }
 
@@ -212,7 +233,7 @@ export default class VoiceRecordComposerTile extends React.PureComponent<IProps,
             this.setState({ recorder, recordingPhase: RecordingState.Started });
         } catch (e) {
             logger.error("Error starting recording: ", e);
-            accessError();
+            accessError(e);
 
             // if this goes wrong we don't want it to affect the call stack
             void VoiceRecordingStore.instance.disposeRecording(this.voiceRecordingId);

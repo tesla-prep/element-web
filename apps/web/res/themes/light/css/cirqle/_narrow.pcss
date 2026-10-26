@@ -45,6 +45,23 @@ Element's resizable panels (the children of the panel group under
         width: 100% !important;
     }
 
+    /* A wide message (a video, a long link) never makes the chat wider than the
+       screen: Element's flex columns otherwise grow to their content and the page
+       slides sideways, header icons and the microphone with it */
+    .mx_RoomView_wrapper,
+    .mx_RoomView,
+    .mx_MainSplit,
+    .mx_RoomView_body,
+    .mx_RoomView_timeline,
+    .mx_RoomView_messagePanel {
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    .mx_RoomView_messagePanel {
+        overflow-x: hidden;
+    }
+
     .cirqle_RoomHeader_back {
         display: flex;
         margin-inline-start: -8px;

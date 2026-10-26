@@ -77,6 +77,11 @@ export class VoiceMessageRecording implements IDestroyable {
         return this.voiceRecording.emit(event, ...args);
     }
 
+    /** CIRQLE: the recording's levels, 16 a second (CirqleMic.ts tells a silent one by them) */
+    public get amplitudes(): number[] {
+        return this.voiceRecording.amplitudes;
+    }
+
     public get hasRecording(): boolean {
         return this.buffer.length > 0;
     }

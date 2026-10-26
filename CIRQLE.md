@@ -45,8 +45,8 @@ Hooks in upstream files (each one line or a small block):
 | `views/rooms/RoomHeader/RoomHeader.tsx` | name without "(WA)", subtitle, back arrow, search and menu |
 | `views/rooms/EventTile.tsx` | staff messages and the number's own ghost (what the owner sends from the phone) on our side; customer name hidden in private chats; in groups the sender's avatar beside the first bubble of a run, which opens their card (`cirqle/CirqleSenderAvatar.tsx`) |
 | `views/rooms/MessageComposerButtons.tsx`, `views/rooms/MessageComposer.tsx` | microphone beside the input, on phones too |
-| `views/rooms/VoiceRecordComposerTile.tsx` | recording a voice message takes the whole row, WhatsApp Web style: delete, red dot and time, waveform, pause; paused, it plays back and continues (`cirqle/CirqleVoiceRecorder.tsx`) |
-| `audio/VoiceRecording.ts`, `audio/VoiceMessageRecording.ts` | pause and resume: the encoder flushes and the audio context is suspended, so the clock and the length stand still |
+| `views/rooms/VoiceRecordComposerTile.tsx` | recording a voice message takes the whole row, WhatsApp Web style: delete, red dot and time, waveform, pause; paused, it plays back and continues (`cirqle/CirqleVoiceRecorder.tsx`); the audio context is made in the tap on the microphone, a microphone that cannot be used is named by its cause (off, busy, none), and a recording that heard only silence is not sent (`cirqle/CirqleMic.ts`) |
+| `audio/VoiceRecording.ts`, `audio/VoiceMessageRecording.ts` | pause and resume: the encoder flushes and the audio context is suspended, so the clock and the length stand still; the recorder records into the context made in the tap (iOS) and lets the microphone go when it fails to start; the recording's levels for the silence check (`cirqle/CirqleMic.ts`) |
 | `audio/Playback.ts`, `audio/PlaybackClock.ts` | voice messages play through an audio element of their own, so 1.5× and 2× keep the pitch; the clock reads the element (`cirqle/CirqleVoiceSpeed.ts`) |
 | `views/audio_messages/RecordingPlayback.tsx` | the speed button while a voice message plays (`cirqle/CirqleVoiceSpeedButton.tsx`) |
 | `views/audio_messages/AudioPlayerBase.tsx` | arrow keys skip 5 s without the focused seek bar undoing it |
@@ -62,7 +62,12 @@ Hooks in upstream files (each one line or a small block):
 | `context_menus/MessageContextMenu.tsx` | no thread, Share, Copy link, Report, View source; "Delete for everyone" for our own messages, "Delete" for anyone else's with WhatsApp's "Delete for everyone" (in a group where our number is an admin and staff may redact) or "Delete for me" (`cirqle/CirqleMessages.ts`, `cirqle/CirqleDeleteDialog.tsx`); a row of reactions on top and Copy for the whole text (`cirqle/CirqleMessageMenu.tsx`); the emoji picker it opens is a sheet on phones |
 | `SupportedBrowser.ts` | phones are a supported browser (`cirqle/CirqleMobile.ts`) |
 | `viewmodels/structures/ResizerViewModel.ts` | the chat list never collapses: no auto-collapse under 768 px, the saved `RoomList.isPanelCollapsed` ignored |
-| `viewmodels/room/timeline/event-tile/DisambiguatedProfileViewModel.ts` | a sender's name without the Matrix ID, even when two have the same name |
+| `viewmodels/room/timeline/event-tile/DisambiguatedProfileViewModel.ts` | a sender's name without the Matrix ID, even when two have the same name; in a group, a customer's number after the name, quieter, on one line (`cirqle/CirqleSenderPhone.ts`: from the ghost, or from `contact_phones` for a LID; not for staff, our own ghosts or Telegram) |
+| `views/rooms/JumpToBottomButton.tsx`, `structures/RoomView.tsx` | on a touch screen the jump-to-latest button leaves the keyboard as it was (it does not take the focus from the composer, nor focus it), and a reaction or a closed dialog does not bring the keyboard up (`cirqle/CirqleMobile.ts`) |
+| `structures/MatrixChat.tsx`, `views/rooms/BasicMessageComposer.tsx` | on a touch screen an opened chat does not focus the message field, so the keyboard comes up only on a tap in it; an edit's field still does (`cirqle/CirqleMobile.ts`) |
+| `structures/ScrollPanel.tsx` | on a touch screen the timeline keeps its bottom while the chat changes height with the keyboard (`cirqle/CirqleMobile.ts`) |
+| `viewmodels/room/timeline/event-tile/timestamp/MessageTimestampViewModel.ts` | no full-date tooltip on a touch screen, where a tap on a message opened it |
+| `views/messages/MBodyFactory.tsx` | Telegram's round video message is a small circle (`cirqle/CirqleTimeline.ts`) |
 | `vector/init.tsx` (second line) | on touch screens the app follows the keyboard and a long press opens a message's menu (`cirqle/CirqleMobile.ts`) |
 | `vector/index.html` | `interactive-widget=resizes-content` and `viewport-fit=cover` in the viewport; CIRQLE's title, icons, iOS home screen tags and launch screens |
 | `webpack.config.ts` | copies `cirqle/manifest.json` as `manifest.json` and `res/cirqle-icons/` |
@@ -126,6 +131,11 @@ The same app on a phone, laid out like WhatsApp there (`_narrow.pcss`, `cirqle/C
   scrolling the page away;
 - a long press on a message opens its menu (reactions, Copy, Reply, Forward, Delete) as a
   sheet at the bottom; the desktop hover bar does not show on a tap;
+- the keyboard comes up only on a tap in the message field: not on opening a chat, after a
+  reaction, or on the jump-to-latest button, and the timeline keeps its bottom above the
+  composer while the keyboard comes and goes;
+- a wide message (a video) never makes the chat wider than the screen; our last message's
+  "sent" mark stays inside the row;
 - no "does not support this browser" on phones.
 
 ## On the home screen

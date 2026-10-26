@@ -16,6 +16,7 @@ import { type MouseEvent } from "react";
 import { _t } from "../../../../languageHandler";
 import { getUserNameColorClass } from "../../../../utils/FormattingUtils";
 import { isCirqleMessenger } from "../../../../cirqle/CirqleFeatures";
+import { cirqleSenderPhone } from "../../../../cirqle/CirqleSenderPhone";
 
 /**
  * Information about a member for disambiguation purposes.
@@ -102,9 +103,11 @@ export class DisambiguatedProfileViewModel
         let title: string | undefined;
 
         if (mxid) {
-            // Only show identifier if disambiguation is needed
-            if (member?.disambiguate && !isCirqleMessenger()) {
-                // CIRQLE: a name only; a bridge's Matrix ID means nothing to staff
+            if (isCirqleMessenger()) {
+                // CIRQLE: no Matrix ID, a bridge's means nothing to staff; a customer's number in a group
+                displayIdentifier = member ? cirqleSenderPhone(mxid, member.roomId, displayName) : undefined;
+            } else if (member?.disambiguate) {
+                // Only show identifier if disambiguation is needed
                 displayIdentifier = mxid;
             }
 

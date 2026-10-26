@@ -80,6 +80,58 @@ export function syncCirqleViewport(
     root.classList.toggle("cirqle_keyboard", viewport.height < full * 0.8);
 }
 
+/** A touch screen the app follows the keyboard on (`startCirqleMobile`). */
+export function isCirqleTouch(): boolean {
+    return isCirqleMessenger() && document.documentElement.classList.contains("cirqle_touch");
+}
+
+/**
+ * The "jump to the latest message" button on a touch screen leaves the keyboard as
+ * it was, as on WhatsApp: a tap on it does not take the focus from the composer
+ * (iOS would drop the keyboard and bring it back, and the app follows both), and
+ * it does not focus the composer when the keyboard was down.
+ */
+export function keepCirqleKeyboard(ev: { preventDefault(): void }): void {
+    if (isCirqleTouch()) ev.preventDefault();
+}
+
+/**
+ * On a touch screen the message field of a chat just opened is not focused: that
+ * brought the keyboard up over every chat opened, which WhatsApp never does. A
+ * tap in the field does; editing a message still focuses its own field.
+ */
+export function skipsCirqleAutoFocus(field: HTMLElement | null): boolean {
+    return isCirqleTouch() && !!field?.closest(".mx_SendMessageComposer");
+}
+
+/**
+ * On a touch screen the timeline keeps its bottom where it was while the chat
+ * changes height, as WhatsApp does: the keyboard coming up or going down (on iOS
+ * only the visual viewport, so Element is never told) left the newest messages
+ * under the composer, or the view in the middle of a long message. What the
+ * person scrolled to is remembered; a change of the panel's own height puts it back.
+ */
+export function keepCirqleTimelineBottom(panel: HTMLElement): () => void {
+    if (!isCirqleTouch() || !panel.classList.contains("mx_RoomView_messagePanel")) return () => {};
+    const distance = (): number => panel.scrollHeight - panel.scrollTop - panel.clientHeight;
+    let fromBottom = distance();
+    let height = panel.clientHeight;
+    const onScroll = (): void => {
+        if (panel.clientHeight === height) fromBottom = distance();
+    };
+    const observer = new ResizeObserver(() => {
+        if (panel.clientHeight === height) return;
+        height = panel.clientHeight;
+        panel.scrollTop = panel.scrollHeight - panel.clientHeight - fromBottom;
+    });
+    panel.addEventListener("scroll", onScroll, { passive: true });
+    observer.observe(panel);
+    return () => {
+        observer.disconnect();
+        panel.removeEventListener("scroll", onScroll);
+    };
+}
+
 /** The element a long press on `target` opens the menu of: a message's line (a link keeps its own menu). */
 export function longPressTarget(target: EventTarget | null): HTMLElement | null {
     if (!(target instanceof Element)) return null;

@@ -15,6 +15,7 @@ import Timer from "../../utils/Timer";
 import { getKeyBindingsManager } from "../../KeyBindingsManager";
 import { KeyBindingAction } from "../../accessibility/KeyboardShortcuts";
 import { SDKContext } from "../../contexts/SDKContext";
+import { keepCirqleTimelineBottom } from "../../cirqle/CirqleMobile";
 
 // The amount of extra scroll distance to allow prior to unfilling.
 // See getExcessHeight.
@@ -183,6 +184,7 @@ export default class ScrollPanel extends React.Component<IProps> {
     private minListHeight!: number;
     private heightUpdateInProgress = false;
     public divScroll: HTMLDivElement | null = null;
+    private unwatchCirqleBottom?: () => void;
 
     public static contextType = SDKContext;
     declare public context: React.ContextType<typeof SDKContext>;
@@ -197,6 +199,8 @@ export default class ScrollPanel extends React.Component<IProps> {
         this.unmounted = false;
         this.context?.resizeNotifier?.on("middlePanelResizedNoisy", this.onResize);
         this.checkScroll();
+        // CIRQLE: on a phone the keyboard does not move the timeline's bottom (CirqleMobile.ts)
+        if (this.divScroll) this.unwatchCirqleBottom = keepCirqleTimelineBottom(this.divScroll);
     }
 
     public componentDidUpdate(): void {
@@ -217,6 +221,7 @@ export default class ScrollPanel extends React.Component<IProps> {
         this.unmounted = true;
 
         this.context?.resizeNotifier?.removeListener("middlePanelResizedNoisy", this.onResize);
+        this.unwatchCirqleBottom?.();
 
         this.divScroll = null;
     }
