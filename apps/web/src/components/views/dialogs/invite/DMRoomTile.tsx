@@ -14,6 +14,7 @@ import BaseAvatar from "../../avatars/BaseAvatar.tsx";
 import { mediaFromMxc } from "../../../../customisations/Media.ts";
 import { _t } from "../../../../languageHandler";
 import EmailPillAvatarIcon from "../../../../../res/img/icon-email-pill-avatar.svg?react";
+import { addMemberLabel } from "../../../../cirqle/CirqleAddMember";
 
 interface IDMRoomTileProps {
     member: Member;
@@ -57,11 +58,13 @@ export class DMRoomTile extends React.PureComponent<IDMRoomTileProps> {
             ? _t("invite|email_caption")
             : userIdentifier || this.props.member.userId;
 
+        const cirqle = addMemberLabel(this.props.member); // CIRQLE: a name and number, never a Matrix ID
+
         return (
             <RichItem
                 avatar={avatar}
-                title={this.props.member.name}
-                description={caption}
+                title={cirqle?.name ?? this.props.member.name}
+                description={cirqle ? cirqle.sub : caption}
                 timestamp={this.props.lastActiveTs}
                 onClick={this.onClick}
                 selected={this.props.isSelected}
