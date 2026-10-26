@@ -64,6 +64,8 @@ Hooks in upstream files (each one line or a small block):
 | `viewmodels/structures/ResizerViewModel.ts` | the chat list never collapses: no auto-collapse under 768 px, the saved `RoomList.isPanelCollapsed` ignored |
 | `viewmodels/room/timeline/event-tile/DisambiguatedProfileViewModel.ts` | a sender's name without the Matrix ID, even when two have the same name |
 | `vector/init.tsx` (second line) | on touch screens the app follows the keyboard and a long press opens a message's menu (`cirqle/CirqleMobile.ts`) |
+| `cirqle/CirqleChatList.tsx` → `cirqle/CirqleWarmup.ts` | the top 12 chats of the list are paged back ahead of time (and the chat under the pointer first), so a chat opens without the 2-4 s spinner |
+| `MatrixClientPeg.ts` | no device dehydration at start: staff have no secret storage, and it cost two round trips before the first sync |
 | `vector/index.html` | `interactive-widget=resizes-content` and `viewport-fit=cover` in the viewport; CIRQLE's title, icons, iOS home screen tags and launch screens |
 | `webpack.config.ts` | copies `cirqle/manifest.json` as `manifest.json` and `res/cirqle-icons/` |
 | `viewmodels/room/EventTileActionBarViewModel.ts` | hover bar without Reply in thread and Pin |

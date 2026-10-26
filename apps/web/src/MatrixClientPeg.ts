@@ -27,6 +27,7 @@ import PlatformPeg from "./PlatformPeg";
 import SdkConfig from "./SdkConfig";
 import { setDeviceIsolationMode } from "./settings/controllers/DeviceIsolationModeController.ts";
 import { initialiseDehydrationIfEnabled } from "./utils/device/dehydration";
+import { isCirqleMessenger } from "./cirqle/CirqleFeatures"; // CIRQLE
 
 export interface MatrixClientPegAssignOpts {
     /**
@@ -329,7 +330,10 @@ class MatrixClientPegClass implements IMatrixClientPeg {
         // is a new login, we will start dehydration after Secret Storage is
         // unlocked.
         try {
-            await initialiseDehydrationIfEnabled(this.matrixClient, { onlyIfKeyCached: true, rehydrate: false });
+            // CIRQLE: staff have no secret storage, so this only cost two round trips before the first sync
+            if (!isCirqleMessenger()) {
+                await initialiseDehydrationIfEnabled(this.matrixClient, { onlyIfKeyCached: true, rehydrate: false });
+            }
         } catch (e) {
             // We may get an error dehydrating, such as if cross-signing and
             // SSSS are not set up yet.  Just log the error and continue.
