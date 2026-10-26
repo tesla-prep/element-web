@@ -45,6 +45,7 @@ import { UserTab } from "../components/views/dialogs/UserTab";
 import { type OpenToTabPayload } from "../dispatcher/payloads/OpenToTabPayload";
 import { contactPhone, type Inbox, numberLine, repeatedNames, stripNetworkSuffix } from "./CirqleInboxes";
 import { CirqleUiStore, type CirqleSection } from "./CirqleUiStore";
+import { warmCirqleChat, warmCirqleChats } from "./CirqleWarmup";
 import {
     type CirqleChip,
     isUnreadChat,
@@ -98,6 +99,7 @@ function ChatRow({
         <button
             className={classNames("cirqle_ChatRow", { cirqle_ChatRow_selected: selected })}
             onClick={open}
+            onPointerDown={() => warmCirqleChat(room)}
             aria-current={selected ? "page" : undefined}
         >
             <RoomAvatar room={room} size="48px" />
@@ -151,6 +153,7 @@ export function CirqleChatList({ section }: { section: CirqleSection }): JSX.Ele
     );
 
     useEffect(() => setShown(PAGE), [section, chip, query]);
+    useEffect(() => warmCirqleChats(rooms), [rooms]);
     const onScroll = useCallback(
         (ev: React.UIEvent<HTMLDivElement>) => {
             const el = ev.currentTarget;

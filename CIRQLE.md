@@ -56,6 +56,8 @@ Hooks in upstream files (each one line or a small block):
 | `autocomplete/NotifProvider.tsx` | no @room |
 | `utils/DialogOpener.ts` | room settings open the chat's info panel (header avatar included) |
 | `structures/MatrixChat.tsx` | Ctrl/Cmd+K focuses the chat list search, no Spotlight |
+| `cirqle/CirqleChatList.tsx` → `cirqle/CirqleWarmup.ts` | the top 12 chats of the list are paged back ahead of time (and the chat under the pointer first), so a chat opens without the 2-4 s spinner |
+| `MatrixClientPeg.ts` | no device dehydration at start: staff have no secret storage, and it cost two round trips before the first sync |
 | `views/dialogs/UserSettingsDialog.tsx` | settings tabs staff need, a short Preferences (`cirqle/CirqleSettings.tsx`) |
 | `settings/tabs/user/HelpUserSettingsTab.tsx` | no access token |
 | `views/messages/MPollBody.tsx` | polls show votes, voting is on the phone |
