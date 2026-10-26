@@ -19,7 +19,7 @@ Everything lives in two places; upstream files only get one-line hooks marked
 | `apps/web/src/cirqle/` | rail (Channels only while a number has a channel), chat list and its order, number picker, New chat, New group, Group info, Contact info, member card, header, empty side, composer buttons, timeline sides, forced settings |
 | `apps/web/res/themes/light/css/cirqle/` | the look, imported unlayered at the end of `light.pcss` so it wins over Element's layered CSS |
 | `apps/web/res/fonts/Source_Serif_4/`, `apps/web/res/img/cirqle/` | heading font (OFL) and the shield logo |
-| `cirqle/` | `config.json`, `manifest.json`, `deploy.sh`, `nginx-next.conf` |
+| `cirqle/` | `config.json`, `manifest.json`, `deploy.sh`, `nginx.conf` |
 | `apps/web/res/cirqle-icons/` | home screen icons (any and maskable), the iOS icon, favicon, notification badge, iOS launch screens |
 
 Hooks in upstream files (each one line or a small block):
@@ -244,14 +244,17 @@ pnpm install --frozen-lockfile
 ./cirqle/deploy.sh          # build, copy to /opt/team-messenger/prod/element-next/webapp
 ```
 
-Served at https://chat.cirqlecirqle.com/next/ by the host nginx
-(`cirqle/nginx-next.conf`, in `/etc/nginx/conf.d/team-messenger.conf`), beside
-the stock Element container at `/`. Same origin, so a browser signed in to one is
-signed in to the other; Element lets one of them run at a time per browser.
+Served at https://chat.cirqlecirqle.com/ by the host nginx (`cirqle/nginx.conf`,
+in `/etc/nginx/conf.d/team-messenger.conf`) since 2026-10-24. Until then it lived at
+`/next/` beside the stock Element; `/next` and anything under it now answer 301 to
+the same path at `/`, so old links and `/next/#/room/…` keep working, and
+`/next/sw.js` hands browsers a service worker that unregisters the old `/next/` one.
+The stock Element container (127.0.0.1:8085) is no longer proxied: it stays only
+as a rollback.
 
-Rollback: remove the `/next` locations from the nginx file (backup in
-`/opt/team-messenger/backups/2026-10-23-element-next/`) and reload nginx. The
-stock Element at `/` is untouched.
+Rollback to the stock Element at `/` (about a minute): put back
+`/opt/team-messenger/backups/2026-10-24-root-switch/team-messenger.conf`, run
+`nginx -t` and `systemctl reload nginx`.
 
 ## Updating from upstream
 
@@ -261,5 +264,5 @@ git merge v1.12.NN          # keep the CIRQLE hooks on conflict
 pnpm install && ./cirqle/deploy.sh
 ```
 
-Stay on the version the stock Element at `/` runs until `/next` replaces it:
-both share the browser's database, and a newer Element migrates it one way.
+Stay on the version the stock Element container runs (1.12.30) while it is the
+rollback: both use the browser's database, and a newer Element migrates it one way.
