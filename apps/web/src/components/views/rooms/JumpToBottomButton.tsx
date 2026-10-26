@@ -11,6 +11,7 @@ import { ChevronDownIcon } from "@vector-im/compound-design-tokens/assets/web/ic
 
 import { _t } from "../../../languageHandler";
 import AccessibleButton, { type ButtonEvent } from "../elements/AccessibleButton";
+import { keepCirqleKeyboard } from "../../../cirqle/CirqleMobile";
 
 interface IProps {
     numUnreadMessages?: number;
@@ -33,6 +34,7 @@ const JumpToBottomButton: React.FC<IProps> = (props) => {
                 className="mx_JumpToBottomButton_scrollDown"
                 title={_t("room|jump_to_bottom_button")}
                 onClick={props.onScrollToBottomClick}
+                onMouseDown={keepCirqleKeyboard}
             >
                 <ChevronDownIcon />
             </AccessibleButton>

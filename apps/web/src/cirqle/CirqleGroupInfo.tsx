@@ -35,9 +35,17 @@ import ErrorDialog from "../components/views/dialogs/ErrorDialog";
 import RoomAvatar from "../components/views/avatars/RoomAvatar";
 import MemberAvatar from "../components/views/avatars/MemberAvatar";
 import { AddMemberIcon, ChevronDownIcon, CloseIcon, LeaveIcon } from "./CirqleIcons";
-import { chatKind, type Inbox, inboxesOf, memberName, networkOf, stripNetworkSuffix } from "./CirqleInboxes";
+import {
+    chatKind,
+    ghostPhone,
+    type Inbox,
+    inboxesOf,
+    memberName,
+    networkOf,
+    stripNetworkSuffix,
+} from "./CirqleInboxes";
 import { CirqleChatActions } from "./CirqleContactInfo";
-import { ACCOUNT, ghostPhone } from "./CirqleMemberCard";
+import { ACCOUNT } from "./CirqleMemberCard";
 import { useCirqleInboxes } from "./useCirqleChats";
 import { canLeaveCirqleGroup, leaveCirqleGroup } from "./CirqleLeaveGroup";
 import { canChangeGroupAdmin, isGroupAdmin, ourAdminNumber, setGroupAdmin } from "./CirqleGroupAdmin";

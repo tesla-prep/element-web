@@ -43,6 +43,7 @@ import { ALTERNATE_KEY_NAME, KeyBindingAction } from "../../../accessibility/Key
 import { _t } from "../../../languageHandler";
 import { Landmark, LandmarkNavigation } from "../../../accessibility/LandmarkNavigation";
 import { SDKContext } from "../../../contexts/SDKContext.ts";
+import { skipsCirqleAutoFocus } from "../../../cirqle/CirqleMobile";
 
 // matches emoticons which follow the start of a line or whitespace
 const REGEX_EMOTICON_WHITESPACE = new RegExp("(?:^|\\s)(" + EMOTICON_REGEX.source + ")\\s|:^$");
@@ -776,7 +777,8 @@ export default class BasicMessageEditor extends React.Component<IProps, IState> 
         this.editorRef.current?.addEventListener("input", this.onInput, true);
         this.editorRef.current?.addEventListener("compositionstart", this.onCompositionStart, true);
         this.editorRef.current?.addEventListener("compositionend", this.onCompositionEnd, true);
-        this.editorRef.current?.focus();
+        // CIRQLE: an opened chat does not bring a phone's keyboard up (CirqleMobile.ts)
+        if (!skipsCirqleAutoFocus(this.editorRef.current)) this.editorRef.current?.focus();
     }
 
     private getInitialCaretPosition(): DocumentPosition {

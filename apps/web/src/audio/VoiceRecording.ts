@@ -22,6 +22,7 @@ import { UPDATE_EVENT } from "../stores/AsyncStore";
 import { createAudioContext } from "./compat";
 import { FixedRollingArray } from "../utils/FixedRollingArray";
 import recorderWorkletFactory from "./recorderWorkletFactory";
+import { takeCirqleRecorderContext } from "../cirqle/CirqleMic";
 
 const CHANNELS = 1; // stereo isn't important
 export const SAMPLE_RATE = 48000; // 48khz is what WebRTC uses. 12khz is where we lose quality.
@@ -109,6 +110,8 @@ export class VoiceRecording extends EventEmitter implements IDestroyable {
     }
 
     private async makeRecorder(): Promise<void> {
+        // CIRQLE: the context made in the tap on the microphone (iOS), see CirqleMic.ts
+        this.recorderContext = takeCirqleRecorderContext();
         try {
             const requestedDeviceId = MediaDeviceHandler.getAudioInput();
             const deviceIdConstraint =
@@ -123,7 +126,7 @@ export class VoiceRecording extends EventEmitter implements IDestroyable {
                     noiseSuppression: { ideal: MediaDeviceHandler.getAudioNoiseSuppression() },
                 },
             });
-            this.recorderContext = createAudioContext({
+            this.recorderContext ??= createAudioContext({
                 // latencyHint: "interactive", // we don't want a latency hint (this causes data smoothing)
             });
             this.recorderSource = this.recorderContext.createMediaStreamSource(this.recorderStream);
@@ -276,7 +279,15 @@ export class VoiceRecording extends EventEmitter implements IDestroyable {
         }
         this.observable = new SimpleObservable<IRecordingUpdate>();
         await this.makeRecorder();
-        await this.recorder?.start();
+        try {
+            await this.recorder?.start();
+        } catch (e) {
+            // CIRQLE: a recorder that failed to start lets the microphone go; iOS keeps it in use otherwise
+            this.recorderStream?.getTracks().forEach((t) => t.stop());
+            this.recorder?.close();
+            void this.recorderContext?.close();
+            throw e;
+        }
         this.recording = true;
         this.emit(RecordingState.Started);
     }

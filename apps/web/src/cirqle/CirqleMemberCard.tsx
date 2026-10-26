@@ -23,31 +23,12 @@ import { Action } from "../dispatcher/actions";
 import { type ViewRoomPayload } from "../dispatcher/payloads/ViewRoomPayload";
 import MemberAvatar from "../components/views/avatars/MemberAvatar";
 import { CloseIcon } from "./CirqleIcons";
-import {
-    formatPhone,
-    type Inbox,
-    inboxesOf,
-    memberName,
-    privateChatContact,
-    stripNetworkSuffix,
-} from "./CirqleInboxes";
+import { ghostPhone, type Inbox, inboxesOf, memberName, privateChatContact, stripNetworkSuffix } from "./CirqleInboxes";
 import { useCirqleInboxes } from "./useCirqleChats";
 
 const GHOST = /^@(whatsapp|telegram)_/;
 export const ACCOUNT = /^@account_(whatsapp|telegram)_/;
 const SERVICE = /^@(relay-bot|learning-center|whatsappbot|telegrambot|newchat_[^:]*):/;
-
-/**
- * "+1 555 709 3423" for a WhatsApp ghost keyed by its number, or for a LID ghost
- * whose number the relay bot lists for one of our numbers; Telegram ids carry none.
- */
-export function ghostPhone(userId: string, inboxes: Inbox[] = []): string | undefined {
-    const digits = userId.match(/^@whatsapp_(\d{7,15}):/)?.[1];
-    if (digits) return formatPhone(digits);
-    const lid = userId.match(/^@whatsapp_lid-(\d+):/)?.[1];
-    const listed = lid && inboxes.map((inbox) => inbox.contactPhones.get(`${lid}@lid`)).find(Boolean);
-    return listed ? formatPhone(listed) : undefined;
-}
 
 export interface MemberCardInfo {
     kind: "us" | "customer" | "colleague" | "service";

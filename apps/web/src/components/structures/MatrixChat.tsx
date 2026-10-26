@@ -143,6 +143,7 @@ import { type URLParams } from "../../vector/url_utils.ts";
 import { type QrLoginCredentials } from "../views/auth/LoginWithQR.tsx";
 import { configureFromCompletedOAuthLogin } from "../../Lifecycle";
 import { focusCirqleSearch, isCirqleMessenger } from "../../cirqle/CirqleFeatures";
+import { isCirqleTouch } from "../../cirqle/CirqleMobile";
 
 const AUTH_SCREENS = ["register", "mobile_register", "login", "forgot_password", "start_sso", "start_cas", "welcome"];
 
@@ -505,7 +506,8 @@ export default class MatrixChat extends React.PureComponent<IProps, IState> {
             }
         }
         if (this.focusNext === "composer") {
-            dis.fire(Action.FocusSendMessageComposer);
+            // CIRQLE: on a touch screen an opened chat does not bring the keyboard up; a tap in the field does
+            if (!isCirqleTouch()) dis.fire(Action.FocusSendMessageComposer);
             this.focusNext = undefined;
         } else if (this.focusNext === "threadsPanel") {
             dis.fire(Action.FocusThreadsPanel);
@@ -1649,7 +1651,7 @@ export default class MatrixChat extends React.PureComponent<IProps, IState> {
                 showNotificationsToast(this.stores.notifier, false);
             }
 
-            dis.fire(Action.FocusSendMessageComposer);
+            if (!isCirqleTouch()) dis.fire(Action.FocusSendMessageComposer);
         });
 
         cli.on(HttpApiEvent.SessionLoggedOut, (errObj) => {

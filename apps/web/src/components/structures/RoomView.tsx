@@ -142,6 +142,7 @@ import { EncryptionEventViewModel } from "../../viewmodels/room/timeline/event-t
 import { ModuleApi } from "../../modules/Api.ts";
 import { RoomUploadContextProvider } from "../../viewmodels/room/RoomUploadViewModel.tsx";
 import { EventPresentationContextProvider } from "../../utils/EventPresentationContextProvider";
+import { isCirqleTouch } from "../../cirqle/CirqleMobile";
 
 const DEBUG = false;
 const PREVENT_MULTIPLE_JITSI_WITHIN = 30_000;
@@ -1308,6 +1309,8 @@ export class RoomView extends React.Component<IRoomProps, IRoomState> {
             }
 
             case Action.FocusAComposer: {
+                // CIRQLE: on a phone a reaction or a closed dialog does not bring the keyboard up
+                if (isCirqleTouch()) break;
                 defaultDispatcher.dispatch<FocusComposerPayload>({
                     ...(payload as FocusComposerPayload),
                     // re-dispatch to the correct composer (the send message will still be on screen even when editing a message)
@@ -1964,7 +1967,8 @@ export class RoomView extends React.Component<IRoomProps, IRoomState> {
         } else {
             // Otherwise we have to jump manually
             this.messagePanel?.jumpToLiveTimeline();
-            defaultDispatcher.fire(Action.FocusSendMessageComposer);
+            // CIRQLE: on a touch screen the keyboard stays as it was (CirqleMobile.ts)
+            if (!isCirqleTouch()) defaultDispatcher.fire(Action.FocusSendMessageComposer);
         }
     };
 

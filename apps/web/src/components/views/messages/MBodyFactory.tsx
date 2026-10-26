@@ -32,6 +32,7 @@ import { VideoBodyViewModel } from "../../../viewmodels/message-body/VideoBodyVi
 import { isMimeTypeAllowed } from "../../../utils/blobs";
 import { type MediaEventHelper } from "../../../utils/MediaEventHelper";
 import { MBodyTileViewModel } from "../../../viewmodels/message-body/MBodyTileViewModel";
+import { isRoundVideo } from "../../../cirqle/CirqleTimeline";
 
 type MBodyComponent = React.ComponentType<IBodyProps>;
 
@@ -169,7 +170,7 @@ export function VideoBodyFactory({
     return (
         <VideoBodyView
             vm={vm}
-            className="mx_MVideoBody"
+            className={isRoundVideo(mxEvent) ? "mx_MVideoBody cirqle_RoundVideo" : "mx_MVideoBody"}
             containerClassName="mx_MVideoBody_container"
             videoRef={videoRef}
         >

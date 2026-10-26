@@ -42,6 +42,11 @@ export function hideCustomerName(event: MatrixEvent, client: MatrixClient): bool
     return !!room && chatKind(room) === "chat";
 }
 
+/** Telegram's round video message (a "video note"): shown as a small circle, as Telegram does. */
+export function isRoundVideo(event: MatrixEvent): boolean {
+    return event.getContent()?.info?.["fi.mau.telegram.round_message"] === true;
+}
+
 /**
  * Room state changes (joins, names, avatars, power levels) are the bridges' and
  * the relay bot's plumbing: staff and service users join every chat. WhatsApp

@@ -131,6 +131,15 @@ slots by their data-testid.
     grid-column: 1;
 }
 
+/* The "sent" mark of our last message stays at the edge of the row: the grid
+   above has one column, and the mark in a column of its own lay past the
+   screen on a phone and pushed the whole chat sideways */
+[class*="_layoutBubble_"]:has(> [data-testid="event-tile-slot-sender"] *) > [class*="_slotReceipt_"] {
+    position: absolute;
+    inset-inline-end: 0;
+    inset-block-end: 0;
+}
+
 [class*="_layoutBubble_"]:has(> [data-testid="event-tile-slot-sender"] *) > [data-testid="event-tile-line"] {
     max-width: none;
     width: auto;
@@ -165,6 +174,30 @@ slots by their data-testid.
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
+}
+
+/* Telegram's round video message (CirqleTimeline.ts): a small circle, as in Telegram */
+.cirqle_RoundVideo .mx_MVideoBody_container {
+    width: 200px !important;
+    max-width: 100% !important;
+    max-height: none !important;
+    aspect-ratio: 1 !important;
+    border-radius: 50%;
+}
+
+.cirqle_RoundVideo video {
+    object-fit: cover;
+}
+
+[class*="_layoutBubble_"] > [data-testid="event-tile-line"]:has(.cirqle_RoundVideo) {
+    background: transparent;
+    box-shadow: none;
+}
+
+/* A customer's number after the name in a group (CirqleSenderPhone.ts), quieter, on the same line */
+[class*="_layoutBubble_"] > [data-testid="event-tile-slot-sender"] .mx_DisambiguatedProfile_mxid {
+    color: var(--cirqle-ink-3);
+    font-weight: 400;
 }
 
 [class*="_layoutBubble_"][class*="_stateOwnEvent_"] > [data-testid="event-tile-slot-sender"] * {
