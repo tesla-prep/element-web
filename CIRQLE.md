@@ -64,7 +64,8 @@ Hooks in upstream files (each one line or a small block):
 | `viewmodels/structures/ResizerViewModel.ts` | the chat list never collapses: no auto-collapse under 768 px, the saved `RoomList.isPanelCollapsed` ignored |
 | `viewmodels/room/timeline/event-tile/DisambiguatedProfileViewModel.ts` | a sender's name without the Matrix ID, even when two have the same name |
 | `vector/init.tsx` (second line) | on touch screens the app follows the keyboard and a long press opens a message's menu (`cirqle/CirqleMobile.ts`) |
-| `vector/index.html` | `interactive-widget=resizes-content` and `viewport-fit=cover` in the viewport; CIRQLE's title, icons, iOS home screen tags and launch screens |
+| `vector/index.html` | `interactive-widget=resizes-content` and `viewport-fit=cover` in the viewport; CIRQLE's title, icons, iOS home screen tags and launch screens; the light theme is preloaded with the page instead of after config.json |
+| `vector/init.tsx` (`loadTheme`) | a theme stylesheet still loading after Element's 2 s of polling no longer stops the app with "Your Element is misconfigured" (`cirqleThemeStillLoading` in `cirqle/CirqleFeatures.ts`) |
 | `webpack.config.ts` | copies `cirqle/manifest.json` as `manifest.json` and `res/cirqle-icons/` |
 | `viewmodels/room/EventTileActionBarViewModel.ts` | hover bar without Reply in thread and Pin |
 | `views/dialogs/ConfirmRedactDialog.tsx` | "Delete for everyone?" without a reason |

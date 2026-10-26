@@ -49,6 +49,7 @@
             var title = match[1].charAt(0).toUpperCase() + match[1].slice(1);
         %>
            <link rel="stylesheet" disabled="disabled" data-mx-theme="<%= title %>" title="<%= title %>" href="<%= file %>">
+           <% if (match[1] === "light") { %><!-- CIRQLE: the one theme starts downloading with the page, not after config.json --><link rel="preload" as="style" href="<%= file %>"><% } %>
         <% } else { %>
            <link rel="stylesheet" href="<%= file %>">
         <% }
