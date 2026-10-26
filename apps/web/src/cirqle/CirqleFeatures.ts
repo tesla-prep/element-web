@@ -8,6 +8,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 // fork adds to upstream code goes through here, so an upstream merge only has to
 // keep the one-line hooks that call it.
 
+import { logger } from "matrix-js-sdk/src/logger";
+
 import { UIComponent } from "../settings/UIFeature";
 import SdkConfig from "../SdkConfig";
 
@@ -99,6 +101,19 @@ export const CIRQLE_MOBILE_GUIDE_REDIRECT = false;
 
 /** The one theme the CIRQLE look is drawn on. */
 export const CIRQLE_THEME = "light";
+
+/**
+ * Element's setTheme polls for the stylesheet for 2 s and then rejects with
+ * nothing, which index.ts shows as "Your Element is misconfigured". On the
+ * first visit after a deploy the theme is not cached yet, and on a slow or
+ * lossy connection it often takes longer. The stylesheet is already enabled
+ * and applies as soon as it arrives, so the app starts instead of failing.
+ * A real load error (an Event) still fails as before.
+ */
+export function cirqleThemeStillLoading(error: unknown): void {
+    if (error !== undefined) throw error;
+    logger.warn("CIRQLE: the theme stylesheet is still loading after 2 s, starting the app anyway");
+}
 
 export function isCirqleHiddenToast(key: string): boolean {
     // Element's "Enable desktop notifications" turns on notifications for an open tab only; ours (CirqlePush) take its place

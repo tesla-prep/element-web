@@ -28,7 +28,7 @@ import WebPlatform from "./platform/WebPlatform";
 import { initRageshake, initRageshakeStore } from "./rageshakesetup";
 import { ModuleApi } from "../modules/Api.ts";
 import { type URLParams } from "./url_utils.ts";
-import { CIRQLE_LANGUAGE, isCirqleMessenger } from "../cirqle/CirqleFeatures";
+import { CIRQLE_LANGUAGE, cirqleThemeStillLoading, isCirqleMessenger } from "../cirqle/CirqleFeatures";
 import { startCirqleMobile } from "../cirqle/CirqleMobile";
 
 export const rageshakePromise = initRageshake();
@@ -123,7 +123,7 @@ export async function loadLanguage(): Promise<void> {
 }
 
 export async function loadTheme(): Promise<void> {
-    return setTheme();
+    return setTheme().catch(cirqleThemeStillLoading); // CIRQLE: a slow theme stylesheet does not stop the app
 }
 
 export async function loadApp(urlParams: URLParams): Promise<void> {
