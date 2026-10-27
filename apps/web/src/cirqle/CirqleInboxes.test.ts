@@ -15,6 +15,7 @@ import { LocalRoom, LOCAL_ROOM_ID_PREFIX } from "../models/LocalRoom";
 import {
     chatKind,
     CONTACT_PHONES_EVENT,
+    contactNumber,
     contactPhone,
     getInboxes,
     isStatusBroadcast,
@@ -226,5 +227,22 @@ describe("numbers and their chats", () => {
         expect(contactPhone(room("!tanya-2:server"), inboxes)).toBe("+7 903 555 0000");
         expect(contactPhone(room("!anna-main1:server"), inboxes)).toBeUndefined();
         expect(contactPhone(room("!community:server"), inboxes)).toBeUndefined();
+    });
+});
+
+describe("contactNumber", () => {
+    const withMember = (client: MatrixClient, userId: string, name: string): Room => {
+        const room = mkRoom(client, "!dm-" + name + ":server", name, [
+            { type: "m.room.member", state_key: userId, content: { membership: "join", displayname: name } },
+        ]);
+        return room;
+    };
+
+    it("reads a WhatsApp ghost's number", () => {
+        expect(contactNumber(withMember(stubClient(), "@whatsapp_13026180314:server", "Anna"))).toBe("+1 302 618 0314");
+    });
+
+    it("never takes a Telegram user id for a phone number", () => {
+        expect(contactNumber(withMember(stubClient(), "@telegram_8759317930:server", "Victoria"))).toBeUndefined();
     });
 });

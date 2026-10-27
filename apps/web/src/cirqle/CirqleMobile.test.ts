@@ -20,6 +20,7 @@ import { DeviceType } from "../utils/device/parseUserAgent";
 import { CIRQLE_BRAND } from "./CirqleFeatures";
 import {
     LONG_PRESS_MS,
+    cirqleChatOpensOnMessages,
     cirqleSupportsDevice,
     longPressTarget,
     syncCirqleViewport,
@@ -66,6 +67,17 @@ describe("CIRQLE on phones", () => {
         expect(cirqleSupportsDevice(DeviceType.Desktop)).toBe(false);
         SdkConfig.reset();
         expect(cirqleSupportsDevice(DeviceType.Mobile)).toBe(false);
+    });
+
+    it("opens a chat on its messages on a phone, never on the info panel left open in it", () => {
+        const matches = vi.fn((query: string) => ({ matches: query.includes("767px") }) as MediaQueryList);
+        vi.spyOn(window, "matchMedia").mockImplementation(matches);
+        expect(cirqleChatOpensOnMessages()).toBe(true);
+        matches.mockImplementation(() => ({ matches: false }) as MediaQueryList);
+        expect(cirqleChatOpensOnMessages()).toBe(false);
+        SdkConfig.reset();
+        matches.mockImplementation(() => ({ matches: true }) as MediaQueryList);
+        expect(cirqleChatOpensOnMessages()).toBe(false);
     });
 
     it("has no 'does not support this browser' on an iPhone", () => {
