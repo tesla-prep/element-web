@@ -53,6 +53,8 @@ import { _t } from "../../languageHandler";
 import { getLateEventInfo } from "./grouper/LateEventGrouper";
 import { isEligibleForSpecialReceipt } from "../../viewmodels/room/timeline/event-tile/EventTileReceiptState";
 import { DateSeparatorWrapper } from "./DateSeparatorWrapper";
+import { isCirqleMessenger } from "../../cirqle/CirqleFeatures";
+import { isOurSideSeries } from "../../cirqle/CirqleTimeline";
 
 const CONTINUATION_MAX_INTERVAL = 5 * 60 * 1000; // 5 minutes
 const continuedTypes = [EventType.Sticker, EventType.RoomMessage];
@@ -97,9 +99,10 @@ export function shouldFormContinuation(
 
     // Check if the sender is the same and hasn't changed their displayname/avatar between these events
     if (
-        mxEvent.sender.userId !== prevEvent.sender.userId ||
-        mxEvent.sender.name !== prevEvent.sender.name ||
-        mxEvent.sender.getMxcAvatarUrl() !== prevEvent.sender.getMxcAvatarUrl()
+        (mxEvent.sender.userId !== prevEvent.sender.userId ||
+            mxEvent.sender.name !== prevEvent.sender.name ||
+            mxEvent.sender.getMxcAvatarUrl() !== prevEvent.sender.getMxcAvatarUrl()) &&
+        !(isCirqleMessenger() && isOurSideSeries(prevEvent, mxEvent, matrixClient)) // CIRQLE
     )
         return false;
 
@@ -783,7 +786,8 @@ export default class MessagePanel extends React.Component<IProps, IState> {
             const willWantSeparator = this.wantsSeparator(mxEv, nextEv);
             lastInSection =
                 willWantSeparator === SeparatorKind.Date ||
-                mxEv.getSender() !== nextEv.getSender() ||
+                (mxEv.getSender() !== nextEv.getSender() &&
+                    !(isCirqleMessenger() && isOurSideSeries(mxEv, nextEv, cli))) || // CIRQLE
                 getEventDisplayInfo(cli, nextEv, this.showHiddenEvents).isInfoMessage ||
                 !shouldFormContinuation(mxEv, nextEv, cli, this.showHiddenEvents, this.context.timelineRenderingType);
         }
