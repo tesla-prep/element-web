@@ -17,6 +17,8 @@ import MatrixClientContext from "../contexts/MatrixClientContext";
 import dis from "../dispatcher/dispatcher";
 import { Action } from "../dispatcher/actions";
 import DMRoomMap from "../utils/DMRoomMap";
+import RightPanelStore from "../stores/right-panel/RightPanelStore";
+import { RightPanelPhases } from "../stores/right-panel/RightPanelStorePhases";
 import { CirqleMemberCard, customerChat, describeMember } from "./CirqleMemberCard";
 import { type Inbox } from "./CirqleInboxes";
 
@@ -171,6 +173,18 @@ describe("CirqleMemberCard", () => {
         expect(screen.getByRole("heading", { name: "Andrey Dubrovsky" })).toBeInTheDocument();
         expect(screen.getByText("Colleague · adubrovsky")).toBeInTheDocument();
         expect(buttons()).toEqual(["Close contact info"]);
+    });
+
+    it("goes back to Group info it was opened from, instead of closing the panel", () => {
+        vi.spyOn(RightPanelStore.instance, "previousCard", "get").mockReturnValue({
+            phase: RightPanelPhases.RoomSummary,
+            state: {},
+        });
+        const popCard = vi.spyOn(RightPanelStore.instance, "popCard").mockReturnValue(undefined);
+        card(member(GROUP, COLLEAGUE, "Andrey Dubrovsky"), room(GROUP));
+        expect(buttons()).toEqual(["Back"]);
+        fireEvent.click(screen.getByRole("button", { name: "Back" }));
+        expect(popCard).toHaveBeenCalledWith(GROUP);
     });
 
     it("shows a user opened from a link, outside any chat", () => {

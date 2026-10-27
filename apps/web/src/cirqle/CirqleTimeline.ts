@@ -16,11 +16,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 // writing, including a number's older identity after WhatsApp's change of
 // number; in a group the number's own ghosts are listed in its inbox space.
 
-import { EventType, type MatrixClient, type MatrixEvent } from "matrix-js-sdk/src/matrix";
+import { EventType, type MatrixClient, type MatrixEvent, type Room } from "matrix-js-sdk/src/matrix";
 
 import { chatKind, getInboxes, privateChatContact } from "./CirqleInboxes";
 
 const BRIDGE_USER = /^@(whatsapp|telegram)(bot)?(_|:)/;
+const ACCOUNT_USER = /^@account_(whatsapp|telegram)_/;
 const BRIDGE_BOT = /^@(whatsapp|telegram)bot:/;
 
 export function isOurSide(event: MatrixEvent, client: MatrixClient): boolean {
@@ -33,6 +34,19 @@ export function isOurSide(event: MatrixEvent, client: MatrixClient): boolean {
     const contact = room ? privateChatContact(room) : undefined;
     if (contact && sender !== contact) return true;
     return getInboxes(client).some((inbox) => inbox.ownUsers.has(sender));
+}
+
+/**
+ * The number or account itself, not a person: its bridge account user and its own
+ * ghosts. The relay bot passes staff's typing on to the customer as the number's,
+ * which then comes back as "Свободный номер is typing…" right under our own message.
+ */
+export function isOwnNumberUser(room: Room, userId: string): boolean {
+    if (ACCOUNT_USER.test(userId)) return true;
+    if (!BRIDGE_USER.test(userId) || BRIDGE_BOT.test(userId)) return false;
+    const contact = privateChatContact(room);
+    if (contact) return userId !== contact;
+    return getInboxes(room.client).some((inbox) => inbox.ownUsers.has(userId));
 }
 
 /** In a private chat the customer's name is the chat's name, so their bubbles go without it, as on WhatsApp. */
@@ -54,4 +68,14 @@ export function isRoundVideo(event: MatrixEvent): boolean {
  */
 export function isPlumbingEvent(event: MatrixEvent): boolean {
     return event.isState() && event.getType() !== EventType.RoomTombstone;
+}
+
+const SERVICE_USER = /^@((whatsapp|telegram)bot|relay-bot):/;
+
+/**
+ * Deleted messages show as "This message was deleted", as on WhatsApp, but not a
+ * notice the bridge or the relay bot posted and took back: nobody wrote those.
+ */
+export function isDeletedServiceMessage(event: MatrixEvent): boolean {
+    return event.isRedacted() && SERVICE_USER.test(event.getSender() ?? "");
 }

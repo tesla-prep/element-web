@@ -10,6 +10,7 @@ import { type MatrixEvent } from "matrix-js-sdk/src/matrix";
 import { formatFullDate } from "../../../../DateUtils";
 import { _t } from "../../../../languageHandler";
 import { MatrixClientPeg } from "../../../../MatrixClientPeg";
+import { isCirqleMessenger } from "../../../../cirqle/CirqleFeatures";
 import { type RedactedBodyViewSnapshot } from "@element-hq/web-shared-components";
 
 /** Converts a redacted event into the data required by the redacted body view. */
@@ -21,10 +22,11 @@ export function getRedactedBodyViewModelProps(mxEvent: MatrixEvent, showTwelveHo
     const redactingRoom = redactingRoomId ? MatrixClientPeg.get()?.getRoom(redactingRoomId) : null;
     const redactingMember = redactingUserId ? redactingRoom?.getMember(redactingUserId) : undefined;
 
-    const text =
-        !redactingUserId || redactingUserId === mxEvent.getSender()
-            ? _t("timeline|self_redaction")
-            : _t("timeline|redaction", { name: redactingMember?.name ?? redactingUserId });
+    const text = isCirqleMessenger()
+        ? "This message was deleted" // CIRQLE: WhatsApp's words, the same as in the chat list
+        : !redactingUserId || redactingUserId === mxEvent.getSender()
+          ? _t("timeline|self_redaction")
+          : _t("timeline|redaction", { name: redactingMember?.name ?? redactingUserId });
 
     const redactionTs = redactedBecause?.origin_server_ts;
     const tooltip = redactionTs

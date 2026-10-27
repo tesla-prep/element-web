@@ -49,6 +49,15 @@ export function useCirqlePhone(): boolean {
     );
 }
 
+/**
+ * Element opens the chat last looked at when it starts. On a phone that puts the
+ * person straight into a chat (and marks it read) instead of the chat list
+ * WhatsApp starts on; a computer shows the list beside the chat anyway.
+ */
+export function cirqleOpensLastChat(): boolean {
+    return !isCirqleMessenger() || !window.matchMedia(CIRQLE_PHONE_QUERY).matches;
+}
+
 /** Opened from the home screen icon, not in a browser tab. */
 export function isCirqleInstalled(): boolean {
     return (

@@ -12,9 +12,11 @@ interface IconProps extends React.SVGAttributes<SVGElement> {
     size?: number;
 }
 
-function Stroke({ size = 22, children }: IconProps & { children: React.ReactNode }): JSX.Element {
+/** `className` is how compound's menu items space their icon from the label. */
+function Stroke({ size = 22, className, children }: IconProps & { children: React.ReactNode }): JSX.Element {
     return (
         <svg
+            className={className}
             width={size}
             height={size}
             viewBox="0 0 24 24"

@@ -219,11 +219,13 @@ export function inboxesOf(room: Room, inboxes: Inbox[]): Inbox[] {
 /**
  * The chats the picked numbers show: only their own. None picked is All numbers:
  * every connected number's chats, and the chats no number lists. WhatsApp's
- * Status never shows.
+ * Status never shows, nor a chat staff left or were taken out of (a deleted
+ * number, Leave group): Element keeps those rooms after a reload.
  */
 export function numberChats(rooms: Room[], inboxes: Inbox[], picked: Inbox[]): Room[] {
     return rooms.filter((room) => {
         if (isStatusBroadcast(room)) return false;
+        if (!isLocalRoom(room) && !["join", "invite"].includes(room.getMyMembership())) return false;
         if (picked.length) return picked.some((inbox) => inbox.childIds.has(room.roomId));
         const own = inboxesOf(room, inboxes);
         return own.length === 0 || own.some((inbox) => inbox.connected);

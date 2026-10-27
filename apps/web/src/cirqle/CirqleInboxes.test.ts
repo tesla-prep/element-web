@@ -24,6 +24,7 @@ import {
     numberLine,
     repeatedNames,
 } from "./CirqleInboxes";
+import { matchesChatSearch } from "./useCirqleChats";
 
 interface State {
     type: string;
@@ -212,6 +213,31 @@ describe("numbers and their chats", () => {
             "!tanya-2:server",
             "!unlisted:server",
         ]);
+    });
+
+    it("leaves out a chat staff left or were taken out of, which Element keeps after a reload", () => {
+        const [main1, slava] = getInboxes(client);
+        room("!tanya-2:server").updateMyMembership(KnownMembership.Leave);
+        room("!unlisted:server").updateMyMembership(KnownMembership.Ban);
+        expect(ids(numberChats(chats(), [main1, slava], []))).toEqual(["!tanya-1:server"]);
+        expect(ids(numberChats(chats(), [main1, slava], [slava]))).toEqual(["!tanya-1:server"]);
+        room("!tanya-2:server").updateMyMembership(KnownMembership.Invite);
+        expect(ids(numberChats(chats(), [main1, slava], [slava]))).toEqual(["!tanya-1:server", "!tanya-2:server"]);
+    });
+
+    it("finds a chat by the customer's number, also when the chat goes by a name", () => {
+        const inboxes = getInboxes(client);
+        const search = (query: string): string[] => {
+            const needle = query.trim().toLocaleLowerCase();
+            const digits = needle.replace(/[^\d]/g, "");
+            return ids(chats().filter((r) => matchesChatSearch(r, inboxes, needle, digits)));
+        };
+        // Татьяна's LID chat: the number only the relay bot knows; the other one is keyed by phone
+        expect(search("916 123")).toEqual(["!tanya-1:server"]);
+        expect(search("+7 903 555")).toEqual(["!tanya-2:server"]);
+        expect(search("татьяна")).toEqual(["!tanya-1:server", "!tanya-2:server"]);
+        // Two digits are too few to search a number by
+        expect(search("91")).toEqual([]);
     });
 
     it("knows WhatsApp's Status by its bridge id, not its name", () => {

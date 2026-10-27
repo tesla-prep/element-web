@@ -8,9 +8,14 @@ SPDX-License-Identifier: AGPL-3.0-only
 // no Appearance and Sidebar (CIRQLE's look is fixed), no Security, Encryption
 // and Labs (the bridged chats are not encrypted), and a short Preferences
 // without the room list, read receipt, typing or language switches, which do
-// nothing here.
+// nothing here. Element's Sessions (session verification, QR sign-in, IP
+// addresses), Keyboard (calls, stickers, threads) and Help (crypto and server
+// versions) are for Element's own users, not for staff answering WhatsApp;
+// Help's "Clear cache and reload", which support needs, is under Preferences.
 
 import React, { type JSX } from "react";
+import { type MatrixClient } from "matrix-js-sdk/src/matrix";
+import { logger } from "matrix-js-sdk/src/logger";
 
 import { Tab } from "../components/structures/TabbedView";
 import { UserTab } from "../components/views/dialogs/UserTab";
@@ -19,18 +24,15 @@ import { SettingsSection } from "../components/views/settings/shared/SettingsSec
 import { SettingsSubsection } from "../components/views/settings/shared/SettingsSubsection";
 import SettingsFlag from "../components/views/elements/SettingsFlag";
 import { SettingLevel } from "../settings/SettingLevel";
+import AccessibleButton from "../components/views/elements/AccessibleButton";
+import PlatformPeg from "../PlatformPeg";
+import { useMatrixClientContext } from "../contexts/MatrixClientContext";
+import { _t } from "../languageHandler";
 import { type BooleanSettingKey } from "../settings/Settings";
 import { cirqlePushConfig, isCirqleMessenger } from "./CirqleFeatures";
 import { CirqleNotificationsTab } from "./CirqleNotificationsTab";
 
-const SHOWN_TABS = new Set<string>([
-    UserTab.Account,
-    UserTab.SessionManager,
-    UserTab.Notifications,
-    UserTab.Preferences,
-    UserTab.Keyboard,
-    UserTab.Help,
-]);
+const SHOWN_TABS = new Set<string>([UserTab.Account, UserTab.Notifications, UserTab.Preferences]);
 
 const PREFERENCES: { heading: string; settings: BooleanSettingKey[] }[] = [
     {
@@ -46,7 +48,16 @@ const PREFERENCES: { heading: string; settings: BooleanSettingKey[] }[] = [
     { heading: "Photos and videos", settings: ["autoplayGifs", "autoplayVideo"] },
 ];
 
+/** Help's "Clear cache and reload", which support asks staff for, without the rest of Help */
+function clearCacheAndReload(client: MatrixClient): void {
+    if (!PlatformPeg.get()) return;
+    logger.log("Clear cache & reload clicked");
+    client.stopClient();
+    void client.store.deleteAllData().then(() => PlatformPeg.get()?.reload());
+}
+
 export function CirqlePreferencesTab(): JSX.Element {
+    const client = useMatrixClientContext();
     return (
         <SettingsTab data-testid="cirqle_PreferencesTab">
             <SettingsSection>
@@ -57,6 +68,11 @@ export function CirqlePreferencesTab(): JSX.Element {
                         ))}
                     </SettingsSubsection>
                 ))}
+                <SettingsSubsection heading="Troubleshooting">
+                    <AccessibleButton onClick={() => clearCacheAndReload(client)} kind="danger_outline">
+                        {_t("setting|help_about|clear_cache_reload")}
+                    </AccessibleButton>
+                </SettingsSubsection>
             </SettingsSection>
         </SettingsTab>
     );

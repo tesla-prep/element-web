@@ -23,7 +23,7 @@ import {
 } from "../stores/notifications/RoomNotificationStateStore";
 import { getMarkedUnreadState } from "../utils/notifications";
 import { useMatrixClientContext } from "../contexts/MatrixClientContext";
-import { chatKind, getInboxes, type Inbox, networkOf, numberChats } from "./CirqleInboxes";
+import { chatKind, contactPhone, getInboxes, type Inbox, networkOf, numberChats } from "./CirqleInboxes";
 import { CIRQLE_UI_CHANGED, type CirqleSection, CirqleUiStore } from "./CirqleUiStore";
 
 export type CirqleChip = "all" | "unread" | "favourites" | "groups";
@@ -131,6 +131,15 @@ export interface CirqleRooms {
     unread: number;
 }
 
+/** A chat found by its name, or by the customer's number (also when the chat goes by a name, as WhatsApp does). */
+export function matchesChatSearch(room: Room, inboxes: Inbox[], needle: string, digits: string): boolean {
+    const name = room.name.toLocaleLowerCase();
+    if (name.includes(needle)) return true;
+    if (digits.length < 3) return false;
+    const phone = contactPhone(room, inboxes)?.replace(/[^\d]/g, "") ?? "";
+    return name.replace(/[^\d]/g, "").includes(digits) || phone.includes(digits);
+}
+
 export function useCirqleRooms(inboxes: Inbox[], section: CirqleSection, chip: CirqleChip, query: string): CirqleRooms {
     const version = useListVersion();
     const read = useCallback((): CirqleRooms => {
@@ -138,12 +147,7 @@ export function useCirqleRooms(inboxes: Inbox[], section: CirqleSection, chip: C
         const shown = all.filter(CHIP_MATCHES[chip]);
         const needle = query.trim().toLocaleLowerCase();
         const digits = needle.replace(/[^\d]/g, "");
-        const rooms = needle
-            ? shown.filter((room) => {
-                  const name = room.name.toLocaleLowerCase();
-                  return name.includes(needle) || (digits.length >= 3 && name.replace(/[^\d]/g, "").includes(digits));
-              })
-            : shown;
+        const rooms = needle ? shown.filter((room) => matchesChatSearch(room, inboxes, needle, digits)) : shown;
         return { rooms, unread: all.filter(isUnreadChat).length };
     }, [inboxes, section, chip, query]);
     const [result, setResult] = useState(read);

@@ -12,7 +12,7 @@ import { KnownMembership } from "matrix-js-sdk/src/types";
 import { mkEvent, stubClient } from "test-utils";
 
 import { NUMBER_USERS_EVENT } from "./CirqleInboxes";
-import { hideCustomerName, isOurSide } from "./CirqleTimeline";
+import { hideCustomerName, isDeletedServiceMessage, isOurSide, isOwnNumberUser } from "./CirqleTimeline";
 
 const SERVER = "matrix.cirqlecirqle.com";
 const ME = `@vchizhov:${SERVER}`;
@@ -186,6 +186,49 @@ describe("isOurSide", () => {
         setUp([42, NUMBER_LID_GHOST]);
         expect(isOurSide(message(GROUP, NUMBER_LID_GHOST), client)).toBe(true);
         expect(isOurSide(message(GROUP, GROUP_MEMBER), client)).toBe(false);
+    });
+
+    it.each([
+        ["the number's account user", DM, ACCOUNT],
+        ["the Telegram account user", TG_DM, `@account_telegram_tg-447877300139:${SERVER}`],
+        ["the number's phone in a private chat", DM, NUMBER_LID_GHOST],
+        ["the number's phone ghost in a group", GROUP, NUMBER_PHONE_GHOST],
+        ["the Telegram account's phone", TG_DM, TG_OWN_GHOST],
+    ])("takes %s for the number itself, whose typing is staff's", (_name, roomId, userId) => {
+        expect(
+            isOwnNumberUser(
+                rooms.find((r) => r.roomId === roomId)!,
+                userId,
+            ),
+        ).toBe(true);
+    });
+
+    it.each([
+        ["a staff member", DM, STAFF],
+        ["the customer", DM, JANAKI],
+        ["another member of a group", GROUP, GROUP_MEMBER],
+        ["the Telegram contact", TG_DM, TG_CONTACT],
+        ["the bridge bot", DM, WA_BOT],
+    ])("takes %s for a person", (_name, roomId, userId) => {
+        expect(
+            isOwnNumberUser(
+                rooms.find((r) => r.roomId === roomId)!,
+                userId,
+            ),
+        ).toBe(false);
+    });
+
+    it("leaves out only a bot's deleted notice, not a person's deleted message", () => {
+        const deleted = (sender: string): MatrixEvent => {
+            const event = message(DM, sender);
+            event.setUnsigned({ redacted_because: { sender: ME } as any });
+            return event;
+        };
+        expect(isDeletedServiceMessage(deleted(WA_BOT))).toBe(true);
+        expect(isDeletedServiceMessage(deleted(`@relay-bot:${SERVER}`))).toBe(true);
+        expect(isDeletedServiceMessage(deleted(JANAKI))).toBe(false);
+        expect(isDeletedServiceMessage(deleted(ME))).toBe(false);
+        expect(isDeletedServiceMessage(message(DM, WA_BOT))).toBe(false);
     });
 
     it("hides only the customer's name in a private chat", () => {

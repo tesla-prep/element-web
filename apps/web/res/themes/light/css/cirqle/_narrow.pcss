@@ -326,6 +326,39 @@ Element's resizable panels (the children of the panel group under
     }
 }
 
+/* Element's image viewer is for a computer. On a phone Download, ⋯ and Close
+   stay on the screen (they were past its right edge), Zoom and Rotate give way
+   (a pinch zooms), the file name keeps to one line, and the chat no longer
+   shows through */
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
+    .mx_ImageView {
+        background: #000000;
+    }
+
+    .mx_ImageView_panel {
+        gap: 8px;
+    }
+
+    .mx_ImageView_info_wrapper,
+    .mx_ImageView_title {
+        min-width: 0;
+    }
+
+    .mx_ImageView_title {
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
+
+    .mx_ImageView_toolbar {
+        flex: 0 0 auto;
+    }
+
+    .mx_ImageView_toolbar > .mx_ImageView_button:nth-child(-n + 4) {
+        display: none;
+    }
+}
+
 /* Installed on the home screen (viewport-fit=cover in index.html): the app keeps
    clear of the notch, the home indicator and, on a phone turned sideways, the
    rounded corners; the strips are the app's white. With the keyboard up, the

@@ -22,7 +22,8 @@ import dis from "../dispatcher/dispatcher";
 import { Action } from "../dispatcher/actions";
 import { type ViewRoomPayload } from "../dispatcher/payloads/ViewRoomPayload";
 import MemberAvatar from "../components/views/avatars/MemberAvatar";
-import { CloseIcon } from "./CirqleIcons";
+import RightPanelStore from "../stores/right-panel/RightPanelStore";
+import { BackIcon, CloseIcon } from "./CirqleIcons";
 import { ghostPhone, type Inbox, inboxesOf, memberName, privateChatContact, stripNetworkSuffix } from "./CirqleInboxes";
 import { useCirqleInboxes } from "./useCirqleChats";
 
@@ -88,13 +89,32 @@ export function CirqleMemberCard({
     const displayName = roomMember ? memberName(roomMember) : ((member as User).displayName ?? member.userId);
     const info = describeMember(member.userId, displayName, inboxes, client.getSafeUserId());
     const chat = info.kind === "customer" ? customerChat(member.userId, client, inboxes, room) : undefined;
+    // Opened from Group info: back to the member list, as WhatsApp does, not out of the panel
+    const rightPanel = RightPanelStore.instance;
+    const back = !!room && rightPanel.previousCard.phase !== null;
 
     return (
         <aside className="cirqle_GroupInfo" aria-labelledby="cirqle_MemberCard_title">
             <div className="cirqle_GroupInfo_bar">
-                <button type="button" className="cirqle_iconButton" aria-label="Close contact info" onClick={onClose}>
-                    <CloseIcon />
-                </button>
+                {back ? (
+                    <button
+                        type="button"
+                        className="cirqle_iconButton"
+                        aria-label="Back"
+                        onClick={() => rightPanel.popCard(room.roomId)}
+                    >
+                        <BackIcon />
+                    </button>
+                ) : (
+                    <button
+                        type="button"
+                        className="cirqle_iconButton"
+                        aria-label="Close contact info"
+                        onClick={onClose}
+                    >
+                        <CloseIcon />
+                    </button>
+                )}
                 <span className="cirqle_GroupInfo_barTitle">Contact info</span>
             </div>
 

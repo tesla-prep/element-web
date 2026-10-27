@@ -5,7 +5,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 */
 
 // The chat header, WhatsApp style: under the name the contact's number (or what
-// the chat is) and the number we answer from; on the right search and a menu.
+// the chat is) and the number we answer from; on the right a menu. Search in the
+// chat waits for its own panel: Element's search lived in the room summary that
+// Contact info replaced, so the button opened Contact info and what staff typed
+// went into the message field.
 
 import React, { type JSX, useContext, useState } from "react";
 import { type Room } from "matrix-js-sdk/src/matrix";
@@ -19,7 +22,7 @@ import { useRoomMembers } from "../hooks/useRoomMembers";
 import { groupPeople, membersLabel } from "./CirqleGroupInfo";
 import { chatKind, contactNumber, contactPhone, inboxesOf, networkOf } from "./CirqleInboxes";
 import { useCirqleInboxes } from "./useCirqleChats";
-import { BackIcon, GroupIcon, KebabIcon, SearchIcon } from "./CirqleIcons";
+import { BackIcon, GroupIcon, KebabIcon } from "./CirqleIcons";
 
 export function CirqleRoomSubtitle({ room }: { room: Room }): JSX.Element | null {
     const inboxes = useCirqleInboxes();
@@ -53,20 +56,11 @@ export function CirqleRoomHeaderButtons({ room }: { room: Room }): JSX.Element {
 
     return (
         <>
-            <button
-                className="cirqle_iconButton cirqle_RoomHeader_button"
-                aria-label="Search in chat"
-                onClick={(ev) => {
-                    ev.stopPropagation();
-                    dis.fire(Action.FocusMessageSearch);
-                }}
-            >
-                <SearchIcon size={20} />
-            </button>
             <Menu
                 open={menuOpen}
                 onOpenChange={setMenuOpen}
                 title="Menu"
+                showTitle={false}
                 side="bottom"
                 align="end"
                 trigger={

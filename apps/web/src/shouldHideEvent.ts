@@ -12,8 +12,9 @@ import { KnownMembership } from "matrix-js-sdk/src/types";
 import SettingsStore from "./settings/SettingsStore";
 import { type IRoomState } from "./components/structures/RoomView";
 import { type SettingKey } from "./settings/Settings.tsx";
-import { isPlumbingEvent } from "./cirqle/CirqleTimeline";
+import { isDeletedServiceMessage, isPlumbingEvent } from "./cirqle/CirqleTimeline";
 import { isHiddenForMe } from "./cirqle/CirqleMessages";
+import { isCirqleMessenger } from "./cirqle/CirqleFeatures";
 import { MatrixClientPeg } from "./MatrixClientPeg";
 
 interface IDiff {
@@ -56,6 +57,7 @@ export default function shouldHideEvent(ev: MatrixEvent, ctx?: IRoomState): bool
     // Hide all poll end events
     if (M_POLL_END.matches(ev.getType())) return true;
     if (isPlumbingEvent(ev)) return true; // CIRQLE
+    if (isCirqleMessenger() && isDeletedServiceMessage(ev)) return true; // CIRQLE: a bot's notice it took back
     if (isHiddenForMe(MatrixClientPeg.get(), ev)) return true; // CIRQLE: "Delete for me"
 
     // Accessing the settings store directly can be expensive if done frequently,
