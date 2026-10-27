@@ -49,7 +49,8 @@ Hooks in upstream files (each one line or a small block):
 | `views/rooms/VoiceRecordComposerTile.tsx` | recording a voice message takes the whole row, WhatsApp Web style: delete, red dot and time, waveform, pause; paused, it plays back and continues (`cirqle/CirqleVoiceRecorder.tsx`); the audio context is made in the tap on the microphone, a microphone that cannot be used is named by its cause (off, busy, none), and a recording that heard only silence is not sent (`cirqle/CirqleMic.ts`) |
 | `audio/VoiceRecording.ts`, `audio/VoiceMessageRecording.ts` | pause and resume: the encoder flushes and the audio context is suspended, so the clock and the length stand still; the recorder records into the context made in the tap (iOS) and lets the microphone go when it fails to start; the recording's levels for the silence check (`cirqle/CirqleMic.ts`) |
 | `audio/Playback.ts`, `audio/PlaybackClock.ts` | voice messages play through an audio element of their own, so 1.5× and 2× keep the pitch; the clock reads the element (`cirqle/CirqleVoiceSpeed.ts`) |
-| `views/audio_messages/RecordingPlayback.tsx` | the speed button while a voice message plays (`cirqle/CirqleVoiceSpeedButton.tsx`) |
+| `views/audio_messages/RecordingPlayback.tsx` | the speed button while a voice message plays (`cirqle/CirqleVoiceSpeedButton.tsx`); press or drag along the waveform to seek, no seek dot (`cirqle/CirqleWaveform.ts`) |
+| `views/audio_messages/Waveform.tsx` | bars fill as the message plays, the playing one part way (`--fill`, `cirqle/CirqleWaveform.ts`) |
 | `views/audio_messages/AudioPlayerBase.tsx` | arrow keys skip 5 s without the focused seek bar undoing it |
 | `vector/init.tsx`, `i18n/settings.ts` | English for everyone |
 | `settings/SettingsStore.ts` (second line) | read receipts and typing always sent: the relay bot passes them on from the number |

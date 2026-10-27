@@ -9,8 +9,12 @@ Please see LICENSE files in the repository root for full details.
 import React, { type CSSProperties } from "react";
 import classNames from "classnames";
 
+import { isCirqleMessenger } from "../../../cirqle/CirqleFeatures";
+import { cirqleBarFill } from "../../../cirqle/CirqleWaveform";
+
 interface WaveformCSSProperties extends CSSProperties {
     "--barHeight": number;
+    "--fill"?: number;
 }
 
 interface IProps {
@@ -32,6 +36,7 @@ export default class Waveform extends React.PureComponent<IProps> {
     };
 
     public render(): React.ReactNode {
+        const cirqle = isCirqleMessenger(); // CIRQLE: bars fill as the message plays
         return (
             <div className="mx_Waveform">
                 {this.props.relHeights.map((h, i) => {
@@ -48,6 +53,9 @@ export default class Waveform extends React.PureComponent<IProps> {
                             style={
                                 {
                                     "--barHeight": h,
+                                    ...(cirqle && {
+                                        "--fill": cirqleBarFill(progress, i, this.props.relHeights.length),
+                                    }),
                                 } as WaveformCSSProperties
                             }
                             className={classes}
