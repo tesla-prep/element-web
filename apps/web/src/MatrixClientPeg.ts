@@ -28,6 +28,7 @@ import SdkConfig from "./SdkConfig";
 import { setDeviceIsolationMode } from "./settings/controllers/DeviceIsolationModeController.ts";
 import { initialiseDehydrationIfEnabled } from "./utils/device/dehydration";
 import { isCirqleMessenger } from "./cirqle/CirqleFeatures"; // CIRQLE
+import { skipCirqleMembersInHistory } from "./cirqle/CirqleWarmup"; // CIRQLE
 
 export interface MatrixClientPegAssignOpts {
     /**
@@ -270,6 +271,7 @@ class MatrixClientPegClass implements IMatrixClientPeg {
         // the react sdk doesn't work without this, so don't allow
         opts.pendingEventOrdering = PendingEventOrdering.Detached;
         opts.lazyLoadMembers = true;
+        if (isCirqleMessenger()) skipCirqleMembersInHistory(); // CIRQLE: history pages without the bridges' joins
         // Poll the user's `<server_name>/.well-known/matrix/client` for client config unless disabled by config.
         // Leaving `clientWellKnownPollPeriod` unset stops the SDK fetching it.
         if (SdkConfig.get("enable_client_well_known_lookups")) {

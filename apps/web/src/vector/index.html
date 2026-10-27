@@ -55,6 +55,11 @@
         <% }
     } %>
 
+    <!-- CIRQLE: config.json and the crypto WASM (the largest .wasm, 7.8 MB) start downloading with the page instead of after the scripts. The WASM goes at low priority: it takes what the scripts leave of the connection and is mostly in by the time the client starts its crypto -->
+    <link rel="preload" as="fetch" crossorigin="anonymous" href="config.json">
+    <% const cirqleCryptoWasm = Object.keys(compilation.assets).filter((name) => /^bundles\/.*\.wasm$/.test(name)).sort((a, b) => compilation.assets[b].size() - compilation.assets[a].size())[0];
+    if (cirqleCryptoWasm) { %><link rel="preload" as="fetch" crossorigin="anonymous" fetchpriority="low" href="<%= cirqleCryptoWasm %>"><% } %>
+
     <% for (const tag of htmlWebpackPlugin.tags.headTags) {
         let path = tag.attributes && tag.attributes.href;
         if (path && path.includes("/Inter/")) { %>

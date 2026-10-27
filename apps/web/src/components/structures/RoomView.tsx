@@ -142,7 +142,7 @@ import { EncryptionEventViewModel } from "../../viewmodels/room/timeline/event-t
 import { ModuleApi } from "../../modules/Api.ts";
 import { RoomUploadContextProvider } from "../../viewmodels/room/RoomUploadViewModel.tsx";
 import { EventPresentationContextProvider } from "../../utils/EventPresentationContextProvider";
-import { isCirqleTouch } from "../../cirqle/CirqleMobile";
+import { isCirqleNearTimelineEnd, isCirqleTouch } from "../../cirqle/CirqleMobile";
 
 const DEBUG = false;
 const PREVENT_MULTIPLE_JITSI_WITHIN = 30_000;
@@ -246,6 +246,8 @@ export interface IRoomState {
     // the end of the live timeline. It has the effect of hiding the
     // 'scroll to bottom' knob, among a couple of other things.
     atEndOfLiveTimeline?: boolean;
+    /** CIRQLE: the timeline is within the jump-to-latest button's height of its end */
+    cirqleNearEnd?: boolean;
     showTopUnreadMessagesBar: boolean;
     statusBarVisible: boolean;
     // We load this later by asking the js-sdk to suggest a version for us.
@@ -1739,6 +1741,7 @@ export class RoomView extends React.Component<IRoomProps, IRoomState> {
         } else {
             this.setState({
                 atEndOfLiveTimeline: false,
+                cirqleNearEnd: isCirqleNearTimelineEnd(this.roomView.current), // CIRQLE
             });
         }
         this.updateTopUnreadMessagesBar();
@@ -2606,7 +2609,7 @@ export class RoomView extends React.Component<IRoomProps, IRoomState> {
         }
         let jumpToBottom;
         // Do not show JumpToBottomButton if we have search results showing, it makes no sense
-        if (this.state.atEndOfLiveTimeline === false && !this.state.search) {
+        if (this.state.atEndOfLiveTimeline === false && !this.state.search && !this.state.cirqleNearEnd) {
             jumpToBottom = (
                 <JumpToBottomButton
                     highlight={this.state.room.getUnreadNotificationCount(NotificationCountType.Highlight) > 0}

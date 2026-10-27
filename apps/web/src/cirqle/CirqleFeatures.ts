@@ -99,6 +99,28 @@ const ALLOWED_COMMANDS = new Set(["plain", "shrug", "tableflip", "unflip", "lenn
  */
 export const CIRQLE_MOBILE_GUIDE_REDIRECT = false;
 
+/**
+ * Since 27.10.2026 the client API is also served on the app's own domain
+ * (chat.cirqlecirqle.com/_matrix, cirqle/nginx.conf): no CORS preflight before
+ * each request, and the page and the API share one connection. A session signed
+ * in before keeps the old address in mx_hs_url; `cirqle_moved_homeservers` in
+ * config.json lists such addresses, and they move to default_server_config's
+ * base_url, with no new sign-in. The access token and the device stay the same:
+ * it is the same homeserver.
+ */
+export function cirqleMovedHomeserverUrl(stored: string | null): string | null {
+    const config = SdkConfig.get() as { cirqle_moved_homeservers?: unknown };
+    const target = SdkConfig.get().default_server_config?.["m.homeserver"]?.base_url;
+    const moved = config.cirqle_moved_homeservers;
+    if (!stored || !target || !Array.isArray(moved)) return stored;
+    const bare = (url: string): string => url.replace(/\/+$/, "");
+    if (bare(stored) === bare(target)) return stored;
+    if (!moved.some((url) => typeof url === "string" && bare(url) === bare(stored))) return stored;
+    localStorage.setItem("mx_hs_url", target);
+    logger.info(`CIRQLE: the homeserver moved from ${stored} to ${target}`);
+    return target;
+}
+
 /** The one theme the CIRQLE look is drawn on. */
 export const CIRQLE_THEME = "light";
 

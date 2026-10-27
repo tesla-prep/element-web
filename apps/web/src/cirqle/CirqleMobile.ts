@@ -132,6 +132,19 @@ export function keepCirqleTimelineBottom(panel: HTMLElement): () => void {
     };
 }
 
+/**
+ * The jump-to-latest button floats over the bottom right corner, where our
+ * bubbles have their time. Element shows it as soon as the timeline is a pixel
+ * off its end, so a chat left a few pixels short of the bottom had it over the
+ * last message's time. It shows once the timeline is scrolled up past its height.
+ */
+const JUMP_BUTTON_ROOM = 72;
+
+export function isCirqleNearTimelineEnd(roomView: HTMLElement | null): boolean {
+    const panel = roomView?.querySelector<HTMLElement>(".mx_RoomView_messagePanel");
+    return !!panel && panel.scrollHeight - panel.scrollTop - panel.clientHeight < JUMP_BUTTON_ROOM;
+}
+
 /** The element a long press on `target` opens the menu of: a message's line (a link keeps its own menu). */
 export function longPressTarget(target: EventTarget | null): HTMLElement | null {
     if (!(target instanceof Element)) return null;

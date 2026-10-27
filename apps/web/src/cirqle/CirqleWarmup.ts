@@ -8,18 +8,32 @@ SPDX-License-Identifier: AGPL-3.0-only
 // events of a room, and bridged chats begin with dozens of hidden member and
 // bridge state events, so Element pages back 2-3 times (one round trip each to
 // the homeserver) before it has the messages and knows where the chat starts.
-// The top of the chat list is paged back ahead of time, a couple of chats at a
-// time, and the chat under the finger or the pointer goes first.
+// The top of the chat list is paged back ahead of time, a few chats at a time,
+// and the chat under the finger or the pointer (a hover on a computer) goes
+// first. History comes without room members (skipCirqleMembersInHistory), so
+// one page of 150 is usually a screen of messages even in a bridged group.
 
-import { Direction, type Room } from "matrix-js-sdk/src/matrix";
+import { Direction, EventType, Filter, type IRoomEventFilter, type Room } from "matrix-js-sdk/src/matrix";
 import { logger } from "matrix-js-sdk/src/logger";
 
 /** How many chats from the top of the list are made ready to open */
-export const WARM_CHATS = 12;
+export const WARM_CHATS = 30;
 /** Enough events for a screen of messages once the hidden state events are dropped */
 const WARM_EVENTS = 60;
-const MAX_PAGES = 3;
-const PARALLEL = 2;
+const PAGE_EVENTS = 150;
+const MAX_PAGES = 2;
+const PARALLEL = 3;
+
+/**
+ * Back-pagination and /context leave the room's member events out. In a bridged
+ * group most of the history is the bridge's joins and invites, which CIRQLE
+ * hides anyway (isPlumbingEvent): "CIRQLE | Frisco" took 8 pages of 50 events
+ * for one screen. The senders' own member events still come with every page
+ * (lazy loading), so names and avatars are unchanged.
+ */
+export function skipCirqleMembersInHistory(): void {
+    (Filter.LAZY_LOADING_MESSAGES_FILTER as IRoomEventFilter).not_types = [EventType.RoomMember];
+}
 
 const warmed = new Set<string>();
 const queue: Room[] = [];
@@ -33,7 +47,7 @@ function needsWarming(room: Room): boolean {
 async function warm(room: Room): Promise<void> {
     const timeline = room.getLiveTimeline();
     for (let page = 0; page < MAX_PAGES && needsWarming(room); page++) {
-        const more = await room.client.paginateEventTimeline(timeline, { backwards: true, limit: 50 });
+        const more = await room.client.paginateEventTimeline(timeline, { backwards: true, limit: PAGE_EVENTS });
         if (!more) break;
     }
 }

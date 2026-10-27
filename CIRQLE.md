@@ -58,8 +58,12 @@ Hooks in upstream files (each one line or a small block):
 | `utils/DialogOpener.ts` | room settings open the chat's info panel (header avatar included) |
 | `structures/MatrixChat.tsx` | Ctrl/Cmd+K focuses the chat list search, no Spotlight |
 | `stores/right-panel/RightPanelStore.ts` | on a phone a chat opens on its messages, not on the info panel left open in it (`cirqleChatOpensOnMessages`) |
-| `cirqle/CirqleChatList.tsx` → `cirqle/CirqleWarmup.ts` | the top 12 chats of the list are paged back ahead of time (and the chat under the pointer first), so a chat opens without the 2-4 s spinner |
+| `cirqle/CirqleChatList.tsx` → `cirqle/CirqleWarmup.ts` | the top 30 chats of the list are paged back ahead of time, one page of 150 events each (and the chat under the finger, or under the mouse on a computer, first), so a chat opens without the 2-4 s spinner |
 | `MatrixClientPeg.ts` | no device dehydration at start: staff have no secret storage, and it cost two round trips before the first sync |
+| `MatrixClientPeg.ts` (second line) | history pages (`/messages`, `/context`) come without room member events (`skipCirqleMembersInHistory` in `cirqle/CirqleWarmup.ts`): in a bridged group they were most of every page and are hidden anyway |
+| `Lifecycle.ts` (second line) | a session signed in when the API was at matrix.cirqlecirqle.com moves to chat.cirqlecirqle.com without a new sign-in (`cirqleMovedHomeserverUrl`, «One domain») |
+| `vector/getconfig.ts` | config.json is asked for without a cache buster, so the copy `index.html` preloads is used |
+| `patches/matrix-js-sdk@43.0.0.patch` | the chat list shows from the browser's copy without waiting for the network: a bridge's delivery status (`com.beeper.message_send_status`) whose message is not loaded no longer holds up the start to fetch that message («One domain») |
 | `views/dialogs/UserSettingsDialog.tsx` | settings tabs staff need, a short Preferences (`cirqle/CirqleSettings.tsx`) |
 | `settings/tabs/user/HelpUserSettingsTab.tsx` | no access token |
 | `views/messages/MPollBody.tsx` | polls show votes, voting is on the phone |
@@ -68,12 +72,13 @@ Hooks in upstream files (each one line or a small block):
 | `viewmodels/structures/ResizerViewModel.ts` | the chat list never collapses: no auto-collapse under 768 px, the saved `RoomList.isPanelCollapsed` ignored |
 | `viewmodels/room/timeline/event-tile/DisambiguatedProfileViewModel.ts` | a sender's name without the Matrix ID, even when two have the same name; in a group, a customer's number after the name, quieter, on one line (`cirqle/CirqleSenderPhone.ts`: from the ghost, or from `contact_phones` for a LID; not for staff, our own ghosts or Telegram) |
 | `views/rooms/JumpToBottomButton.tsx`, `structures/RoomView.tsx` | on a touch screen the jump-to-latest button leaves the keyboard as it was (it does not take the focus from the composer, nor focus it), and a reaction or a closed dialog does not bring the keyboard up (`cirqle/CirqleMobile.ts`) |
+| `structures/RoomView.tsx` (second hook) | the jump-to-latest button shows only once the timeline is scrolled up past its height, not a few pixels off the end, where it covered the time of the last message (`isCirqleNearTimelineEnd`) |
 | `structures/MatrixChat.tsx`, `views/rooms/BasicMessageComposer.tsx` | on a touch screen an opened chat does not focus the message field, so the keyboard comes up only on a tap in it; an edit's field still does (`cirqle/CirqleMobile.ts`) |
 | `structures/ScrollPanel.tsx` | on a touch screen the timeline keeps its bottom while the chat changes height with the keyboard (`cirqle/CirqleMobile.ts`) |
 | `viewmodels/room/timeline/event-tile/timestamp/MessageTimestampViewModel.ts` | no full-date tooltip on a touch screen, where a tap on a message opened it |
 | `views/messages/MBodyFactory.tsx` | Telegram's round video message is a small circle (`cirqle/CirqleTimeline.ts`) |
 | `vector/init.tsx` (second line) | on touch screens the app follows the keyboard and a long press opens a message's menu (`cirqle/CirqleMobile.ts`) |
-| `vector/index.html` | `interactive-widget=resizes-content` and `viewport-fit=cover` in the viewport; CIRQLE's title, icons, iOS home screen tags and launch screens; the light theme is preloaded with the page instead of after config.json |
+| `vector/index.html` | `interactive-widget=resizes-content` and `viewport-fit=cover` in the viewport; CIRQLE's title, icons, iOS home screen tags and launch screens; the light theme, config.json and the crypto WASM (at low priority) are preloaded with the page instead of after the scripts |
 | `vector/init.tsx` (`loadTheme`) | a theme stylesheet still loading after Element's 2 s of polling no longer stops the app with "Your Element is misconfigured" (`cirqleThemeStillLoading` in `cirqle/CirqleFeatures.ts`) |
 | `webpack.config.ts` | copies `cirqle/manifest.json` as `manifest.json` and `res/cirqle-icons/` |
 | `viewmodels/room/EventTileActionBarViewModel.ts` | hover bar without Reply in thread and Pin |
@@ -252,6 +257,38 @@ tuwunel ── customer's message ──> matrix.cirqlecirqle.com/_matrix/push/v
   messages and "via Main #1 · WhatsApp"; none while that chat is open in the window in
   front. A chat's notifications close once it is read anywhere, on every device where
   the app is running (a closed app cannot hear of it).
+
+## One domain
+
+Since 27.10.2026 the app talks to the homeserver at `https://chat.cirqlecirqle.com/_matrix`
+(`base_url` in `cirqle/config.json`), on its own domain. The server is in Ashburn,
+about 270-290 ms from Vietnam, so the start is mostly waiting for answers in turn.
+With the API on matrix.cirqlecirqle.com every request carried an Authorization
+header to another site and waited for a CORS preflight first (its cache is per URL,
+and `/sync?since=…`, `/messages?from=…`, `/event/…` are new every time), and the
+first request paid for a second connection. Now the page and the API share one
+HTTP/2 connection and none of it is preflighted.
+
+- nginx (tesla-prep/cirqle-agents `deploy/team-messenger/prod/nginx/team-messenger.conf`,
+  excerpt in `cirqle/nginx.conf`) sends `/_matrix/` on chat. to tuwunel with
+  `Host: matrix.cirqlecirqle.com`, so tuwunel sees no difference.
+  matrix.cirqlecirqle.com stays for the bridges, Element X, FluffyChat and push.
+- Sessions signed in before keep `mx_hs_url` = matrix.cirqlecirqle.com; at the next
+  start `cirqleMovedHomeserverUrl` moves them to `base_url` because
+  `cirqle_moved_homeservers` lists the old address. Same server, same token and
+  device, no new sign-in. Sign-in itself (auth_metadata, Keycloak) stays on matrix.:
+  tuwunel's sign-in cookie belongs to the host it starts on.
+- Rollback: `base_url` back to matrix. and `"cirqle_moved_homeservers": ["https://chat.cirqlecirqle.com"]`,
+  deploy, and only then the old nginx file (sessions moved to chat. need it until
+  they start once more).
+- `patches/matrix-js-sdk@43.0.0.patch`: at start the SDK replays the saved sync
+  from the browser and then the list appears without the network, but for every
+  relation whose parent is not loaded it fetched the parent first, one by one
+  (`Room.addLiveEvents`). In our sync those are the bridges' delivery statuses, so
+  the start waited for 4 rounds of `/event` (1.8 s on a computer). A delivery status
+  is no longer worth that fetch: it goes straight to the room's relations, where it
+  ended up after the fetch as well, and the ticks and «Not delivered» read it there
+  as before. Other relations still fetch their parent.
 
 ## Build and deploy
 
