@@ -45,9 +45,11 @@ function needsWarming(room: Room): boolean {
 }
 
 async function warm(room: Room): Promise<void> {
-    const timeline = room.getLiveTimeline();
     for (let page = 0; page < MAX_PAGES && needsWarming(room); page++) {
-        const more = await room.client.paginateEventTimeline(timeline, { backwards: true, limit: PAGE_EVENTS });
+        const more = await room.client.paginateEventTimeline(room.getLiveTimeline(), {
+            backwards: true,
+            limit: PAGE_EVENTS,
+        });
         if (!more) break;
     }
 }
