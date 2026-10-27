@@ -6,11 +6,14 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 // @vitest-environment happy-dom
 
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { EventType, type MatrixClient, type MatrixEvent, MsgType, Room } from "matrix-js-sdk/src/matrix";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { EventType, type MatrixClient, type MatrixEvent, MsgType, Room, RoomMember } from "matrix-js-sdk/src/matrix";
 import { KnownMembership } from "matrix-js-sdk/src/types";
 import { mkEvent, stubClient } from "test-utils";
 
+import SdkConfig from "../SdkConfig";
+import { shouldFormContinuation } from "../components/structures/MessagePanel";
+import { CIRQLE_BRAND } from "./CirqleFeatures";
 import { NUMBER_USERS_EVENT } from "./CirqleInboxes";
 import { hideCustomerName, isOurSide } from "./CirqleTimeline";
 
@@ -192,5 +195,80 @@ describe("isOurSide", () => {
         expect(hideCustomerName(message(DM, JANAKI), client)).toBe(true);
         expect(hideCustomerName(message(DM, NUMBER_LID_GHOST), client)).toBe(false);
         expect(hideCustomerName(message(DM, STAFF), client)).toBe(false);
+    });
+});
+
+describe("our side's messages as one series", () => {
+    let client: MatrixClient;
+    let rooms: Room[] = [];
+
+    function named(roomId: string, sender: string, name: string, ts: number): MatrixEvent {
+        const event = mkEvent({
+            type: EventType.RoomMessage,
+            room: roomId,
+            user: sender,
+            content: { msgtype: MsgType.Audio, body: "Voice message", url: "mxc://matrix.cirqlecirqle.com/voice" },
+            ts,
+            event: true,
+        });
+        const member = new RoomMember(roomId, sender);
+        member.name = name;
+        member.rawDisplayName = name;
+        event.sender = member;
+        return event;
+    }
+
+    function continues(prev: MatrixEvent, cur: MatrixEvent): boolean {
+        return shouldFormContinuation(prev, cur, client, false);
+    }
+
+    beforeEach(() => {
+        SdkConfig.put({ brand: CIRQLE_BRAND });
+        client = stubClient();
+        vi.mocked(client.getUserId).mockReturnValue(ME);
+        rooms = [
+            inboxSpace(client, "whatsapp", NUMBER, [NUMBER_PHONE_GHOST, NUMBER_LID_GHOST]),
+            privateChat(client, DM, "whatsapp", "50002177056782@lid", NUMBER),
+            room(client, GROUP, [
+                created(GROUP),
+                bridgeState(GROUP, "whatsapp", { channel: { id: "120363425399214516@g.us" } }),
+            ]),
+        ];
+        vi.mocked(client.getRooms).mockImplementation(() => rooms);
+        vi.mocked(client.getRoom).mockImplementation((id) => rooms.find((r) => r.roomId === id) ?? null);
+    });
+
+    afterEach(() => {
+        SdkConfig.reset();
+    });
+
+    it("keeps a staff reply and what the number then sends from the phone under one name", () => {
+        const staff = named(DM, STAFF, "Andrey", 1_000);
+        const phone = named(DM, NUMBER_LID_GHOST, "Andrey", 21_000);
+        const again = named(DM, STAFF, "Andrey", 41_000);
+        expect(continues(staff, phone)).toBe(true);
+        expect(continues(phone, again)).toBe(true);
+    });
+
+    it("reads the name as shown, without the network suffix", () => {
+        expect(
+            continues(named(GROUP, STAFF, "Andrey", 1_000), named(GROUP, NUMBER_LID_GHOST, "Andrey (WA)", 2_000)),
+        ).toBe(true);
+    });
+
+    it("starts a new series when our side's name changes", () => {
+        expect(continues(named(DM, STAFF, "Andrey", 1_000), named(DM, ME, "Vyacheslav", 2_000))).toBe(false);
+    });
+
+    it("never joins the customer to our side, even under the same name", () => {
+        expect(continues(named(DM, STAFF, "Andrey", 1_000), named(DM, JANAKI, "Andrey", 2_000))).toBe(false);
+        expect(continues(named(GROUP, STAFF, "Andrey", 1_000), named(GROUP, GROUP_MEMBER, "Andrey", 2_000))).toBe(
+            false,
+        );
+    });
+
+    it("keeps the stock Element rule outside CIRQLE", () => {
+        SdkConfig.reset();
+        expect(continues(named(DM, STAFF, "Andrey", 1_000), named(DM, NUMBER_LID_GHOST, "Andrey", 2_000))).toBe(false);
     });
 });

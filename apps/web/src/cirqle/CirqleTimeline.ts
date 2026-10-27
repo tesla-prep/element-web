@@ -19,6 +19,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 import { EventType, type MatrixClient, type MatrixEvent } from "matrix-js-sdk/src/matrix";
 
 import { chatKind, getInboxes, privateChatContact } from "./CirqleInboxes";
+import { cirqleMentionName } from "./CirqleSenderPhone";
 
 const BRIDGE_USER = /^@(whatsapp|telegram)(bot)?(_|:)/;
 const BRIDGE_BOT = /^@(whatsapp|telegram)bot:/;
@@ -33,6 +34,21 @@ export function isOurSide(event: MatrixEvent, client: MatrixClient): boolean {
     const contact = room ? privateChatContact(room) : undefined;
     if (contact && sender !== contact) return true;
     return getInboxes(client).some((inbox) => inbox.ownUsers.has(sender));
+}
+
+/**
+ * A run of our side's messages under one name reads as one series, as WhatsApp
+ * shows everything the number sends: a staff member's reply and what the owner
+ * then sends from the phone come from different Matrix users but carry the same
+ * name, so the name is not repeated over each of them.
+ */
+export function isOurSideSeries(prev: MatrixEvent, cur: MatrixEvent, client: MatrixClient): boolean {
+    if (!prev.sender || !cur.sender) return false;
+    if (!isOurSide(prev, client) || !isOurSide(cur, client)) return false;
+    return (
+        cirqleMentionName(prev.sender.rawDisplayName, prev.sender.userId) ===
+        cirqleMentionName(cur.sender.rawDisplayName, cur.sender.userId)
+    );
 }
 
 /** In a private chat the customer's name is the chat's name, so their bubbles go without it, as on WhatsApp. */
