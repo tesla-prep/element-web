@@ -1,3 +1,24 @@
+diff --git a/lib/models/event-timeline-set.js b/lib/models/event-timeline-set.js
+index 6decbddf6341da416f06ed552ad7091a2172640f..77d55be90d8e0b2215a15a375a5162bc4cabc5a0 100644
+--- a/lib/models/event-timeline-set.js
++++ b/lib/models/event-timeline-set.js
+@@ -287,6 +287,16 @@ export class EventTimelineSet extends TypedEventEmitter {
+     if (!timeline) {
+       throw new Error("'timeline' not specified for EventTimelineSet.addEventsToTimeline");
+     }
++    // CIRQLE: a page that comes back for a timeline this set has since dropped (a limited sync reset
++    // every timeline while the page was on its way) is thrown away. Added, it put its events in the new
++    // event map pointing at the dropped timeline, the next back-pagination joined that timeline to the
++    // live one, and the chat showed its old copies again: messages twice or more, deleted ones with
++    // their text (redactions look events up through the map and never reach them).
++    if (!this.timelines.includes(timeline)) {
++      logger.info(`Ignoring ${events.length} events paginated into timeline ${timeline}, which was reset`);
++      timeline.setPaginationToken(null, toStartOfTimeline ? EventTimeline.BACKWARDS : EventTimeline.FORWARDS);
++      return;
++    }
+     if (!toStartOfTimeline && timeline == this.liveTimeline) {
+       throw new Error("EventTimelineSet.addEventsToTimeline cannot be used for adding events to " + "the live timeline - use Room.addLiveEvents instead");
+     }
 diff --git a/lib/models/room.js b/lib/models/room.js
 index e3e712bbe0b2bab1ba1624759e0813bdf91f1f67..daa3f5790734b2f77ff1565f6b5f7850d80ff0af 100644
 --- a/lib/models/room.js
@@ -14,6 +35,28 @@ index e3e712bbe0b2bab1ba1624759e0813bdf91f1f67..daa3f5790734b2f77ff1565f6b5f7850
          try {
            const parentEvent = new MatrixEvent(await this.client.fetchRoomEvent(this.roomId, event.relationEventId));
            neighbouringEvents.push(parentEvent);
+diff --git a/src/models/event-timeline-set.ts b/src/models/event-timeline-set.ts
+index d1fc652f109b9822568d6b57ac61fb5e7e5cb23d..88f496dbd30905ff1cb779722bbf70afc61e1705 100644
+--- a/src/models/event-timeline-set.ts
++++ b/src/models/event-timeline-set.ts
+@@ -403,6 +403,17 @@ export class EventTimelineSet extends TypedEventEmitter<EmittedEvents, EventTime
+             throw new Error("'timeline' not specified for EventTimelineSet.addEventsToTimeline");
+         }
+ 
++        // CIRQLE: a page that comes back for a timeline this set has since dropped (a limited sync reset
++        // every timeline while the page was on its way) is thrown away. Added, it put its events in the new
++        // event map pointing at the dropped timeline, the next back-pagination joined that timeline to the
++        // live one, and the chat showed its old copies again: messages twice or more, deleted ones with
++        // their text (redactions look events up through the map and never reach them).
++        if (!this.timelines.includes(timeline)) {
++            logger.info(`Ignoring ${events.length} events paginated into timeline ${timeline}, which was reset`);
++            timeline.setPaginationToken(null, toStartOfTimeline ? EventTimeline.BACKWARDS : EventTimeline.FORWARDS);
++            return;
++        }
++
+         if (!toStartOfTimeline && timeline == this.liveTimeline) {
+             throw new Error(
+                 "EventTimelineSet.addEventsToTimeline cannot be used for adding events to " +
 diff --git a/src/models/room.ts b/src/models/room.ts
 index ea9e38dba74df04ff70e032ba280fa71edc7bfa2..fd15ea2816bd7a9c9afe77af50e4162710405ae8 100644
 --- a/src/models/room.ts

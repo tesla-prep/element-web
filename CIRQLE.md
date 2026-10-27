@@ -66,6 +66,7 @@ Hooks in upstream files (each one line or a small block):
 | `Lifecycle.ts` (second line) | a session signed in when the API was at matrix.cirqlecirqle.com moves to chat.cirqlecirqle.com without a new sign-in (`cirqleMovedHomeserverUrl`, «One domain») |
 | `vector/getconfig.ts` | config.json is asked for without a cache buster, so the copy `index.html` preloads is used |
 | `patches/matrix-js-sdk@43.0.0.patch` | the chat list shows from the browser's copy without waiting for the network: a bridge's delivery status (`com.beeper.message_send_status`) whose message is not loaded no longer holds up the start to fetch that message («One domain») |
+| `patches/matrix-js-sdk@43.0.0.patch` (second change) | a history page that comes back after a limited sync dropped its timeline is thrown away (`EventTimelineSet.addEventsToTimeline`): added, it joined the old copy of the chat to the new one, so messages showed two or three times and deleted ones came back with their text; the warmup pages the current live timeline each time (VLA-389, `cirqle/CirqleTimelineReset.test.ts`) |
 | `views/dialogs/UserSettingsDialog.tsx` | settings tabs staff need, a short Preferences (`cirqle/CirqleSettings.tsx`) |
 | `settings/tabs/user/HelpUserSettingsTab.tsx` | no access token |
 | `views/messages/MPollBody.tsx` | polls show votes, voting is on the phone |
