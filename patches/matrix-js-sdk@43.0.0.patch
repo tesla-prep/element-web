@@ -1,0 +1,37 @@
+diff --git a/lib/models/room.js b/lib/models/room.js
+index e3e712bbe0b2bab1ba1624759e0813bdf91f1f67..daa3f5790734b2f77ff1565f6b5f7850d80ff0af 100644
+--- a/lib/models/room.js
++++ b/lib/models/room.js
+@@ -2585,7 +2585,10 @@ export class Room extends ReadReceipt {
+         shouldLiveInThread,
+         threadId = ""
+       } = this.eventShouldLiveIn(event, neighbouringEvents, threadRoots);
+-      if (!shouldLiveInThread && !shouldLiveInRoom && event.isRelation()) {
++      // CIRQLE: a bridge's delivery status whose message is not loaded is not worth a fetch of that
++      // message: fetched one by one, they held up the chat list shown from the cache. It goes to the
++      // room's relations below, which is where it ended up after the fetch too.
++      if (!shouldLiveInThread && !shouldLiveInRoom && event.isRelation() && event.getType() !== "com.beeper.message_send_status") {
+         try {
+           const parentEvent = new MatrixEvent(await this.client.fetchRoomEvent(this.roomId, event.relationEventId));
+           neighbouringEvents.push(parentEvent);
+diff --git a/src/models/room.ts b/src/models/room.ts
+index ea9e38dba74df04ff70e032ba280fa71edc7bfa2..fd15ea2816bd7a9c9afe77af50e4162710405ae8 100644
+--- a/src/models/room.ts
++++ b/src/models/room.ts
+@@ -3132,7 +3132,15 @@ export class Room extends ReadReceipt<RoomEmittedEvents, RoomEventHandlerMap> {
+                 threadId = "",
+             } = this.eventShouldLiveIn(event, neighbouringEvents, threadRoots);
+ 
+-            if (!shouldLiveInThread && !shouldLiveInRoom && event.isRelation()) {
++            // CIRQLE: a bridge's delivery status whose message is not loaded is not worth a fetch of that
++            // message: fetched one by one, they held up the chat list shown from the cache. It goes to the
++            // room's relations below, which is where it ended up after the fetch too.
++            if (
++                !shouldLiveInThread &&
++                !shouldLiveInRoom &&
++                event.isRelation() &&
++                event.getType() !== "com.beeper.message_send_status"
++            ) {
+                 try {
+                     const parentEvent = new MatrixEvent(
+                         await this.client.fetchRoomEvent(this.roomId, event.relationEventId!),

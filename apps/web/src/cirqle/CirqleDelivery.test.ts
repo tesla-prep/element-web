@@ -6,7 +6,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 // @vitest-environment happy-dom
 
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { type MatrixClient, MatrixEvent, Room } from "matrix-js-sdk/src/matrix";
 import { stubClient } from "test-utils";
 
@@ -109,6 +109,29 @@ describe("CIRQLE delivery", () => {
         const failure = deliveryFailure(room, refused)!;
         expect(failure).toEqual({ what: "message", reason: "it was refused" });
         expect(deliveryText(failure, "WhatsApp")).toBe("Not delivered to WhatsApp: it was refused");
+    });
+
+    it("takes a status whose message is not loaded at once, without fetching the message (start from the cache)", async () => {
+        vi.mocked(client.supportsThreads).mockReturnValue(true);
+        await room.addLiveEvents([status("$older", "FAIL_RETRIABLE")], { addToState: false });
+        expect(client.fetchRoomEvent).not.toHaveBeenCalled();
+        const older = message("$older", 30 * MINUTE);
+        await room.addLiveEvents([older], { addToState: false });
+        expect(deliveryFailure(room, older)).toEqual({ what: "message", reason: "it was not accepted" });
+    });
+
+    it("still fetches the parent of other relations it cannot place", async () => {
+        vi.mocked(client.supportsThreads).mockReturnValue(true);
+        const reaction = new MatrixEvent({
+            type: "m.reaction",
+            event_id: "$like",
+            room_id: ROOM,
+            sender: "@whatsapp_1:server",
+            origin_server_ts: NOW,
+            content: { "m.relates_to": { rel_type: "m.annotation", event_id: "$elsewhere", key: "👍" } },
+        });
+        await room.addLiveEvents([reaction], { addToState: false });
+        expect(client.fetchRoomEvent).toHaveBeenCalledWith(ROOM, "$elsewhere");
     });
 
     it("takes the bridge's last answer: a retry that worked clears the refusal", () => {

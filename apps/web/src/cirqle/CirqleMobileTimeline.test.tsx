@@ -15,7 +15,12 @@ import SdkConfig from "../SdkConfig";
 import JumpToBottomButton from "../components/views/rooms/JumpToBottomButton";
 import { MessageTimestampViewModel } from "../viewmodels/room/timeline/event-tile/timestamp/MessageTimestampViewModel";
 import { CIRQLE_BRAND } from "./CirqleFeatures";
-import { keepCirqleKeyboard, keepCirqleTimelineBottom, skipsCirqleAutoFocus } from "./CirqleMobile";
+import {
+    isCirqleNearTimelineEnd,
+    keepCirqleKeyboard,
+    keepCirqleTimelineBottom,
+    skipsCirqleAutoFocus,
+} from "./CirqleMobile";
 import { isRoundVideo } from "./CirqleTimeline";
 
 /** A scroll panel whose sizes the test sets, as happy-dom lays nothing out. */
@@ -78,6 +83,15 @@ describe("the timeline on a phone", () => {
         document.documentElement.classList.remove("cirqle_touch");
         keepCirqleTimelineBottom(panel(1000, 500, 0));
         expect(resized).toBeUndefined();
+    });
+
+    it("keeps the jump-to-latest button away until the timeline is scrolled up past its height", () => {
+        const view = document.createElement("div");
+        view.append(panel(2000, 700, 1290));
+        expect(isCirqleNearTimelineEnd(view)).toBe(true); // 10 px short of the end: the button would cover the last time
+        view.replaceChildren(panel(2000, 700, 1200));
+        expect(isCirqleNearTimelineEnd(view)).toBe(false);
+        expect(isCirqleNearTimelineEnd(null)).toBe(false);
     });
 
     it("does not take the focus from the composer on a tap of the jump-to-bottom button", () => {

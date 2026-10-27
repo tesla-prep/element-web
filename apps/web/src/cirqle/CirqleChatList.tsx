@@ -100,6 +100,7 @@ function ChatRow({
             className={classNames("cirqle_ChatRow", { cirqle_ChatRow_selected: selected })}
             onClick={open}
             onPointerDown={() => warmCirqleChat(room)}
+            onPointerEnter={(e) => e.pointerType === "mouse" && warmCirqleChat(room)}
             aria-current={selected ? "page" : undefined}
         >
             <RoomAvatar room={room} size="48px" />

@@ -19,7 +19,7 @@ export async function getVectorConfig(relativeLocation = ""): Promise<IConfigOpt
     }
 
     const specificConfigPromise = getConfig(`${relativeLocation}config.${domain}.json`);
-    const generalConfigPromise = getConfig(relativeLocation + "config.json");
+    const generalConfigPromise = getConfig(relativeLocation + "config.json", true);
 
     try {
         const configJson = await specificConfigPromise;
@@ -33,13 +33,13 @@ export async function getVectorConfig(relativeLocation = ""): Promise<IConfigOpt
     }
 }
 
-async function getConfig(configJsonFilename: string): Promise<IConfigOptions | undefined> {
+async function getConfig(configJsonFilename: string, preloaded = false): Promise<IConfigOptions | undefined> {
     const url = new URL(configJsonFilename, window.location.href);
-    url.searchParams.set("cachebuster", Date.now().toString());
-    const res = await fetch(url, {
-        cache: "no-cache",
-        method: "GET",
-    });
+    // CIRQLE: config.json is asked for just as index.html preloads it, so the preload is used
+    // instead of a second round trip after the scripts; nginx sends it with Cache-Control: no-cache,
+    // so it is still checked every time
+    if (!preloaded) url.searchParams.set("cachebuster", Date.now().toString());
+    const res = await fetch(url, preloaded ? undefined : { cache: "no-cache", method: "GET" });
 
     if (res.status === 404 || res.status === 0) {
         // Lack of a config isn't an error, we should just use the defaults.

@@ -70,6 +70,7 @@ import { CallStatusListener } from "./CallStatusListener.ts";
 import { CallStore } from "./stores/CallStore.ts";
 import { ModuleApi } from "./modules/Api.ts";
 import { cirqlePushSignOut } from "./cirqle/CirqlePush";
+import { cirqleMovedHomeserverUrl } from "./cirqle/CirqleFeatures";
 
 const HOMESERVER_URL_KEY = "mx_hs_url";
 const ID_SERVER_URL_KEY = "mx_is_url";
@@ -604,7 +605,7 @@ async function getStoredToken(storageKey: string): Promise<string | undefined> {
  * @returns {Object} Information about the session - see implementation for variables.
  */
 export async function getStoredSessionVars(): Promise<Partial<IStoredSession>> {
-    const hsUrl = localStorage.getItem(HOMESERVER_URL_KEY) ?? undefined;
+    const hsUrl = cirqleMovedHomeserverUrl(localStorage.getItem(HOMESERVER_URL_KEY)) ?? undefined; // CIRQLE: the API moved to chat.cirqlecirqle.com
     const isUrl = localStorage.getItem(ID_SERVER_URL_KEY) ?? undefined;
 
     const accessToken = await getStoredToken(ACCESS_TOKEN_STORAGE_KEY);

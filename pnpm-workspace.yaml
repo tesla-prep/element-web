@@ -123,6 +123,8 @@ patchedDependencies:
     # Tweaks to record screenshot diffs as vitest artifacts
     vitest-plugin-vis@5.1.1: patches/vitest-plugin-vis@5.1.1.patch
     storybook-addon-vis@4.2.3: patches/storybook-addon-vis@4.2.3.patch
+    # CIRQLE: the chat list shows from the cache without fetching the messages of bridge delivery statuses (CIRQLE.md)
+    matrix-js-sdk@43.0.0: patches/matrix-js-sdk@43.0.0.patch
 
 peerDependencyRules:
     allowedVersions:
