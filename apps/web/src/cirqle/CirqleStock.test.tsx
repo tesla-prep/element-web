@@ -7,9 +7,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 // @vitest-environment happy-dom
 
 import React from "react";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MatrixEvent } from "matrix-js-sdk/src/matrix";
-import { render, screen } from "test-utils-rtl";
+import { fireEvent, render, screen, waitFor } from "test-utils-rtl";
 import { stubClient } from "test-utils";
 import { ActionBarAction } from "@element-hq/web-shared-components";
 
@@ -19,7 +19,10 @@ import { Tab } from "../components/structures/TabbedView";
 import { UserTab } from "../components/views/dialogs/UserTab";
 import { CIRQLE_BRAND, cirqlePollTotal, isCirqleHiddenCommand } from "./CirqleFeatures";
 import { cirqleActionBarActions, cirqleMayDelete } from "./CirqleMessages";
-import { cirqleUserTabs } from "./CirqleSettings";
+import { CirqlePreferencesTab, cirqleUserTabs } from "./CirqleSettings";
+import MatrixClientContext from "../contexts/MatrixClientContext";
+import PlatformPeg from "../PlatformPeg";
+import type BasePlatform from "../BasePlatform";
 import { CirqleDeleteDialog } from "./CirqleDeleteDialog";
 import { MainGrouper } from "../components/structures/grouper/MainGrouper";
 import type MessagePanel from "../components/structures/MessagePanel";
@@ -122,6 +125,25 @@ describe("CIRQLE without stock Element's extras", () => {
         expect(screen.queryByText(/read receipts/i)).toBeNull();
         expect(screen.queryByText(/typing notifications/i)).toBeNull();
         expect(screen.queryByText(/language/i)).toBeNull();
+    });
+
+    it("keeps Help's Clear cache and reload, under Preferences, for support", async () => {
+        const client = stubClient();
+        const deleteAllData = vi.fn().mockResolvedValue(undefined);
+        (client as any).store = { deleteAllData };
+        (client as any).stopClient = vi.fn();
+        const reload = vi.fn();
+        const platform = vi.spyOn(PlatformPeg, "get").mockReturnValue({ reload } as unknown as BasePlatform);
+        render(
+            <MatrixClientContext.Provider value={client}>
+                <CirqlePreferencesTab />
+            </MatrixClientContext.Provider>,
+        );
+        fireEvent.click(screen.getByRole("button", { name: "Clear cache and reload" }));
+        expect(client.stopClient).toHaveBeenCalled();
+        await waitFor(() => expect(reload).toHaveBeenCalled());
+        expect(deleteAllData).toHaveBeenCalled();
+        platform.mockRestore();
     });
 
     it('shows each deleted message as WhatsApp\'s "This message was deleted", not folded into a summary', () => {
