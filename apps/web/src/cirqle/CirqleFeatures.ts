@@ -121,6 +121,39 @@ export function cirqleMovedHomeserverUrl(stored: string | null): string | null {
     return target;
 }
 
+/**
+ * The start fails with "Unable to load session" when the crypto WASM (or a
+ * script) does not download: a network change or a dropped connection on the
+ * way to Ashburn. Nothing in the page can try again (the crypto library keeps
+ * its failed load), and the dialog's way out signs the person out. So the page
+ * reloads instead, twice at most within two minutes, which downloads it again;
+ * after that the dialog shows as before.
+ */
+const START_RELOADS_KEY = "cirqle_start_reloads";
+const START_RELOADS = 2;
+const START_RELOADS_WINDOW_MS = 2 * 60 * 1000;
+
+export function isCirqleDownloadFailure(error: unknown): boolean {
+    if (!(error instanceof Error)) return false;
+    if (["CompileError", "ChunkLoadError"].includes(error.name)) return true;
+    return /WebAssembly|wasm|Failed to fetch|NetworkError|Network error|Load failed|Loading chunk/i.test(error.message);
+}
+
+/** True when the page is reloading for another try; the caller stops there. */
+export function reloadCirqleAfterDownloadFailure(error: unknown, now = Date.now()): boolean {
+    if (!isCirqleMessenger() || !isCirqleDownloadFailure(error)) return false;
+    let tries: number[] = [];
+    try {
+        tries = JSON.parse(sessionStorage.getItem(START_RELOADS_KEY) ?? "[]");
+    } catch {}
+    tries = tries.filter((t) => typeof t === "number" && now - t < START_RELOADS_WINDOW_MS);
+    if (tries.length >= START_RELOADS) return false;
+    sessionStorage.setItem(START_RELOADS_KEY, JSON.stringify([...tries, now]));
+    logger.warn(`CIRQLE: the app did not download (${error}), reloading for try ${tries.length + 2}`);
+    setTimeout(() => window.location.reload(), 1000 + tries.length * 2000);
+    return true;
+}
+
 /** The one theme the CIRQLE look is drawn on. */
 export const CIRQLE_THEME = "light";
 

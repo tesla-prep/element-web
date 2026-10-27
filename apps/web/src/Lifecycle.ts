@@ -70,7 +70,7 @@ import { CallStatusListener } from "./CallStatusListener.ts";
 import { CallStore } from "./stores/CallStore.ts";
 import { ModuleApi } from "./modules/Api.ts";
 import { cirqlePushSignOut } from "./cirqle/CirqlePush";
-import { cirqleMovedHomeserverUrl } from "./cirqle/CirqleFeatures";
+import { cirqleMovedHomeserverUrl, reloadCirqleAfterDownloadFailure } from "./cirqle/CirqleFeatures";
 
 const HOMESERVER_URL_KEY = "mx_hs_url";
 const ID_SERVER_URL_KEY = "mx_is_url";
@@ -715,6 +715,7 @@ export async function restoreSessionFromStorage(opts?: { ignoreGuest?: boolean }
 
 async function handleLoadSessionFailure(e: unknown, loadSessionOpts?: ILoadSessionOpts): Promise<boolean> {
     logger.error("Unable to load session", e);
+    if (reloadCirqleAfterDownloadFailure(e)) return new Promise<boolean>(() => {}); // CIRQLE: the WASM did not download, try again
 
     const modal = Modal.createDialog(SessionRestoreErrorDialog, {
         error: e,
