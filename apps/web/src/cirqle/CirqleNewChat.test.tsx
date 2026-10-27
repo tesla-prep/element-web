@@ -15,7 +15,7 @@ import { stubClient } from "test-utils";
 import MatrixClientContext from "../contexts/MatrixClientContext";
 import { SDKContextClass } from "../contexts/SDKContextClass";
 import { MetaSpace } from "../stores/spaces";
-import { CirqleNewChat } from "./CirqleNewChat";
+import { CirqleNewChat, splitLabel } from "./CirqleNewChat";
 import { type Inbox } from "./CirqleInboxes";
 
 const SLAVA_TEST = "!slava-test:server";
@@ -42,6 +42,29 @@ vi.mock("./useCirqleChats", () => ({
 vi.mock("../stores/room-list-v3/RoomListStoreV3", () => ({
     default: { instance: { getSortedRooms: () => [] } },
 }));
+
+describe("splitLabel", () => {
+    const user = (contact: string): string => `@newchat_whatsapp_wa-e7d32330_${contact}:matrix.cirqlecirqle.com`;
+
+    it("names a typed number by the number the chat goes to, not WhatsApp's guess", () => {
+        // Typed "2145550100": WhatsApp names it +1 214…, the chat would go to +2145550100
+        expect(splitLabel("+12145550100, +2145550100 · SMS USA (NY)", "whatsapp", user("=2145550100"))).toEqual({
+            name: "+2145550100",
+            sub: "On WhatsApp · check the country code",
+        });
+    });
+
+    it("keeps the relay bot's label when the number is the one the chat goes to", () => {
+        expect(splitLabel("+12145550100 · SMS USA (NY)", "whatsapp", user("=12145550100"))).toEqual({
+            name: "+1 214 555 0100",
+            sub: "On WhatsApp · start chat",
+        });
+        expect(splitLabel("Anna Petrova, +14695551234 · Main #1", "whatsapp", user("lid-195"))).toEqual({
+            name: "Anna Petrova",
+            sub: "+1 469 555 1234 · On WhatsApp",
+        });
+    });
+});
 
 describe("CirqleNewChat", () => {
     let client: MatrixClient;

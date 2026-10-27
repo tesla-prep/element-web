@@ -69,3 +69,13 @@ export function isRoundVideo(event: MatrixEvent): boolean {
 export function isPlumbingEvent(event: MatrixEvent): boolean {
     return event.isState() && event.getType() !== EventType.RoomTombstone;
 }
+
+const SERVICE_USER = /^@((whatsapp|telegram)bot|relay-bot):/;
+
+/**
+ * Deleted messages show as "This message was deleted", as on WhatsApp, but not a
+ * notice the bridge or the relay bot posted and took back: nobody wrote those.
+ */
+export function isDeletedServiceMessage(event: MatrixEvent): boolean {
+    return event.isRedacted() && SERVICE_USER.test(event.getSender() ?? "");
+}

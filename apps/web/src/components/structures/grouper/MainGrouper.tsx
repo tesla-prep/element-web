@@ -19,6 +19,7 @@ import HistoryTile from "../../views/rooms/HistoryTile";
 import EventListSummary from "../../views/elements/EventListSummary";
 import { DateSeparatorViewModel } from "../../../viewmodels/room/timeline/DateSeparatorViewModel";
 import { SDKContext } from "../../../contexts/SDKContext.ts";
+import { isCirqleMessenger } from "../../../cirqle/CirqleFeatures";
 
 const groupedStateEvents = [
     EventType.RoomMember,
@@ -48,7 +49,8 @@ export class MainGrouper extends BaseGrouper {
         }
 
         if (ev.isRedacted()) {
-            return true;
+            // CIRQLE: each deleted message is its own "This message was deleted" bubble, as on WhatsApp
+            return !isCirqleMessenger();
         }
 
         if (panel.showHiddenEvents && !panel.shouldShowEvent(ev, true)) {
@@ -82,7 +84,7 @@ export class MainGrouper extends BaseGrouper {
             return true;
         }
         if (ev.isRedacted()) {
-            return true;
+            return !isCirqleMessenger(); // CIRQLE: not folded into a summary
         }
         if (this.panel.showHiddenEvents && !this.panel.shouldShowEvent(ev, true)) {
             return true;

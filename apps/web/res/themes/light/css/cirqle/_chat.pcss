@@ -698,6 +698,22 @@ slots by their data-testid.
     grid-template-columns: fit-content(85%);
 }
 
+/* A deleted message: "🚫 This message was deleted" in grey italics, as on WhatsApp */
+.mx_RoomView_body[data-layout="bubble"] .mx_RedactedBody {
+    font-style: italic;
+    color: var(--cirqle-ink-3);
+}
+
+.mx_RoomView_body[data-layout="bubble"] .mx_RedactedBody > svg {
+    display: none;
+}
+
+.mx_RoomView_body[data-layout="bubble"] .mx_RedactedBody::before {
+    content: "🚫";
+    font-style: normal;
+    font-size: 13px;
+}
+
 /* A photo or video with a caption is a bubble, as on WhatsApp: Element left the
    caption on the chat's background and the time over its last line. Every photo
    has the caption element; only a filled one counts. */

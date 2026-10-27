@@ -45,11 +45,21 @@ export function inboxOption(inbox: Inbox): string {
     return `${inbox.label} · ${[messenger, inbox.phone].filter(Boolean).join(" ")}`;
 }
 
-/** "+14695551234 · Main #1" or "Anna Petrova, +14695551234 · Main #1": the relay bot's label, without the inbox. */
-export function splitLabel(displayName: string, network: Network): { name: string; sub: string } {
+/**
+ * "+14695551234 · Main #1" or "Anna Petrova, +14695551234 · Main #1": the relay bot's label, without the inbox.
+ * A typed number is shown as the number the chat would really go to, the one in the user id
+ * (`@newchat_whatsapp_wa-…_=2145550100`): for "2145550100" WhatsApp may name a contact
+ * "+12145550100" while the chat would start with +2145550100, which has no country code.
+ */
+export function splitLabel(displayName: string, network: Network, userId = ""): { name: string; sub: string } {
+    const messenger = network === "whatsapp" ? "On WhatsApp" : "On Telegram";
+    const target = userId.match(/_=(\d{7,15}):/)?.[1];
+    const named = displayName.replace(/\s·\s[^·]+$/, "").split(/,\s(?=\+)/)[0];
+    if (target && /^\+\d{7,15}$/.test(named) && named.slice(1) !== target) {
+        return { name: formatPhone(`+${target}`), sub: `${messenger} · check the country code` };
+    }
     const person = displayName.replace(/\s·\s[^·]+$/, "");
     const [name, number] = person.split(/,\s(?=\+)/);
-    const messenger = network === "whatsapp" ? "On WhatsApp" : "On Telegram";
     const asNumber = (text: string): string => (/^\+\d{7,15}$/.test(text) ? formatPhone(text) : text);
     return number
         ? { name: asNumber(name), sub: `${formatPhone(number)} · ${messenger}` }
@@ -102,7 +112,7 @@ export function CirqleNewChat(): JSX.Element {
                             .map((u) => ({
                                 userId: u.user_id,
                                 avatarUrl: u.avatar_url,
-                                ...splitLabel(u.display_name ?? u.user_id, fromNetwork),
+                                ...splitLabel(u.display_name ?? u.user_id, fromNetwork, u.user_id),
                             })),
                     );
                 })
@@ -197,6 +207,11 @@ export function CirqleNewChat(): JSX.Element {
                         ))}
                     </select>
                 </div>
+            )}
+            {from?.network === "whatsapp" && /^\d{7,15}$/.test(query.replace(/[\s().-]/g, "")) && (
+                <p className="cirqle_NewChat_note" role="status">
+                    Type the number with its country code, like +1 214 555 0100
+                </p>
             )}
             {inboxes.length > 0 && !from && (
                 <p className="cirqle_NewChat_hint" role="status">

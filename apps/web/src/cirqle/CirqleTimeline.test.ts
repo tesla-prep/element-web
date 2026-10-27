@@ -12,7 +12,7 @@ import { KnownMembership } from "matrix-js-sdk/src/types";
 import { mkEvent, stubClient } from "test-utils";
 
 import { NUMBER_USERS_EVENT } from "./CirqleInboxes";
-import { hideCustomerName, isOurSide, isOwnNumberUser } from "./CirqleTimeline";
+import { hideCustomerName, isDeletedServiceMessage, isOurSide, isOwnNumberUser } from "./CirqleTimeline";
 
 const SERVER = "matrix.cirqlecirqle.com";
 const ME = `@vchizhov:${SERVER}`;
@@ -216,6 +216,19 @@ describe("isOurSide", () => {
                 userId,
             ),
         ).toBe(false);
+    });
+
+    it("leaves out only a bot's deleted notice, not a person's deleted message", () => {
+        const deleted = (sender: string): MatrixEvent => {
+            const event = message(DM, sender);
+            event.setUnsigned({ redacted_because: { sender: ME } as any });
+            return event;
+        };
+        expect(isDeletedServiceMessage(deleted(WA_BOT))).toBe(true);
+        expect(isDeletedServiceMessage(deleted(`@relay-bot:${SERVER}`))).toBe(true);
+        expect(isDeletedServiceMessage(deleted(JANAKI))).toBe(false);
+        expect(isDeletedServiceMessage(deleted(ME))).toBe(false);
+        expect(isDeletedServiceMessage(message(DM, WA_BOT))).toBe(false);
     });
 
     it("hides only the customer's name in a private chat", () => {

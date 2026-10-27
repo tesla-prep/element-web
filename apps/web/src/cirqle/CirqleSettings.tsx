@@ -8,7 +8,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 // no Appearance and Sidebar (CIRQLE's look is fixed), no Security, Encryption
 // and Labs (the bridged chats are not encrypted), and a short Preferences
 // without the room list, read receipt, typing or language switches, which do
-// nothing here.
+// nothing here. Element's Sessions (session verification, QR sign-in, IP
+// addresses), Keyboard (calls, stickers, threads) and Help (crypto and server
+// versions) are for Element's own users, not for staff answering WhatsApp.
 
 import React, { type JSX } from "react";
 
@@ -23,14 +25,7 @@ import { type BooleanSettingKey } from "../settings/Settings";
 import { cirqlePushConfig, isCirqleMessenger } from "./CirqleFeatures";
 import { CirqleNotificationsTab } from "./CirqleNotificationsTab";
 
-const SHOWN_TABS = new Set<string>([
-    UserTab.Account,
-    UserTab.SessionManager,
-    UserTab.Notifications,
-    UserTab.Preferences,
-    UserTab.Keyboard,
-    UserTab.Help,
-]);
+const SHOWN_TABS = new Set<string>([UserTab.Account, UserTab.Notifications, UserTab.Preferences]);
 
 const PREFERENCES: { heading: string; settings: BooleanSettingKey[] }[] = [
     {
