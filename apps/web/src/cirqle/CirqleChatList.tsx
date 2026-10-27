@@ -193,6 +193,7 @@ export function CirqleChatList({ section }: { section: CirqleSection }): JSX.Ele
                     open={menuOpen}
                     onOpenChange={setMenuOpen}
                     title="Menu"
+                    showTitle={false}
                     side="bottom"
                     align="end"
                     trigger={

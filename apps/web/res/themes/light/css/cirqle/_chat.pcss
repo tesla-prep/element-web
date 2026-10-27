@@ -132,13 +132,26 @@ slots by their data-testid.
     grid-column: 1;
 }
 
-/* The "sent" mark of our last message stays at the edge of the row: the grid
-   above has one column, and the mark in a column of its own lay past the
-   screen on a phone and pushed the whole chat sideways */
-[class*="_layoutBubble_"]:has(> [data-testid="event-tile-slot-sender"] *) > [class*="_slotReceipt_"] {
+/* The "sent" mark of our last message sits in the bubble after the time, as
+   WhatsApp's ticks. In a column of its own (the grid above has one) it lay past
+   the screen on a phone and pushed the chat sideways; at the row's edge it lay
+   on the time; in Element's gutter, which CIRQLE has not, it was cut off. */
+[class*="_layoutBubble_"][class*="_stateOwnEvent_"] > [class*="_slotReceipt_"] {
     position: absolute;
-    inset-inline-end: 0;
-    inset-block-end: 0;
+    z-index: 4;
+    inset-inline-end: 6px;
+    inset-block-end: 3px;
+}
+
+[class*="_layoutBubble_"][class*="_stateOwnEvent_"]:has(> [class*="_slotReceipt_"] *)
+    > [data-testid="event-tile-line"] {
+    padding-inline-end: 78px; /* Element's 60 px for the time, and the mark */
+}
+
+[class*="_layoutBubble_"][class*="_stateOwnEvent_"]:has(> [class*="_slotReceipt_"] *)
+    [data-testid="event-tile-slot-timestamp"]
+    > * {
+    inset-inline-end: 18px;
 }
 
 [class*="_layoutBubble_"]:has(> [data-testid="event-tile-slot-sender"] *) > [data-testid="event-tile-line"] {
@@ -683,6 +696,36 @@ slots by their data-testid.
 /* A voice bubble keeps its width on phones, where 62% leaves the waveform no room */
 [class*="_layoutBubble_"]:has(> [data-testid="event-tile-slot-sender"] *):has(.mx_MVoiceMessageBody) {
     grid-template-columns: fit-content(85%);
+}
+
+/* A photo or video with a caption is a bubble, as on WhatsApp: Element left the
+   caption on the chat's background and the time over its last line. Every photo
+   has the caption element; only a filled one counts. */
+[class*="_layoutBubble_"]
+    > [data-testid="event-tile-line"]:has(.mx_EventTile_caption > .mx_EventTile_body:not(:empty)) {
+    background: var(--event-tile-bubble-other-background);
+    padding-bottom: 20px;
+}
+
+[class*="_layoutBubble_"][class*="_stateOwnEvent_"]
+    > [data-testid="event-tile-line"]:has(.mx_EventTile_caption > .mx_EventTile_body:not(:empty)) {
+    background: var(--event-tile-bubble-self-background);
+}
+
+[class*="_layoutBubble_"] .mx_EventTile_caption:has(> .mx_EventTile_body:not(:empty)) {
+    padding: 4px 10px 0;
+}
+
+/* The time on a photo without a caption: white on a dark chip, readable on any picture */
+[class*="_layoutBubble_"]
+    > [class*="_lineImage_"]:not(:has(.mx_EventTile_caption > .mx_EventTile_body:not(:empty)))
+    [data-testid="event-tile-slot-timestamp"]
+    > * {
+    margin: 0 6px 6px 0;
+    padding: 0 6px;
+    border-radius: 8px;
+    background: rgb(0 0 0 / 50%);
+    color: #ffffff;
 }
 
 /* Element draws media without a bubble; a voice message keeps its bubble */

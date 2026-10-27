@@ -21,6 +21,7 @@ import { CIRQLE_BRAND } from "./CirqleFeatures";
 import {
     LONG_PRESS_MS,
     cirqleChatOpensOnMessages,
+    cirqleOpensLastChat,
     cirqleSupportsDevice,
     longPressTarget,
     syncCirqleViewport,
@@ -78,6 +79,17 @@ describe("CIRQLE on phones", () => {
         SdkConfig.reset();
         matches.mockImplementation(() => ({ matches: true }) as MediaQueryList);
         expect(cirqleChatOpensOnMessages()).toBe(false);
+    });
+
+    it("starts on the chat list on a phone, on the last chat on a computer", () => {
+        const matches = vi.fn((query: string) => ({ matches: query.includes("767px") }) as MediaQueryList);
+        vi.spyOn(window, "matchMedia").mockImplementation(matches);
+        expect(cirqleOpensLastChat()).toBe(false);
+        matches.mockImplementation(() => ({ matches: false }) as MediaQueryList);
+        expect(cirqleOpensLastChat()).toBe(true);
+        SdkConfig.reset();
+        matches.mockImplementation(() => ({ matches: true }) as MediaQueryList);
+        expect(cirqleOpensLastChat()).toBe(true);
     });
 
     it("has no 'does not support this browser' on an iPhone", () => {

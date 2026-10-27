@@ -68,6 +68,11 @@ export function groupPeople(members: RoomMember[], inboxes: Inbox[] = []): RoomM
         );
 }
 
+/** A member's number under their name, unless they are saved by that number only and named by it already. */
+export function memberSubline(label: string, phone: string | undefined): string | undefined {
+    return phone && phone.replace(/\D/g, "") !== label.replace(/\D/g, "") ? phone : undefined;
+}
+
 /** "1 member", "3 members" */
 export function membersLabel(count: number): string {
     return count === 1 ? "1 member" : `${count} members`;
@@ -221,7 +226,7 @@ function MemberRow({
     const ours = inboxes.find((inbox) => inbox.accountName && member.userId.includes(`_${inbox.accountName}:`));
     const name = stripNetworkSuffix(memberName(member));
     const label = isUs ? `${ours?.label ?? name} (us)` : name;
-    const subline = isUs ? ours?.phone : ghostPhone(member.userId, inboxes);
+    const subline = memberSubline(label, isUs ? ours?.phone : ghostPhone(member.userId, inboxes));
     const admin = isGroupAdmin(member);
     const changeAdmin = canChangeGroupAdmin(room, member, inboxes);
 
@@ -244,7 +249,6 @@ function MemberRow({
                     open={menuOpen}
                     onOpenChange={setMenuOpen}
                     title={label}
-                    showTitle={false}
                     side="bottom"
                     align="end"
                     trigger={

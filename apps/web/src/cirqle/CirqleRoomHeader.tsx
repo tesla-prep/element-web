@@ -67,6 +67,7 @@ export function CirqleRoomHeaderButtons({ room }: { room: Room }): JSX.Element {
                 open={menuOpen}
                 onOpenChange={setMenuOpen}
                 title="Menu"
+                showTitle={false}
                 side="bottom"
                 align="end"
                 trigger={

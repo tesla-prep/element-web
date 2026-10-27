@@ -9,13 +9,23 @@ Please see LICENSE files in the repository root for full details.
 import { type Room, type RoomMember } from "matrix-js-sdk/src/matrix";
 
 import { _t } from "./languageHandler";
+import { isCirqleMessenger } from "./cirqle/CirqleFeatures";
+import { isOwnNumberUser } from "./cirqle/CirqleTimeline";
 
 export function usersTypingApartFromMeAndIgnored(room: Room): RoomMember[] {
-    return usersTyping(room, [room.client.getSafeUserId()].concat(room.client.getIgnoredUsers()));
+    return withoutOwnNumber(
+        room,
+        usersTyping(room, [room.client.getSafeUserId()].concat(room.client.getIgnoredUsers())),
+    );
 }
 
 export function usersTypingApartFromMe(room: Room): RoomMember[] {
-    return usersTyping(room, [room.client.getSafeUserId()]);
+    return withoutOwnNumber(room, usersTyping(room, [room.client.getSafeUserId()]));
+}
+
+/** CIRQLE: the number's own typing is staff's, passed on to the customer by the relay bot */
+function withoutOwnNumber(room: Room, members: RoomMember[]): RoomMember[] {
+    return isCirqleMessenger() ? members.filter((member) => !isOwnNumberUser(room, member.userId)) : members;
 }
 
 /**

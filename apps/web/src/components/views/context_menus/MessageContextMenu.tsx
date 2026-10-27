@@ -634,8 +634,9 @@ export default class MessageContextMenu extends React.Component<IProps, IState> 
         const selectedText = getSelectedText();
 
         let copyButton: JSX.Element | undefined;
-        if (rightClick && (selectedText || cirqleCopyText(mxEvent))) {
-            // CIRQLE: Copy for the whole text too (a long press on a phone selects nothing)
+        if ((rightClick || isCirqleMessenger()) && (selectedText || cirqleCopyText(mxEvent))) {
+            // CIRQLE: Copy for the whole text too (a long press on a phone selects nothing), and in the
+            // message's "…" menu, as on WhatsApp Web
             copyButton = (
                 <IconizedContextMenuOption
                     icon={<CopyIcon />}

@@ -12,7 +12,7 @@ import { KnownMembership } from "matrix-js-sdk/src/types";
 import { mkEvent, stubClient } from "test-utils";
 
 import { NUMBER_USERS_EVENT } from "./CirqleInboxes";
-import { hideCustomerName, isOurSide } from "./CirqleTimeline";
+import { hideCustomerName, isOurSide, isOwnNumberUser } from "./CirqleTimeline";
 
 const SERVER = "matrix.cirqlecirqle.com";
 const ME = `@vchizhov:${SERVER}`;
@@ -186,6 +186,36 @@ describe("isOurSide", () => {
         setUp([42, NUMBER_LID_GHOST]);
         expect(isOurSide(message(GROUP, NUMBER_LID_GHOST), client)).toBe(true);
         expect(isOurSide(message(GROUP, GROUP_MEMBER), client)).toBe(false);
+    });
+
+    it.each([
+        ["the number's account user", DM, ACCOUNT],
+        ["the Telegram account user", TG_DM, `@account_telegram_tg-447877300139:${SERVER}`],
+        ["the number's phone in a private chat", DM, NUMBER_LID_GHOST],
+        ["the number's phone ghost in a group", GROUP, NUMBER_PHONE_GHOST],
+        ["the Telegram account's phone", TG_DM, TG_OWN_GHOST],
+    ])("takes %s for the number itself, whose typing is staff's", (_name, roomId, userId) => {
+        expect(
+            isOwnNumberUser(
+                rooms.find((r) => r.roomId === roomId)!,
+                userId,
+            ),
+        ).toBe(true);
+    });
+
+    it.each([
+        ["a staff member", DM, STAFF],
+        ["the customer", DM, JANAKI],
+        ["another member of a group", GROUP, GROUP_MEMBER],
+        ["the Telegram contact", TG_DM, TG_CONTACT],
+        ["the bridge bot", DM, WA_BOT],
+    ])("takes %s for a person", (_name, roomId, userId) => {
+        expect(
+            isOwnNumberUser(
+                rooms.find((r) => r.roomId === roomId)!,
+                userId,
+            ),
+        ).toBe(false);
     });
 
     it("hides only the customer's name in a private chat", () => {

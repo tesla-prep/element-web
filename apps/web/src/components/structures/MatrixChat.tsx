@@ -143,7 +143,7 @@ import { type URLParams } from "../../vector/url_utils.ts";
 import { type QrLoginCredentials } from "../views/auth/LoginWithQR.tsx";
 import { configureFromCompletedOAuthLogin } from "../../Lifecycle";
 import { focusCirqleSearch, isCirqleMessenger } from "../../cirqle/CirqleFeatures";
-import { isCirqleTouch } from "../../cirqle/CirqleMobile";
+import { cirqleOpensLastChat, isCirqleTouch } from "../../cirqle/CirqleMobile";
 
 const AUTH_SCREENS = ["register", "mobile_register", "login", "forgot_password", "start_sso", "start_cas", "welcome"];
 
@@ -1494,8 +1494,8 @@ export default class MatrixChat extends React.PureComponent<IProps, IState> {
             logger.debug(`showScreenAfterLogin: showing screen ${this.screenAfterLogin.screen}`);
             this.showScreen(this.screenAfterLogin.screen, this.screenAfterLogin.params);
             this.screenAfterLogin = undefined;
-        } else if (localStorage && localStorage.getItem("mx_last_room_id")) {
-            // Before defaulting to directory, show the last viewed room
+        } else if (localStorage && localStorage.getItem("mx_last_room_id") && cirqleOpensLastChat()) {
+            // Before defaulting to directory, show the last viewed room (CIRQLE: on a computer)
             logger.debug("showScreenAfterLogin: showing last room");
             this.viewLastRoom();
         } else {
