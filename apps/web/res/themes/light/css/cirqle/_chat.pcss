@@ -73,7 +73,8 @@ slots by their data-testid.
 
 /* No avatars beside bubbles, as on WhatsApp, except senders' in groups
    (CirqleSenderAvatar): beside the first bubble of a run, and the run keeps its indent */
-[class*="_layoutBubble_"] > [data-testid="event-tile-slot-avatar"]:not(:has(.cirqle_SenderAvatar:not(.cirqle_SenderAvatar_run))) {
+[class*="_layoutBubble_"]
+    > [data-testid="event-tile-slot-avatar"]:not(:has(.cirqle_SenderAvatar:not(.cirqle_SenderAvatar_run))) {
     display: none;
 }
 
@@ -523,24 +524,12 @@ slots by their data-testid.
     margin: 0;
 }
 
-/* The bars spread over the seek bar's width, so the seek dot sits over the bar that plays */
-.cirqle_VoiceRecorder .mx_RecordingPlayback_timelineLayoutMiddle .mx_Waveform,
-.mx_MVoiceMessageBody .mx_RecordingPlayback_timelineLayoutMiddle .mx_Waveform {
-    width: 100%;
-    top: 0;
-    justify-content: space-between;
-}
-
-.cirqle_VoiceRecorder .mx_RecordingPlayback_timelineLayoutMiddle .mx_Waveform .mx_Waveform_bar,
-.mx_MVoiceMessageBody .mx_Waveform .mx_Waveform_bar {
-    margin: 0;
-}
-
-.cirqle_VoiceRecorder .mx_VoiceMessagePrimaryContainer .mx_Waveform .mx_Waveform_bar {
+/* The live waveform while recording */
+.cirqle_VoiceRecorder .mx_VoiceMessagePrimaryContainer > .mx_Waveform .mx_Waveform_bar {
     background-color: var(--cirqle-ink-3);
 }
 
-.cirqle_VoiceRecorder .mx_VoiceMessagePrimaryContainer .mx_Waveform .mx_Waveform_bar.mx_Waveform_bar_100pct {
+.cirqle_VoiceRecorder .mx_VoiceMessagePrimaryContainer > .mx_Waveform .mx_Waveform_bar.mx_Waveform_bar_100pct {
     background-color: var(--cirqle-whatsapp);
 }
 
@@ -552,11 +541,11 @@ slots by their data-testid.
 }
 
 /* ---------- voice messages in the timeline: WhatsApp's bubble ----------
-   play, the waveform with a dot where it plays, the length under it; the
+   play, the waveform that fills in as it plays, the length under it; the
    time stays in the bubble's corner. */
 
 .mx_MVoiceMessageBody .mx_VoiceMessagePrimaryContainer {
-    width: 272px;
+    width: 300px;
     max-width: 100%;
     box-sizing: border-box;
     margin: 0;
@@ -565,7 +554,8 @@ slots by their data-testid.
     border-radius: 0;
     background: none;
     display: grid;
-    grid-template-columns: 36px minmax(0, 1fr) auto;
+    /* the speed pill's column is kept while it is hidden, so the waveform does not jump */
+    grid-template-columns: 36px minmax(0, 1fr) 44px;
     grid-template-rows: 32px 18px;
     column-gap: 8px;
     align-items: center;
@@ -590,28 +580,61 @@ slots by their data-testid.
     color: var(--cirqle-ink-3);
 }
 
-.mx_MVoiceMessageBody .mx_Waveform .mx_Waveform_bar {
-    background-color: #aab3ad;
+/* The waveform as WhatsApp and Telegram draw it (cirqle/CirqleWaveform.ts): no seek dot;
+   each bar sits in an equal share of the width, so a press at x lands on the bar under
+   it; bars fill dark green as the message plays (`--fill`, the playing one part way);
+   silence is low bars, not dots. A press or a drag along it seeks (pointer handlers on
+   the waveform); Element's range input stays only for the keyboard. */
+.mx_MVoiceMessageBody .mx_RecordingPlayback_timelineLayoutMiddle,
+.cirqle_VoiceRecorder .mx_RecordingPlayback_timelineLayoutMiddle {
+    --cirqle-bar-played: var(--cirqle-green);
+    --cirqle-bar-left: #b3bbb6;
+    cursor: pointer;
+    touch-action: pan-y;
+    user-select: none;
+    border-radius: 4px;
 }
 
-.mx_MVoiceMessageBody .mx_Waveform .mx_Waveform_bar.mx_Waveform_bar_100pct {
-    background-color: var(--cirqle-whatsapp);
+.mx_MVoiceMessageBody .mx_RecordingPlayback_timelineLayoutMiddle .mx_Waveform,
+.cirqle_VoiceRecorder .mx_RecordingPlayback_timelineLayoutMiddle .mx_Waveform {
+    width: 100%;
+    top: 0;
+    justify-content: space-around;
 }
 
-.mx_MVoiceMessageBody .mx_RecordingPlayback_timelineLayoutMiddle .mx_SeekBar::-webkit-slider-thumb,
-.cirqle_VoiceRecorder .mx_RecordingPlayback_timelineLayoutMiddle .mx_SeekBar::-webkit-slider-thumb {
-    width: 12px;
-    height: 12px;
-    border-radius: 6px;
-    background-color: var(--cirqle-whatsapp);
+.mx_MVoiceMessageBody .mx_RecordingPlayback_timelineLayoutMiddle .mx_Waveform .mx_Waveform_bar,
+.cirqle_VoiceRecorder .mx_RecordingPlayback_timelineLayoutMiddle .mx_Waveform .mx_Waveform_bar {
+    flex: 0 0 auto;
+    width: 3px;
+    height: max(5px, calc(var(--barHeight) * 100%));
+    margin: 0;
+    border: 0;
+    border-radius: 1.5px;
+    transform: none;
+    transition: none;
+    background: linear-gradient(
+        to right,
+        var(--cirqle-bar-played) calc(var(--fill, 0) * 100%),
+        var(--cirqle-bar-left) calc(var(--fill, 0) * 100%)
+    );
 }
 
-.mx_MVoiceMessageBody .mx_RecordingPlayback_timelineLayoutMiddle .mx_SeekBar::-moz-range-thumb,
-.cirqle_VoiceRecorder .mx_RecordingPlayback_timelineLayoutMiddle .mx_SeekBar::-moz-range-thumb {
-    width: 12px;
-    height: 12px;
-    border-radius: 6px;
-    background-color: var(--cirqle-whatsapp);
+/* The recorder's waveform is narrower: thinner bars keep a gap between them */
+.cirqle_VoiceRecorder .mx_RecordingPlayback_timelineLayoutMiddle .mx_Waveform .mx_Waveform_bar {
+    width: 2px;
+    border-radius: 1px;
+}
+
+.mx_MVoiceMessageBody .mx_RecordingPlayback_timelineLayoutMiddle .mx_SeekBar,
+.cirqle_VoiceRecorder .mx_RecordingPlayback_timelineLayoutMiddle .mx_SeekBar {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.mx_MVoiceMessageBody .mx_RecordingPlayback_timelineLayoutMiddle:has(.mx_SeekBar:focus-visible),
+.cirqle_VoiceRecorder .mx_RecordingPlayback_timelineLayoutMiddle:has(.mx_SeekBar:focus-visible) {
+    outline: 2px solid var(--cirqle-green);
+    outline-offset: 2px;
 }
 
 /* Play and pause: the green glyph alone, as WhatsApp draws it, in the bubble and in the recorder */

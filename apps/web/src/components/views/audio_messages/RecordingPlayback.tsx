@@ -17,6 +17,7 @@ import PlaybackWaveform from "./PlaybackWaveform";
 import { PlaybackState } from "../../../audio/Playback";
 import { isCirqleMessenger } from "../../../cirqle/CirqleFeatures";
 import { CirqleVoiceSpeedButton } from "../../../cirqle/CirqleVoiceSpeedButton";
+import { cirqleWaveformSeek } from "../../../cirqle/CirqleWaveform";
 
 export enum PlaybackLayout {
     /**
@@ -50,7 +51,10 @@ export default class RecordingPlayback extends AudioPlayerBase<IProps> {
     private renderTimelineLook(): ReactNode {
         return (
             <>
-                <div className="mx_RecordingPlayback_timelineLayoutMiddle">
+                <div
+                    className="mx_RecordingPlayback_timelineLayoutMiddle"
+                    {...(isCirqleMessenger() && cirqleWaveformSeek(this.props.playback))}
+                >
                     <PlaybackWaveform playback={this.props.playback} />
                     <LegacySeekBar
                         playback={this.props.playback}
