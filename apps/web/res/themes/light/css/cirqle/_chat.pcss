@@ -293,6 +293,40 @@ slots by their data-testid.
     padding: 0;
 }
 
+/* The number a message goes out from, over the message field */
+.cirqle_ComposerFrom {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding-bottom: 8px;
+}
+
+.cirqle_ComposerFrom_number {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    max-width: 100%;
+    box-sizing: border-box;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 16px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.cirqle_ComposerFrom_whatsapp {
+    background: var(--cirqle-green-soft);
+    color: var(--cirqle-whatsapp);
+}
+
+.cirqle_ComposerFrom_telegram {
+    background: #d6e6f5;
+    color: var(--cirqle-telegram);
+}
+
 .mx_MessageComposer_row {
     display: flex;
     align-items: center;

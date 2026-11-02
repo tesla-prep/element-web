@@ -170,7 +170,21 @@ describe("CirqleNewGroup", () => {
             <CirqleNewGroup />
         </MatrixClientContext.Provider>
     );
-    const writeFrom = (): HTMLSelectElement => screen.getByRole("combobox", { name: "Write from" });
+    const writeFrom = (): HTMLButtonElement => screen.getByRole("button", { name: /^Write from/ });
+    // The name of the number written from, as Write from shows it
+    const writtenFrom = (): string => writeFrom().querySelector(".cirqle_NumberPicker_name")?.textContent ?? "";
+    const offered = (): string[] => {
+        fireEvent.click(writeFrom());
+        const names = screen
+            .getAllByRole("option")
+            .map((o) => o.querySelector(".cirqle_NumberPicker_name")?.textContent);
+        fireEvent.click(writeFrom());
+        return names as string[];
+    };
+    const pickNumber = (name: string): void => {
+        fireEvent.click(writeFrom());
+        fireEvent.click(screen.getByRole("option", { name: new RegExp(`^${name}`) }));
+    };
     const search = async (term: string): Promise<void> => {
         fireEvent.change(screen.getByRole("textbox", { name: "Search name or number" }), { target: { value: term } });
         await act(() => vi.advanceTimersByTimeAsync(400));
@@ -184,13 +198,13 @@ describe("CirqleNewGroup", () => {
 
     it("under All numbers offers nobody until a number is picked", async () => {
         render(panel());
-        expect(writeFrom().value).toBe("");
+        expect(writtenFrom()).toBe("Choose a number");
         expect(screen.getByRole("status").textContent).toBe("Choose the number to write from");
         await search("+79990001122");
         expect(client.searchUserDirectory).not.toHaveBeenCalled();
         expect(screen.queryByText("Anna")).toBeNull();
 
-        fireEvent.change(writeFrom(), { target: { value: MAIN } });
+        pickNumber("Main #1");
         await act(() => vi.advanceTimersByTimeAsync(400));
         expect(client.searchUserDirectory).toHaveBeenCalledTimes(1);
         expect(await screen.findByText("Test Person")).toBeTruthy();
@@ -202,14 +216,14 @@ describe("CirqleNewGroup", () => {
         mocked.disconnected = new Set([OTHER]);
         render(panel());
         // The one connected number is written from, as when it is the only one
-        expect(writeFrom().value).toBe(MAIN);
-        expect(Array.from(writeFrom().options).map((option) => option.value)).toEqual([MAIN]);
+        expect(writtenFrom()).toBe("Main #1");
+        expect(offered()).toEqual(["Main #1"]);
     });
 
     it("offers the number's private chats as contacts", () => {
         activeSpace = MAIN;
         render(panel());
-        expect(writeFrom().value).toBe(MAIN);
+        expect(writtenFrom()).toBe("Main #1");
         expect(screen.getByText("Contacts on Main #1")).toBeTruthy();
         expect(contact("Anna")).toBeTruthy();
         expect(contact("Bob")).toBeTruthy();
@@ -240,7 +254,7 @@ describe("CirqleNewGroup", () => {
         render(panel());
         fireEvent.click(contact("Anna"));
         expect(chips()).toEqual(["Anna"]);
-        fireEvent.change(writeFrom(), { target: { value: OTHER } });
+        pickNumber("Other");
         expect(chips()).toEqual([]);
         expect(button("Next").disabled).toBe(true);
     });

@@ -145,9 +145,6 @@ export function CirqleNumberPicker({ inboxes, section }: { inboxes: Inbox[]; sec
                     </div>
                     {inboxes.map((inbox) => {
                         const isPicked = picked.includes(inbox);
-                        const sub = [inbox.network === "whatsapp" ? "WhatsApp" : "Telegram", inbox.phone]
-                            .filter(Boolean)
-                            .join(" · ");
                         return (
                             <div
                                 key={inbox.spaceId}
@@ -161,24 +158,7 @@ export function CirqleNumberPicker({ inboxes, section }: { inboxes: Inbox[]; sec
                                     title={`Only ${inbox.label}`}
                                     onClick={() => pickOnly([inbox.spaceId])}
                                 >
-                                    <span
-                                        className={`cirqle_NumberPicker_icon cirqle_NumberPicker_icon_${inbox.connected ? inbox.network : "off"}`}
-                                    >
-                                        {inbox.network === "telegram" ? (
-                                            <TelegramIcon size={18} />
-                                        ) : (
-                                            <ChatsIcon size={18} />
-                                        )}
-                                    </span>
-                                    <span className="cirqle_NumberPicker_text">
-                                        <span className="cirqle_NumberPicker_name">{inbox.label}</span>
-                                        <span className="cirqle_NumberPicker_sub">
-                                            {sub}
-                                            {!inbox.connected && (
-                                                <span className="cirqle_NumberPicker_off">Disconnected</span>
-                                            )}
-                                        </span>
-                                    </span>
+                                    <NumberLabel inbox={inbox} />
                                     <span className="cirqle_NumberPicker_count">
                                         <UnreadBadge count={countUnread(inboxes, [inbox], section)} />
                                     </span>
@@ -201,6 +181,27 @@ export function CirqleNumberPicker({ inboxes, section }: { inboxes: Inbox[]; sec
                 </div>
             )}
         </div>
+    );
+}
+
+/** A number as the lists show it: its messenger's icon, the name, and under it the messenger and the number. */
+export function NumberLabel({ inbox }: { inbox: Inbox }): JSX.Element {
+    const sub = [inbox.network === "whatsapp" ? "WhatsApp" : "Telegram", inbox.phone].filter(Boolean).join(" · ");
+    return (
+        <>
+            <span
+                className={`cirqle_NumberPicker_icon cirqle_NumberPicker_icon_${inbox.connected ? inbox.network : "off"}`}
+            >
+                {inbox.network === "telegram" ? <TelegramIcon size={18} /> : <ChatsIcon size={18} />}
+            </span>
+            <span className="cirqle_NumberPicker_text">
+                <span className="cirqle_NumberPicker_name">{inbox.label}</span>
+                <span className="cirqle_NumberPicker_sub">
+                    {sub}
+                    {!inbox.connected && <span className="cirqle_NumberPicker_off">Disconnected</span>}
+                </span>
+            </span>
+        </>
     );
 }
 

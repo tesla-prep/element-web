@@ -13,8 +13,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 // answered by the relay bot with the real chat). "Write from" narrows the
 // search to that number's contacts; under All numbers nothing is offered until
 // staff pick the number. A disconnected number is not offered: nothing sends from it.
+// The New chat row above New group says where a new chat starts: it puts the
+// cursor in the search.
 
-import React, { type JSX, useEffect, useMemo, useRef, useState } from "react";
+import React, { type JSX, useEffect, useId, useMemo, useRef, useState } from "react";
 import { type Room } from "matrix-js-sdk/src/matrix";
 import { logger } from "matrix-js-sdk/src/logger";
 
@@ -27,8 +29,9 @@ import { DirectoryMember, startDmOnFirstMessage } from "../utils/direct-messages
 import RoomAvatar from "../components/views/avatars/RoomAvatar";
 import BaseAvatar from "../components/views/avatars/BaseAvatar";
 import RoomListStoreV3 from "../stores/room-list-v3/RoomListStoreV3";
-import { BackIcon, GroupIcon, SearchIcon } from "./CirqleIcons";
+import { BackIcon, ChevronDownIcon, ChevronUpIcon, GroupIcon, PencilIcon, SearchIcon } from "./CirqleIcons";
 import { chatKind, contactNumber, formatPhone, type Inbox, type Network, stripNetworkSuffix } from "./CirqleInboxes";
+import { NumberLabel } from "./CirqleNumberPicker";
 import { CirqleUiStore } from "./CirqleUiStore";
 import { useCirqleInboxes } from "./useCirqleChats";
 
@@ -39,10 +42,83 @@ interface Found {
     avatarUrl?: string;
 }
 
-/** "Main #1 · WhatsApp +1 646 331 3251" */
-export function inboxOption(inbox: Inbox): string {
-    const messenger = inbox.network === "whatsapp" ? "WhatsApp" : "Telegram";
-    return `${inbox.label} · ${[messenger, inbox.phone].filter(Boolean).join(" ")}`;
+/**
+ * "Write from": the number shown as the number picker lists it, the name over the
+ * messenger and the number, and a click opens the list of the numbers below it.
+ * Names wrap rather than being cut.
+ */
+export function CirqleWriteFrom({
+    label,
+    inboxes,
+    from,
+    disabled,
+    onPick,
+}: {
+    label: string;
+    inboxes: Inbox[];
+    from: Inbox | undefined;
+    disabled?: boolean;
+    onPick: (spaceId: string) => void;
+}): JSX.Element {
+    const [open, setOpen] = useState(false);
+    const labelId = useId();
+    const valueId = useId();
+    return (
+        <div className="cirqle_NewChat_from">
+            <span id={labelId} className="cirqle_NewChat_fromLabel">
+                {label}
+            </span>
+            <button
+                type="button"
+                className={`cirqle_NewChat_fromPick${open ? " cirqle_NewChat_fromPick_open" : ""}`}
+                aria-labelledby={`${labelId} ${valueId}`}
+                aria-haspopup="listbox"
+                aria-expanded={open}
+                disabled={disabled}
+                onClick={() => setOpen(!open)}
+            >
+                <span id={valueId} className="cirqle_NewChat_fromValue">
+                    {from ? (
+                        <NumberLabel inbox={from} />
+                    ) : (
+                        <span className="cirqle_NumberPicker_text">
+                            <span className="cirqle_NumberPicker_name">Choose a number</span>
+                        </span>
+                    )}
+                </span>
+                {open ? <ChevronUpIcon /> : <ChevronDownIcon />}
+            </button>
+            {open && (
+                <div
+                    className="cirqle_NewChat_fromList"
+                    role="listbox"
+                    tabIndex={-1}
+                    aria-labelledby={labelId}
+                    onKeyDown={(ev) => {
+                        if (ev.key !== "Escape") return;
+                        ev.stopPropagation();
+                        setOpen(false);
+                    }}
+                >
+                    {inboxes.map((inbox) => (
+                        <button
+                            key={inbox.spaceId}
+                            type="button"
+                            role="option"
+                            aria-selected={inbox === from}
+                            className="cirqle_NumberPicker_item cirqle_NumberPicker_option"
+                            onClick={() => {
+                                setOpen(false);
+                                onPick(inbox.spaceId);
+                            }}
+                        >
+                            <NumberLabel inbox={inbox} />
+                        </button>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
 }
 
 /**
@@ -85,6 +161,7 @@ export function CirqleNewChat(): JSX.Element {
     const from = inboxes.find((inbox) => inbox.spaceId === fromId) ?? (inboxes.length === 1 ? inboxes[0] : undefined);
     const [found, setFound] = useState<Found[]>([]);
     const [busy, setBusy] = useState(false);
+    const [askedForNumber, setAskedForNumber] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => inputRef.current?.focus(), []);
@@ -188,25 +265,12 @@ export function CirqleNewChat(): JSX.Element {
                 />
             </div>
             {inboxes.length > 0 && (
-                <div className="cirqle_NewChat_from">
-                    <label htmlFor="cirqle_NewChat_from">Write from</label>
-                    <select
-                        id="cirqle_NewChat_from"
-                        value={from?.spaceId ?? ""}
-                        onChange={(ev) => setFromId(ev.target.value)}
-                    >
-                        {!from && (
-                            <option value="" disabled>
-                                Choose a number
-                            </option>
-                        )}
-                        {inboxes.map((inbox) => (
-                            <option key={inbox.spaceId} value={inbox.spaceId}>
-                                {inboxOption(inbox)}
-                            </option>
-                        ))}
-                    </select>
-                </div>
+                <CirqleWriteFrom label="Write from" inboxes={inboxes} from={from} onPick={setFromId} />
+            )}
+            {askedForNumber && !query.trim() && (
+                <p className="cirqle_NewChat_note" role="status">
+                    Type a name, or a number with its country code, like +1 214 555 0100
+                </p>
             )}
             {from?.network === "whatsapp" && /^\d{7,15}$/.test(query.replace(/[\s().-]/g, "")) && (
                 <p className="cirqle_NewChat_note" role="status">
@@ -233,6 +297,22 @@ export function CirqleNewChat(): JSX.Element {
                         </span>
                     </button>
                 ))}
+                <button
+                    type="button"
+                    className="cirqle_NewChat_row cirqle_NewChat_action"
+                    onClick={() => {
+                        setAskedForNumber(true);
+                        inputRef.current?.focus();
+                    }}
+                >
+                    <span className="cirqle_NewChat_actionIcon">
+                        <PencilIcon />
+                    </span>
+                    <span className="cirqle_NewChat_text">
+                        <span className="cirqle_NewChat_actionLabel">New chat</span>
+                        <span className="cirqle_NewChat_sub">Search a name or type a number</span>
+                    </span>
+                </button>
                 <button
                     className="cirqle_NewChat_row cirqle_NewChat_action"
                     onClick={() => CirqleUiStore.openNewGroup()}

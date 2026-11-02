@@ -65,6 +65,7 @@ import { useScopedRoomContext } from "../../../contexts/ScopedRoomContext";
 import PlatformPeg from "../../../PlatformPeg";
 import { ModuleApi } from "../../../modules/Api";
 import { isCirqleMessenger } from "../../../cirqle/CirqleFeatures";
+import { CirqleComposerFrom } from "../../../cirqle/CirqleComposerFrom";
 
 // The prefix used when persisting editor drafts to localstorage.
 export const WYSIWYG_EDITOR_STATE_STORAGE_PREFIX = "mx_wysiwyg_state_";
@@ -704,6 +705,7 @@ export class MessageComposer extends React.Component<IProps, IState> {
                         replyToEvent={this.props.replyToEvent}
                         permalinkCreator={this.props.permalinkCreator}
                     />
+                    {isCirqleMessenger() && <CirqleComposerFrom room={this.props.room} />}
                     <div className="mx_MessageComposer_row">
                         {leftIcon}
                         {composer}

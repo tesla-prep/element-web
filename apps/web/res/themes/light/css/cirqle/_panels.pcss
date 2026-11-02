@@ -59,29 +59,66 @@ Contact info and the member card share Group info's look.
 
 .cirqle_NewChat_from {
     display: flex;
-    align-items: center;
-    gap: 10px;
+    flex-direction: column;
+    gap: 6px;
     padding: 0 16px 14px 20px;
 }
 
-.cirqle_NewChat_from label {
-    flex: 0 0 auto;
-    white-space: nowrap;
+.cirqle_NewChat_fromLabel {
     font-size: 13px;
     color: var(--cirqle-ink-2);
 }
 
-.cirqle_NewChat_from select {
-    flex: 1 1 auto;
-    min-width: 0;
-    height: 36px;
-    padding: 0 10px;
-    border-radius: 10px;
+/* The picked number, as the number picker shows it; a click opens the list under it */
+.cirqle_NewChat_fromPick {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 8px 10px;
+    border-radius: 12px;
     border: 1px solid var(--cirqle-pill-line);
     background: var(--cirqle-pill);
     font: inherit;
-    font-size: 14px;
-    color: var(--cirqle-ink);
+    text-align: left;
+    color: var(--cirqle-ink-3);
+    cursor: pointer;
+}
+
+.cirqle_NewChat_fromPick_open {
+    border-color: var(--cirqle-green);
+    box-shadow: inset 0 0 0 1px var(--cirqle-green);
+    background: #ffffff;
+}
+
+.cirqle_NewChat_fromPick:disabled {
+    cursor: default;
+    opacity: 0.6;
+}
+
+.cirqle_NewChat_fromValue {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.cirqle_NewChat_fromList {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 6px;
+    border-radius: 14px;
+    background: #ffffff;
+    box-shadow: 0 10px 30px rgba(20, 32, 25, 0.16);
+}
+
+/* Here a name wraps rather than being cut */
+.cirqle_NewChat_from .cirqle_NumberPicker_name {
+    white-space: normal;
+    overflow-wrap: anywhere;
 }
 
 .cirqle_NewChat_hint {

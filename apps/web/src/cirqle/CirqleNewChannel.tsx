@@ -23,7 +23,7 @@ import { type ViewRoomPayload } from "../dispatcher/payloads/ViewRoomPayload";
 import Modal from "../Modal";
 import ErrorDialog from "../components/views/dialogs/ErrorDialog";
 import { BackIcon } from "./CirqleIcons";
-import { inboxOption } from "./CirqleNewChat";
+import { CirqleWriteFrom } from "./CirqleNewChat";
 import { CirqleUiStore } from "./CirqleUiStore";
 import { useCirqleInboxes } from "./useCirqleChats";
 
@@ -99,26 +99,13 @@ export function CirqleNewChannel(): JSX.Element {
                 </p>
             ) : (
                 <>
-                    <div className="cirqle_NewChat_from">
-                        <label htmlFor="cirqle_NewChannel_from">Channel of</label>
-                        <select
-                            id="cirqle_NewChannel_from"
-                            value={from?.spaceId ?? ""}
-                            disabled={creating}
-                            onChange={(ev) => setFromId(ev.target.value)}
-                        >
-                            {!from && (
-                                <option value="" disabled>
-                                    Choose a number
-                                </option>
-                            )}
-                            {inboxes.map((inbox) => (
-                                <option key={inbox.spaceId} value={inbox.spaceId}>
-                                    {inboxOption(inbox)}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
+                    <CirqleWriteFrom
+                        label="Channel of"
+                        inboxes={inboxes}
+                        from={from}
+                        disabled={creating}
+                        onPick={setFromId}
+                    />
                     <div className="cirqle_NewGroup_nameField">
                         <label htmlFor="cirqle_NewChannel_name">Channel name</label>
                         <input

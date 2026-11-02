@@ -98,7 +98,21 @@ describe("CirqleNewChat", () => {
             <CirqleNewChat />
         </MatrixClientContext.Provider>
     );
-    const writeFrom = (): HTMLSelectElement => screen.getByRole("combobox", { name: "Write from" });
+    const writeFrom = (): HTMLButtonElement => screen.getByRole("button", { name: /^Write from/ });
+    // The name of the number written from, as Write from shows it
+    const writtenFrom = (): string => writeFrom().querySelector(".cirqle_NumberPicker_name")?.textContent ?? "";
+    const offered = (): string[] => {
+        fireEvent.click(writeFrom());
+        const names = screen
+            .getAllByRole("option")
+            .map((o) => o.querySelector(".cirqle_NumberPicker_name")?.textContent);
+        fireEvent.click(writeFrom());
+        return names as string[];
+    };
+    const pickNumber = (name: string): void => {
+        fireEvent.click(writeFrom());
+        fireEvent.click(screen.getByRole("option", { name: new RegExp(`^${name}`) }));
+    };
     const search = (term: string): void => {
         fireEvent.change(screen.getByRole("textbox", { name: "Search name or number" }), { target: { value: term } });
     };
@@ -106,7 +120,7 @@ describe("CirqleNewChat", () => {
     it("searches once per typed term although the inboxes are re-read", async () => {
         activeSpace = SLAVA_TEST;
         const { rerender } = render(panel());
-        expect(writeFrom().value).toBe(SLAVA_TEST);
+        expect(writtenFrom()).toBe("slava test");
         search("+79990001122");
         for (let i = 0; i < 5; i++) {
             rerender(panel());
@@ -123,7 +137,7 @@ describe("CirqleNewChat", () => {
 
     it("under All numbers offers nobody until a number is picked", async () => {
         render(panel());
-        expect(writeFrom().value).toBe("");
+        expect(writtenFrom()).toBe("Choose a number");
         expect(screen.getByRole("status").textContent).toBe("Choose the number to write from");
 
         search("+79990001122");
@@ -132,7 +146,7 @@ describe("CirqleNewChat", () => {
         expect(client.searchUserDirectory).not.toHaveBeenCalled();
         expect(screen.queryByText("Test Person")).toBeNull();
 
-        fireEvent.change(writeFrom(), { target: { value: SLAVA_TEST } });
+        pickNumber("slava test");
         await act(() => vi.advanceTimersByTimeAsync(400));
         expect(client.searchUserDirectory).toHaveBeenCalledTimes(1);
         expect(await screen.findByText("Test Person")).toBeTruthy();
@@ -143,14 +157,46 @@ describe("CirqleNewChat", () => {
         mocked.disconnected = [OTHER];
         activeSpace = OTHER;
         render(panel());
-        expect(Array.from(writeFrom().options).map((option) => option.value)).toEqual([SLAVA_TEST]);
-        expect(writeFrom().value).toBe(SLAVA_TEST);
+        expect(offered()).toEqual(["slava test"]);
+        expect(writtenFrom()).toBe("slava test");
     });
 
     it("writes from the only number there is", () => {
         mocked.spaces = [SLAVA_TEST];
         render(panel());
-        expect(writeFrom().value).toBe(SLAVA_TEST);
+        expect(writtenFrom()).toBe("slava test");
         expect(screen.queryByRole("status")).toBeNull();
+    });
+
+    it("lists each number with its name over the number, and picks one", () => {
+        render(panel());
+        fireEvent.click(writeFrom());
+        expect(writeFrom().getAttribute("aria-expanded")).toBe("true");
+        expect(
+            screen
+                .getAllByRole("option")
+                .map((o) => [
+                    o.querySelector(".cirqle_NumberPicker_name")?.textContent,
+                    o.querySelector(".cirqle_NumberPicker_sub")?.textContent,
+                ]),
+        ).toEqual([
+            ["Other", "WhatsApp"],
+            ["slava test", "WhatsApp"],
+        ]);
+        fireEvent.click(screen.getByRole("option", { name: /^Other/ }));
+        expect(screen.queryByRole("listbox")).toBeNull();
+        expect(writtenFrom()).toBe("Other");
+    });
+
+    it("New chat puts the cursor in the search and says what to type", () => {
+        render(panel());
+        const input = screen.getByRole("textbox", { name: "Search name or number" });
+        input.blur();
+        fireEvent.click(screen.getByRole("button", { name: /^New chat/ }));
+        expect(document.activeElement).toBe(input);
+        expect(screen.getAllByRole("status").map((s) => s.textContent)).toContain(
+            "Type a name, or a number with its country code, like +1 214 555 0100",
+        );
+        expect(screen.getByRole("button", { name: "New group" })).toBeTruthy();
     });
 });
