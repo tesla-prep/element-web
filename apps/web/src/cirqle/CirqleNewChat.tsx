@@ -161,7 +161,6 @@ export function CirqleNewChat(): JSX.Element {
     const from = inboxes.find((inbox) => inbox.spaceId === fromId) ?? (inboxes.length === 1 ? inboxes[0] : undefined);
     const [found, setFound] = useState<Found[]>([]);
     const [busy, setBusy] = useState(false);
-    const [askedForNumber, setAskedForNumber] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => inputRef.current?.focus(), []);
@@ -267,11 +266,6 @@ export function CirqleNewChat(): JSX.Element {
             {inboxes.length > 0 && (
                 <CirqleWriteFrom label="Write from" inboxes={inboxes} from={from} onPick={setFromId} />
             )}
-            {askedForNumber && !query.trim() && (
-                <p className="cirqle_NewChat_note" role="status">
-                    Type a name, or a number with its country code, like +1 214 555 0100
-                </p>
-            )}
             {from?.network === "whatsapp" && /^\d{7,15}$/.test(query.replace(/[\s().-]/g, "")) && (
                 <p className="cirqle_NewChat_note" role="status">
                     Type the number with its country code, like +1 214 555 0100
@@ -300,10 +294,7 @@ export function CirqleNewChat(): JSX.Element {
                 <button
                     type="button"
                     className="cirqle_NewChat_row cirqle_NewChat_action"
-                    onClick={() => {
-                        setAskedForNumber(true);
-                        inputRef.current?.focus();
-                    }}
+                    onClick={() => inputRef.current?.focus()}
                 >
                     <span className="cirqle_NewChat_actionIcon">
                         <PencilIcon />

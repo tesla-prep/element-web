@@ -188,15 +188,12 @@ describe("CirqleNewChat", () => {
         expect(writtenFrom()).toBe("Other");
     });
 
-    it("New chat puts the cursor in the search and says what to type", () => {
+    it("New chat puts the cursor in the search", () => {
         render(panel());
         const input = screen.getByRole("textbox", { name: "Search name or number" });
         input.blur();
         fireEvent.click(screen.getByRole("button", { name: /^New chat/ }));
         expect(document.activeElement).toBe(input);
-        expect(screen.getAllByRole("status").map((s) => s.textContent)).toContain(
-            "Type a name, or a number with its country code, like +1 214 555 0100",
-        );
         expect(screen.getByRole("button", { name: "New group" })).toBeTruthy();
     });
 });
