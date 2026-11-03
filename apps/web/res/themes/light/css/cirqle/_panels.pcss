@@ -226,6 +226,19 @@ Contact info and the member card share Group info's look.
     color: var(--cirqle-green-hover);
 }
 
+.cirqle_NewChat_empty {
+    margin: 0;
+    padding: 12px 20px;
+    font-size: 13px;
+    color: var(--cirqle-ink-3);
+}
+
+/* A phone book has hundreds of contacts: rows off screen are not laid out */
+.cirqle_NewChat_bookRow {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 61px;
+}
+
 /* ---------- new group ---------- */
 
 .cirqle_NewGroup {

@@ -8,7 +8,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 import React from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { type MatrixClient } from "matrix-js-sdk/src/matrix";
+import { type MatrixClient, Method } from "matrix-js-sdk/src/matrix";
 import { act, fireEvent, render, screen } from "test-utils-rtl";
 import { stubClient } from "test-utils";
 
@@ -16,6 +16,7 @@ import MatrixClientContext from "../contexts/MatrixClientContext";
 import { SDKContextClass } from "../contexts/SDKContextClass";
 import { MetaSpace } from "../stores/spaces";
 import { CirqleNewChat, splitLabel } from "./CirqleNewChat";
+import { bookLabel, filterBook } from "./CirqlePhoneBook";
 import { type Inbox } from "./CirqleInboxes";
 
 const SLAVA_TEST = "!slava-test:server";
@@ -66,8 +67,28 @@ describe("splitLabel", () => {
     });
 });
 
+const BOOK = [
+    { user_id: "@newchat_whatsapp_wa-efa4b19c_=14695558888:server", name: "+14695558888", number: "+14695558888" },
+    { user_id: "@newchat_whatsapp_wa-efa4b19c_lid-2:server", name: "boris", number: "+14695552222" },
+    { user_id: "@newchat_whatsapp_wa-efa4b19c_lid-1:server", name: "Anna Client", number: "+14695551111" },
+];
+
+describe("phone book", () => {
+    it("filters by name, or by the digits of a typed number", () => {
+        expect(filterBook(BOOK, " ann").map((c) => c.name)).toEqual(["Anna Client"]);
+        expect(filterBook(BOOK, "(469) 555-22").map((c) => c.name)).toEqual(["boris"]);
+        expect(filterBook(BOOK, "")).toBe(BOOK);
+    });
+
+    it("shows the number under the name, or the number alone", () => {
+        expect(bookLabel(BOOK[2])).toEqual({ name: "Anna Client", sub: "+1 469 555 1111" });
+        expect(bookLabel(BOOK[0])).toEqual({ name: "+1 469 555 8888", sub: "" });
+    });
+});
+
 describe("CirqleNewChat", () => {
     let client: MatrixClient;
+    let book: typeof BOOK;
     let activeSpace: string;
 
     beforeEach(() => {
@@ -76,6 +97,10 @@ describe("CirqleNewChat", () => {
         activeSpace = MetaSpace.Home;
         mocked.spaces = [OTHER, SLAVA_TEST];
         mocked.disconnected = [];
+        book = BOOK;
+        Object.assign(client, {
+            http: { authedRequest: vi.fn().mockImplementation(async () => ({ contacts: book })) },
+        });
         vi.spyOn(SDKContextClass.instance.spaceStore, "activeSpace", "get").mockImplementation(() => activeSpace);
         client.searchUserDirectory = vi.fn().mockResolvedValue({
             limited: false,
@@ -186,6 +211,81 @@ describe("CirqleNewChat", () => {
         fireEvent.click(screen.getByRole("option", { name: /^Other/ }));
         expect(screen.queryByRole("listbox")).toBeNull();
         expect(writtenFrom()).toBe("Other");
+    });
+
+    it("lists the number's whole phone book by name, and the search filters it", async () => {
+        activeSpace = SLAVA_TEST;
+        render(panel());
+        expect(await screen.findByText("Anna Client")).toBeTruthy();
+        expect(client.http.authedRequest).toHaveBeenCalledWith(
+            Method.Post,
+            "/com.cirqle/phone_book",
+            undefined,
+            { network: "whatsapp", account: "wa-efa4b19c" },
+            { prefix: "/_matrix/client/unstable" },
+        );
+        const listed = (): string[] =>
+            [...document.querySelectorAll(".cirqle_NewChat_bookRow .cirqle_NewChat_name")].map(
+                (n) => n.textContent ?? "",
+            );
+        expect(screen.getByText("Contacts on slava test")).toBeTruthy();
+        expect(listed()).toEqual(["Anna Client", "boris", "+1 469 555 8888"]);
+        search("BOR");
+        await act(() => vi.advanceTimersByTimeAsync(400));
+        expect(listed()).toEqual(["boris"]);
+        // Names are the book's to answer; only a typed number is looked up on WhatsApp
+        expect(client.searchUserDirectory).not.toHaveBeenCalled();
+        search("+79990001122");
+        await act(() => vi.advanceTimersByTimeAsync(400));
+        expect(client.searchUserDirectory).toHaveBeenCalledTimes(1);
+        expect(await screen.findByText("Test Person")).toBeTruthy();
+
+        // The typed number of a contact the book has under their LID is shown once, in the book
+        vi.mocked(client.searchUserDirectory).mockResolvedValueOnce({
+            limited: false,
+            results: [
+                {
+                    user_id: "@newchat_whatsapp_wa-efa4b19c_=14695552222:server",
+                    display_name: "boris, +14695552222 · slava test",
+                },
+            ],
+        });
+        search("+1 469 555 2222");
+        await act(() => vi.advanceTimersByTimeAsync(400));
+        expect(client.searchUserDirectory).toHaveBeenCalledTimes(2);
+        expect(listed()).toEqual(["boris"]);
+        expect(document.querySelectorAll(".cirqle_NewChat_found")).toHaveLength(0);
+    });
+
+    it("still shows a found contact without a typed number when the book has one without a number", async () => {
+        activeSpace = SLAVA_TEST;
+        book = [...BOOK, { user_id: "@newchat_whatsapp_wa-efa4b19c_lid-3:server", name: "Clara" }] as typeof BOOK;
+        vi.mocked(client.searchUserDirectory).mockResolvedValueOnce({
+            limited: false,
+            results: [
+                {
+                    user_id: "@newchat_whatsapp_wa-efa4b19c_lid-9:server",
+                    display_name: "Dora, +79990001122 · slava test",
+                },
+            ],
+        });
+        render(panel());
+        expect(await screen.findByText("Clara")).toBeTruthy();
+        search("+79990001122");
+        await act(() => vi.advanceTimersByTimeAsync(400));
+        expect(await screen.findByText("Dora")).toBeTruthy();
+        expect(document.querySelectorAll(".cirqle_NewChat_found")).toHaveLength(1);
+    });
+
+    it("says so when the number's phone book is empty", async () => {
+        activeSpace = SLAVA_TEST;
+        book = [];
+        render(panel());
+        expect(await screen.findByText(/^No contacts in this number's phone book/)).toBeTruthy();
+        // Without a book the search asks the bridge, as before
+        search("Test");
+        await act(() => vi.advanceTimersByTimeAsync(400));
+        expect(client.searchUserDirectory).toHaveBeenCalledWith({ term: "Test", limit: 30 });
     });
 
     it("New chat puts the cursor in the search", () => {
