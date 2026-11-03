@@ -17,7 +17,11 @@ import SdkConfig from "../SdkConfig";
 import { getCommand } from "../slash-commands/SlashCommands";
 import { Tab } from "../components/structures/TabbedView";
 import { UserTab } from "../components/views/dialogs/UserTab";
-import { CIRQLE_BRAND, cirqlePollTotal, isCirqleHiddenCommand } from "./CirqleFeatures";
+import { CIRQLE_BRAND, cirqlePollTotal, cirqleTheme, isCirqleHiddenCommand } from "./CirqleFeatures";
+import SettingsStore from "../settings/SettingsStore";
+import { SettingLevel } from "../settings/SettingLevel";
+import dis from "../dispatcher/dispatcher";
+import { Action } from "../dispatcher/actions";
 import { cirqleActionBarActions, cirqleMayDelete } from "./CirqleMessages";
 import { CirqlePreferencesTab, cirqleUserTabs } from "./CirqleSettings";
 import MatrixClientContext from "../contexts/MatrixClientContext";
@@ -144,6 +148,34 @@ describe("CIRQLE without stock Element's extras", () => {
         await waitFor(() => expect(reload).toHaveBeenCalled());
         expect(deleteAllData).toHaveBeenCalled();
         platform.mockRestore();
+    });
+
+    it("offers the theme as System, Light or Dark, through Element's theme settings", async () => {
+        const setValue = vi.spyOn(SettingsStore, "setValue").mockResolvedValue(undefined);
+        const dispatch = vi.spyOn(dis, "dispatch");
+        render(
+            <MatrixClientContext.Provider value={stubClient()}>
+                <CirqlePreferencesTab />
+            </MatrixClientContext.Provider>,
+        );
+        expect(screen.getByRole("radio", { name: "System" })).toBeChecked();
+        fireEvent.click(screen.getByRole("radio", { name: "Dark" }));
+        await waitFor(() => expect(dispatch).toHaveBeenCalledWith({ action: Action.RecheckTheme }));
+        // The theme before leaving System: leaving it first would switch to the last theme kept on the way
+        expect(setValue.mock.calls).toEqual([
+            ["theme", null, SettingLevel.DEVICE, "dark"],
+            ["use_system_theme", null, SettingLevel.DEVICE, false],
+        ]);
+        setValue.mockRestore();
+        dispatch.mockRestore();
+    });
+
+    it("draws CIRQLE on Element's light or dark theme only", () => {
+        expect(cirqleTheme("dark")).toBe("dark");
+        expect(cirqleTheme("light-high-contrast")).toBe("light");
+        expect(cirqleTheme("custom-Solarized")).toBe("light");
+        SdkConfig.reset();
+        expect(cirqleTheme("light-high-contrast")).toBe("light-high-contrast");
     });
 
     it('shows each deleted message as WhatsApp\'s "This message was deleted", not folded into a summary', () => {

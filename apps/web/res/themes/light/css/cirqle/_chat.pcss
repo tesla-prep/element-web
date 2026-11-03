@@ -17,7 +17,7 @@ slots by their data-testid.
     padding: 12px 20px;
     min-height: 66px;
     box-sizing: border-box;
-    background: #ffffff;
+    background: var(--cirqle-panel);
     border-bottom: 1px solid var(--cirqle-line);
 }
 
@@ -60,7 +60,7 @@ slots by their data-testid.
 /* Shared components set these on each tile's root, so they are set there too */
 .mx_RoomView_body[data-layout="bubble"],
 [class*="_layoutBubble_"] {
-    --event-tile-bubble-other-background: #ffffff;
+    --event-tile-bubble-other-background: var(--cirqle-bubble-other);
     --event-tile-bubble-self-background: var(--cirqle-green-soft);
     --event-tile-bubble-hover-background: transparent;
     --event-tile-bubble-corner-radius: 10px;
@@ -227,7 +227,7 @@ slots by their data-testid.
     height: 24px;
     padding: 0 8px;
     border-radius: 12px;
-    background: #ffffff;
+    background: var(--cirqle-panel);
     border: 1px solid var(--cirqle-line);
     font-size: 12px;
     color: var(--cirqle-ink-2);
@@ -266,7 +266,7 @@ slots by their data-testid.
 .mx_TimelineSeparator > div {
     padding: 4px 12px;
     border-radius: 8px;
-    background: #ffffff;
+    background: var(--cirqle-panel);
     font-size: 12px;
     font-weight: 400;
     color: var(--cirqle-ink-2);
@@ -285,7 +285,7 @@ slots by their data-testid.
     width: 100%;
     padding: 10px 16px;
     margin: 0;
-    background: #ffffff;
+    background: var(--cirqle-panel);
     border-top: 1px solid var(--cirqle-line);
 }
 
@@ -323,7 +323,7 @@ slots by their data-testid.
 }
 
 .cirqle_ComposerFrom_telegram {
-    background: #d6e6f5;
+    background: var(--cirqle-telegram-soft);
     color: var(--cirqle-telegram);
 }
 
@@ -635,7 +635,7 @@ slots by their data-testid.
 .mx_MVoiceMessageBody .mx_RecordingPlayback_timelineLayoutMiddle,
 .cirqle_VoiceRecorder .mx_RecordingPlayback_timelineLayoutMiddle {
     --cirqle-bar-played: var(--cirqle-green);
-    --cirqle-bar-left: #b3bbb6;
+    --cirqle-bar-left: var(--cirqle-waveform);
     cursor: pointer;
     touch-action: pan-y;
     user-select: none;
@@ -714,7 +714,7 @@ slots by their data-testid.
     border: 0;
     border-radius: 12px;
     background: var(--cirqle-whatsapp);
-    color: #ffffff;
+    color: var(--cirqle-on-whatsapp);
     font: inherit;
     font-size: 12px;
     font-weight: 600;
@@ -842,7 +842,7 @@ slots by their data-testid.
     font-weight: 600;
     font-size: 30px;
     line-height: normal;
-    color: var(--cirqle-green);
+    color: var(--cirqle-green-text);
 }
 
 .cirqle_Empty_text {
@@ -879,16 +879,16 @@ slots by their data-testid.
     width: 64px;
     height: 64px;
     border-radius: 32px;
-    background: #ffffff;
+    background: var(--cirqle-panel);
     border: 1px solid var(--cirqle-line);
-    color: var(--cirqle-green);
+    color: var(--cirqle-green-text);
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
 .cirqle_Empty_action:hover .cirqle_Empty_actionIcon {
-    border-color: var(--cirqle-green);
+    border-color: var(--cirqle-green-text);
 }
 
 /* A message, edit or delete WhatsApp or Telegram refused (CirqleDelivery) */

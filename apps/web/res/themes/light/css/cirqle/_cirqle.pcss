@@ -36,9 +36,11 @@ specificity, and upstream CSS can change underneath without this file needing
         U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
-/* Compound sets its tokens on body.cpd-theme-light, so they are overridden there too. */
+/* Compound sets its tokens on body.cpd-theme-light (or -dark), so they are overridden
+   there too. The dark theme draws the same rules with the palette in _dark.pcss. */
 :root,
-.cpd-theme-light {
+.cpd-theme-light,
+.cpd-theme-dark {
     /* CIRQLE palette, from the owner-approved concept */
     --cirqle-green: #0e3b2e;
     --cirqle-green-hover: #145a45;
@@ -56,6 +58,16 @@ specificity, and upstream CSS can change underneath without this file needing
     --cirqle-telegram: #1e6fb8;
     --cirqle-danger: #8a2a2a;
     --cirqle-record: #d93a2b;
+    --cirqle-panel: #ffffff;
+    --cirqle-hover: #f7f6f2;
+    --cirqle-bubble-other: #ffffff;
+    --cirqle-whatsapp-soft: #e8f1ec;
+    --cirqle-telegram-soft: #d6e6f5;
+    --cirqle-on-whatsapp: #ffffff;
+    --cirqle-rail: var(--cirqle-green);
+    /* Green as text and icons: the brand green here, a lighter one on the dark ground */
+    --cirqle-green-text: var(--cirqle-green);
+    --cirqle-waveform: #b3bbb6;
     --cirqle-serif: "Source Serif 4", Georgia, serif;
 
     --cpd-font-family-sans:
@@ -68,9 +80,9 @@ specificity, and upstream CSS can change underneath without this file needing
     --cpd-color-text-action-accent: var(--cirqle-green-hover);
     --cpd-color-text-link-external: var(--cirqle-green-hover);
     --cpd-color-text-success-primary: var(--cirqle-whatsapp);
-    --cpd-color-text-badge-accent: var(--cirqle-green);
+    --cpd-color-text-badge-accent: var(--cirqle-green-text);
 
-    --cpd-color-bg-canvas-default: #ffffff;
+    --cpd-color-bg-canvas-default: var(--cirqle-panel);
     --cpd-color-bg-subtle-primary: var(--cirqle-line-soft);
     --cpd-color-bg-subtle-secondary: var(--cirqle-ground);
     --cpd-color-bg-action-primary-rest: var(--cirqle-green);

@@ -154,8 +154,14 @@ export function reloadCirqleAfterDownloadFailure(error: unknown, now = Date.now(
     return true;
 }
 
-/** The one theme the CIRQLE look is drawn on. */
-export const CIRQLE_THEME = "light";
+/**
+ * The CIRQLE look is drawn on Element's light and dark themes only (themes/light/css/cirqle):
+ * a high contrast or custom theme stock Element left in this browser shows as light or dark.
+ */
+export function cirqleTheme(theme: string): string {
+    if (!isCirqleMessenger()) return theme;
+    return theme.includes("dark") ? "dark" : "light";
+}
 
 /**
  * Element's setTheme polls for the stylesheet for 2 s and then rejects with
