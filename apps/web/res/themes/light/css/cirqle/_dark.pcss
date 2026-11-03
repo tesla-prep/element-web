@@ -28,7 +28,7 @@ Text colours keep WCAG AA contrast on the panels and bubbles they sit on.
     --cirqle-ink: #e9eaec;
     --cirqle-ink-2: #c3c5c9;
     --cirqle-ink-3: #9a9ea4;
-    --cirqle-whatsapp: #3fbf86;
+    --cirqle-whatsapp: #4cc794;
     --cirqle-on-whatsapp: #0f1012;
     --cirqle-telegram: #5aa9e6;
     --cirqle-danger: #ef7d72;
@@ -36,8 +36,10 @@ Text colours keep WCAG AA contrast on the panels and bubbles they sit on.
     --cirqle-telegram-soft: #1b2e42;
     --cirqle-rail: #141518;
     --cirqle-waveform: #5a5e64;
+    --cirqle-own-muted: #9fc4b2;
 
-    /* White text stays readable on the green while it is hovered or pressed */
+    /* White text on the green buttons, readable at rest, hovered or pressed */
+    --cpd-color-text-on-solid-primary: #ffffff;
     --cpd-color-bg-action-primary-hovered: #1d6e50;
     --cpd-color-bg-action-primary-pressed: #1d6e50;
     --cpd-color-bg-accent-rest: var(--cirqle-green);
@@ -58,9 +60,16 @@ Text colours keep WCAG AA contrast on the panels and bubbles they sit on.
     background: #1d6e50;
 }
 
-/* The time in an own bubble: Element's secondary grey falls under AA on the dark green */
-[class*="_layoutBubble_"][class*="_stateOwnEvent_"] [data-testid="event-tile-slot-timestamp"] > * {
-    color: #9fc4b2;
+/* The time and "This message was deleted" in an own bubble: the grey falls under AA on the dark green */
+[class*="_layoutBubble_"][class*="_stateOwnEvent_"] [data-testid="event-tile-slot-timestamp"] > *,
+[class*="_layoutBubble_"][class*="_stateOwnEvent_"] .mx_RedactedBody {
+    color: var(--cirqle-own-muted);
+}
+
+/* "Replying" over the composer: Element dims it with opacity, under AA on the dark panel */
+.mx_ReplyPreview .mx_ReplyPreview_header {
+    color: var(--cirqle-ink-3);
+    opacity: 1;
 }
 
 /* Letter avatars in the green of the sample, instead of Compound's decorative colours */
@@ -78,4 +87,14 @@ Text colours keep WCAG AA contrast on the panels and bubbles they sit on.
 
 [class*="_tooltip_"] [class*="_arrow_"] {
     fill: var(--cirqle-hover);
+}
+
+/* An error in an own bubble ("Unable to show image…") in a lighter red, readable on the dark green */
+[class*="_layoutBubble_"][class*="_stateOwnEvent_"] {
+    --cpd-color-text-critical-primary: #ffb3ab;
+}
+
+/* The chat's number and network beside a name in Forward: Element's tertiary grey is under AA here */
+.mx_ForwardList_entry_detail {
+    color: var(--cirqle-ink-3);
 }
