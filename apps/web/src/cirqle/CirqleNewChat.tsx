@@ -215,10 +215,13 @@ export function CirqleNewChat(): JSX.Element {
         if (!book) return [];
         return filterBook(book, bookQuery).map((contact) => ({ userId: contact.user_id, ...bookLabel(contact) }));
     }, [book, bookQuery]);
-    // A contact in the book is offered there, once
+    // A contact in the book is offered there, once: a typed number (`@newchat_…_=<digits>`) of a
+    // contact the book names by their WhatsApp LID is the same person
     const foundShown = useMemo(() => {
-        const inBook = new Set(book?.map((contact) => contact.user_id));
-        return found.filter((person) => !inBook.has(person.userId));
+        const inBook = new Set(book?.flatMap((contact) => [contact.user_id, contact.number?.replace(/\D/g, "")]));
+        return found.filter(
+            (person) => !inBook.has(person.userId) && !inBook.has(person.userId.match(/_=(\d+):/)?.[1]),
+        );
     }, [book, found]);
 
     // The private chats this number already has, as its contacts, when there is no book to show
@@ -341,7 +344,7 @@ export function CirqleNewChat(): JSX.Element {
                 {from && book === undefined && <p className="cirqle_NewChat_empty">Loading contacts…</p>}
                 {from && book?.length === 0 && (
                     <p className="cirqle_NewChat_empty">
-                        No contacts in this number's phone book. Type a number with its country code to start a chat.
+                        No contacts in this number's phone book. Type a number to start a chat.
                     </p>
                 )}
                 {bookShown.map((person) => (

@@ -239,6 +239,22 @@ describe("CirqleNewChat", () => {
         await act(() => vi.advanceTimersByTimeAsync(400));
         expect(client.searchUserDirectory).toHaveBeenCalledTimes(1);
         expect(await screen.findByText("Test Person")).toBeTruthy();
+
+        // The typed number of a contact the book has under their LID is shown once, in the book
+        vi.mocked(client.searchUserDirectory).mockResolvedValueOnce({
+            limited: false,
+            results: [
+                {
+                    user_id: "@newchat_whatsapp_wa-efa4b19c_=14695552222:server",
+                    display_name: "boris, +14695552222 · slava test",
+                },
+            ],
+        });
+        search("+1 469 555 2222");
+        await act(() => vi.advanceTimersByTimeAsync(400));
+        expect(client.searchUserDirectory).toHaveBeenCalledTimes(2);
+        expect(listed()).toEqual(["boris"]);
+        expect(document.querySelectorAll(".cirqle_NewChat_found")).toHaveLength(0);
     });
 
     it("says so when the number's phone book is empty", async () => {
