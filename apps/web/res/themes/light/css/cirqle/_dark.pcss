@@ -45,6 +45,11 @@ Text colours keep WCAG AA contrast on the panels and bubbles they sit on.
     --cpd-color-bg-accent-rest: var(--cirqle-green);
     --cpd-color-bg-accent-hovered: #1d6e50;
 
+    /* The same white on the red danger buttons ("Sign out", "Delete"): the reds of the light theme, readable at rest, hovered or pressed */
+    --cpd-color-bg-critical-primary: #d51928;
+    --cpd-color-bg-critical-hovered: #bc0f22;
+    --cpd-color-bg-critical-pressed: #a4041d;
+
     color-scheme: dark;
 }
 
@@ -97,4 +102,19 @@ Text colours keep WCAG AA contrast on the panels and bubbles they sit on.
 /* The chat's number and network beside a name in Forward: Element's tertiary grey is under AA here */
 .mx_ForwardList_entry_detail {
     color: var(--cirqle-ink-3);
+}
+
+/* Bot commands from the Telegram bridge ("/newbot") come with an inline dark blue, under AA on both bubbles */
+.mx_EventTile_body [style*="rgb(55, 113, 187)"],
+.mx_EventTile_body [style*="#3771bb" i] {
+    color: #93bbf5 !important;
+}
+
+/* The unread count on the jump-to-bottom button: white on Element's light grey and red is under AA */
+.mx_JumpToBottomButton_badge {
+    background-color: #656d77;
+}
+
+.mx_JumpToBottomButton_highlight .mx_JumpToBottomButton_badge {
+    background-color: var(--cpd-color-bg-critical-primary);
 }
