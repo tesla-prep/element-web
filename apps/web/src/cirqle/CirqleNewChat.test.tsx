@@ -233,6 +233,12 @@ describe("CirqleNewChat", () => {
         search("BOR");
         await act(() => vi.advanceTimersByTimeAsync(400));
         expect(listed()).toEqual(["boris"]);
+        // Names are the book's to answer; only a typed number is looked up on WhatsApp
+        expect(client.searchUserDirectory).not.toHaveBeenCalled();
+        search("+79990001122");
+        await act(() => vi.advanceTimersByTimeAsync(400));
+        expect(client.searchUserDirectory).toHaveBeenCalledTimes(1);
+        expect(await screen.findByText("Test Person")).toBeTruthy();
     });
 
     it("says so when the number's phone book is empty", async () => {
@@ -240,6 +246,10 @@ describe("CirqleNewChat", () => {
         book = [];
         render(panel());
         expect(await screen.findByText(/^No contacts in this number's phone book/)).toBeTruthy();
+        // Without a book the search asks the bridge, as before
+        search("Test");
+        await act(() => vi.advanceTimersByTimeAsync(400));
+        expect(client.searchUserDirectory).toHaveBeenCalledWith({ term: "Test", limit: 30 });
     });
 
     it("New chat puts the cursor in the search", () => {

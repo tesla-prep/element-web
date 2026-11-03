@@ -172,9 +172,16 @@ export function CirqleNewChat(): JSX.Element {
     // update, and each search makes the relay bot look the contact up on WhatsApp/Telegram.
     const fromNetwork = from?.network;
     const fromAccount = from?.accountName;
+    const book = usePhoneBook(client, fromNetwork, fromAccount);
+    // A book answers the search itself; the bridge is asked only for a typed number or
+    // Telegram username, which may be someone the book does not have
+    const bookAnswers = book === undefined || (book !== null && book.length > 0);
     useEffect(() => {
         const term = query.trim();
-        if (!term || !fromNetwork || !fromAccount) {
+        const typed =
+            /^\+?[\d\s().-]{7,}$/.test(term) ||
+            (fromNetwork === "telegram" && /^(@|(https?:\/\/)?t\.me\/)\w/.test(term));
+        if (!term || !fromNetwork || !fromAccount || (bookAnswers && !typed)) {
             setFound([]);
             return;
         }
@@ -201,9 +208,8 @@ export function CirqleNewChat(): JSX.Element {
             stale = true;
             window.clearTimeout(timer);
         };
-    }, [client, query, fromNetwork, fromAccount]);
+    }, [client, query, fromNetwork, fromAccount, bookAnswers]);
 
-    const book = usePhoneBook(client, fromNetwork, fromAccount);
     const bookQuery = useDeferredValue(query);
     const bookShown = useMemo((): Found[] => {
         if (!book) return [];
