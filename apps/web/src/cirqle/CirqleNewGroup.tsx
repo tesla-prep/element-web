@@ -28,7 +28,7 @@ import BaseAvatar from "../components/views/avatars/BaseAvatar";
 import RoomListStoreV3 from "../stores/room-list-v3/RoomListStoreV3";
 import { ArrowRightIcon, BackIcon, CheckIcon, CloseIcon, SearchIcon } from "./CirqleIcons";
 import { chatKind, type Inbox, type Network, privateChatContact, stripNetworkSuffix } from "./CirqleInboxes";
-import { contactSub, inboxOption, splitLabel } from "./CirqleNewChat";
+import { CirqleWriteFrom, contactSub, splitLabel } from "./CirqleNewChat";
 import { CirqleUiStore } from "./CirqleUiStore";
 import { useCirqleInboxes } from "./useCirqleChats";
 
@@ -255,25 +255,7 @@ export function CirqleNewGroup(): JSX.Element {
                 </h2>
             </div>
             {inboxes.length > 0 && (
-                <div className="cirqle_NewChat_from">
-                    <label htmlFor="cirqle_NewGroup_from">Write from</label>
-                    <select
-                        id="cirqle_NewGroup_from"
-                        value={from?.spaceId ?? ""}
-                        onChange={(ev) => pickNumber(ev.target.value)}
-                    >
-                        {!from && (
-                            <option value="" disabled>
-                                Choose a number
-                            </option>
-                        )}
-                        {inboxes.map((inbox) => (
-                            <option key={inbox.spaceId} value={inbox.spaceId}>
-                                {inboxOption(inbox)}
-                            </option>
-                        ))}
-                    </select>
-                </div>
+                <CirqleWriteFrom label="Write from" inboxes={inboxes} from={from} onPick={pickNumber} />
             )}
             {inboxes.length > 0 && !from && (
                 <p className="cirqle_NewChat_hint" role="status">

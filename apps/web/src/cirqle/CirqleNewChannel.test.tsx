@@ -64,10 +64,14 @@ describe("CirqleNewChannel", () => {
 
     it("offers connected WhatsApp numbers only, and takes the only one without asking", () => {
         panel();
-        const options = Array.from(screen.getByLabelText("Channel of").querySelectorAll("option")).map(
-            (o) => o.textContent,
-        );
-        expect(options).toEqual(["Andrey - Personal · WhatsApp"]);
+        fireEvent.click(screen.getByRole("button", { name: /^Channel of/ }));
+        const options = screen
+            .getAllByRole("option")
+            .map((o) => [
+                o.querySelector(".cirqle_NumberPicker_name")?.textContent,
+                o.querySelector(".cirqle_NumberPicker_sub")?.textContent,
+            ]);
+        expect(options).toEqual([["Andrey - Personal", "WhatsApp"]]);
     });
 
     it("asks the relay bot for a public room in the number's space, which it answers with the channel", async () => {
