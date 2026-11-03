@@ -219,9 +219,10 @@ export function CirqleNewChat(): JSX.Element {
     // contact the book names by their WhatsApp LID is the same person
     const foundShown = useMemo(() => {
         const inBook = new Set(book?.flatMap((contact) => [contact.user_id, contact.number?.replace(/\D/g, "")]));
-        return found.filter(
-            (person) => !inBook.has(person.userId) && !inBook.has(person.userId.match(/_=(\d+):/)?.[1]),
-        );
+        return found.filter((person) => {
+            const digits = person.userId.match(/_=(\d+):/)?.[1];
+            return !inBook.has(person.userId) && !(digits && inBook.has(digits));
+        });
     }, [book, found]);
 
     // The private chats this number already has, as its contacts, when there is no book to show

@@ -257,6 +257,26 @@ describe("CirqleNewChat", () => {
         expect(document.querySelectorAll(".cirqle_NewChat_found")).toHaveLength(0);
     });
 
+    it("still shows a found contact without a typed number when the book has one without a number", async () => {
+        activeSpace = SLAVA_TEST;
+        book = [...BOOK, { user_id: "@newchat_whatsapp_wa-efa4b19c_lid-3:server", name: "Clara" }] as typeof BOOK;
+        vi.mocked(client.searchUserDirectory).mockResolvedValueOnce({
+            limited: false,
+            results: [
+                {
+                    user_id: "@newchat_whatsapp_wa-efa4b19c_lid-9:server",
+                    display_name: "Dora, +79990001122 · slava test",
+                },
+            ],
+        });
+        render(panel());
+        expect(await screen.findByText("Clara")).toBeTruthy();
+        search("+79990001122");
+        await act(() => vi.advanceTimersByTimeAsync(400));
+        expect(await screen.findByText("Dora")).toBeTruthy();
+        expect(document.querySelectorAll(".cirqle_NewChat_found")).toHaveLength(1);
+    });
+
     it("says so when the number's phone book is empty", async () => {
         activeSpace = SLAVA_TEST;
         book = [];
