@@ -17,7 +17,7 @@ Rail, chat list and number picker (concept artboards Main, Empty, NumberPicker).
     flex-direction: column;
     align-items: center;
     gap: 8px;
-    background: var(--cirqle-green);
+    background: var(--cirqle-rail);
 }
 
 .cirqle_Rail_logo {
@@ -60,7 +60,7 @@ Rail, chat list and number picker (concept artboards Main, Empty, NumberPicker).
     box-sizing: border-box;
     border-radius: 9px;
     background: var(--cirqle-pill);
-    color: var(--cirqle-green);
+    color: var(--cirqle-green-text);
     font-size: 10px;
     font-weight: 700;
     display: flex;
@@ -106,7 +106,7 @@ Rail, chat list and number picker (concept artboards Main, Empty, NumberPicker).
     box-sizing: border-box;
     border-radius: 10px;
     background: var(--cirqle-whatsapp);
-    color: #ffffff;
+    color: var(--cirqle-on-whatsapp);
     font-size: 12px;
     font-weight: 700;
     display: flex;
@@ -133,7 +133,7 @@ Rail, chat list and number picker (concept artboards Main, Empty, NumberPicker).
 }
 
 .cirqle_iconButton_green {
-    color: var(--cirqle-green);
+    color: var(--cirqle-green-text);
 }
 
 .cirqle_chip {
@@ -150,14 +150,14 @@ Rail, chat list and number picker (concept artboards Main, Empty, NumberPicker).
 
 .cirqle_chip[aria-selected="true"] {
     background: var(--cirqle-green-soft);
-    color: var(--cirqle-green);
+    color: var(--cirqle-green-text);
     font-weight: 600;
 }
 
 /* ---------- chat list ---------- */
 
 .mx_LeftPanel_roomListContainer:has(.cirqle_ChatList) {
-    background: #ffffff;
+    background: var(--cirqle-panel);
 }
 
 .cirqle_ChatList,
@@ -172,7 +172,7 @@ Rail, chat list and number picker (concept artboards Main, Empty, NumberPicker).
     min-width: 0;
     display: flex;
     flex-direction: column;
-    background: #ffffff;
+    background: var(--cirqle-panel);
     border-right: 1px solid var(--cirqle-line);
     font-family: Inter, system-ui, sans-serif;
     color: var(--cirqle-ink);
@@ -192,7 +192,7 @@ Rail, chat list and number picker (concept artboards Main, Empty, NumberPicker).
     font-weight: 600;
     font-size: 26px;
     line-height: normal;
-    color: var(--cirqle-green);
+    color: var(--cirqle-green-text);
 }
 
 .cirqle_ChatList_search {
@@ -281,7 +281,7 @@ Rail, chat list and number picker (concept artboards Main, Empty, NumberPicker).
     align-items: center;
     padding: 10px 16px 0 20px;
     border: 0;
-    background: #ffffff;
+    background: var(--cirqle-panel);
     font: inherit;
     text-align: left;
     color: var(--cirqle-ink);
@@ -289,7 +289,7 @@ Rail, chat list and number picker (concept artboards Main, Empty, NumberPicker).
 }
 
 .cirqle_ChatRow:hover {
-    background: #f7f6f2;
+    background: var(--cirqle-hover);
 }
 
 .cirqle_ChatRow_selected,
@@ -413,7 +413,7 @@ Rail, chat list and number picker (concept artboards Main, Empty, NumberPicker).
 
 .cirqle_NumberPicker_pill_open {
     border: 2px solid var(--cirqle-green);
-    background: #ffffff;
+    background: var(--cirqle-panel);
 }
 
 .cirqle_NumberPicker_label {
@@ -433,7 +433,7 @@ Rail, chat list and number picker (concept artboards Main, Empty, NumberPicker).
     top: 62px;
     left: 12px;
     right: 12px;
-    background: #ffffff;
+    background: var(--cirqle-panel);
     border-radius: 14px;
     box-shadow: 0 10px 30px rgba(20, 32, 25, 0.16);
     padding: 8px;
@@ -448,11 +448,11 @@ Rail, chat list and number picker (concept artboards Main, Empty, NumberPicker).
     display: flex;
     align-items: center;
     border-radius: 10px;
-    background: #ffffff;
+    background: var(--cirqle-panel);
 }
 
 .cirqle_NumberPicker_item:hover {
-    background: #f7f6f2;
+    background: var(--cirqle-hover);
 }
 
 .cirqle_NumberPicker_item[aria-selected="true"] {
@@ -497,7 +497,7 @@ Rail, chat list and number picker (concept artboards Main, Empty, NumberPicker).
     box-sizing: border-box;
     border-radius: 50%;
     border: 2px solid var(--cirqle-ink-3);
-    background: #ffffff;
+    background: var(--cirqle-panel);
 }
 
 .cirqle_NumberPicker_tick > svg {
@@ -505,13 +505,13 @@ Rail, chat list and number picker (concept artboards Main, Empty, NumberPicker).
 }
 
 .cirqle_NumberPicker_tick_on::before {
-    border-color: var(--cirqle-green);
+    border-color: var(--cirqle-green-text);
     background: var(--cirqle-green);
 }
 
 /* All numbers has a plain check, not a tick: it is "none picked" */
 .cirqle_NumberPicker_tick_all {
-    color: var(--cirqle-green);
+    color: var(--cirqle-green-text);
     cursor: default;
 }
 
@@ -526,8 +526,8 @@ Rail, chat list and number picker (concept artboards Main, Empty, NumberPicker).
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #e8f1ec;
-    color: var(--cirqle-green);
+    background: var(--cirqle-whatsapp-soft);
+    color: var(--cirqle-green-text);
 }
 
 .cirqle_NumberPicker_icon_whatsapp {
@@ -536,7 +536,7 @@ Rail, chat list and number picker (concept artboards Main, Empty, NumberPicker).
 }
 
 .cirqle_NumberPicker_icon_telegram {
-    background: #d6e6f5;
+    background: var(--cirqle-telegram-soft);
     color: var(--cirqle-telegram);
 }
 

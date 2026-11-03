@@ -1,0 +1,81 @@
+/*
+Copyright 2026 CIRQLE.
+
+SPDX-License-Identifier: AGPL-3.0-only
+
+CIRQLE Messenger in Element's dark theme (VLA-756): the rules of _cirqle.pcss
+with a graphite palette, after the owner's sample of 2026-11-03 (almost black
+ground, slightly lighter panels, the green of the buttons and of own messages,
+light text). Imported unlayered after _cirqle.pcss at the end of dark.pcss.
+Text colours keep WCAG AA contrast on the panels and bubbles they sit on.
+*/
+
+:root,
+.cpd-theme-dark {
+    --cirqle-green: #23825d;
+    --cirqle-green-hover: #4cc794;
+    --cirqle-green-text: #4cc794;
+    --cirqle-green-soft: #1f4a3b;
+    --cirqle-green-selected: #26282c;
+    --cirqle-ground: #0f1012;
+    --cirqle-panel: #1a1b1e;
+    --cirqle-hover: #232428;
+    --cirqle-bubble-other: #26282c;
+    --cirqle-pill: #232428;
+    --cirqle-line: #2e3035;
+    --cirqle-line-soft: #26282c;
+    --cirqle-pill-line: #3a3d42;
+    --cirqle-ink: #e9eaec;
+    --cirqle-ink-2: #c3c5c9;
+    --cirqle-ink-3: #9a9ea4;
+    --cirqle-whatsapp: #3fbf86;
+    --cirqle-on-whatsapp: #0f1012;
+    --cirqle-telegram: #5aa9e6;
+    --cirqle-danger: #ef7d72;
+    --cirqle-whatsapp-soft: #1f4a3b;
+    --cirqle-telegram-soft: #1b2e42;
+    --cirqle-rail: #141518;
+    --cirqle-waveform: #5a5e64;
+
+    /* White text stays readable on the green while it is hovered or pressed */
+    --cpd-color-bg-action-primary-hovered: #1d6e50;
+    --cpd-color-bg-action-primary-pressed: #1d6e50;
+    --cpd-color-bg-accent-rest: var(--cirqle-green);
+    --cpd-color-bg-accent-hovered: #1d6e50;
+
+    color-scheme: dark;
+}
+
+/* Titles in light ink, as in the sample, rather than green */
+.cirqle_ChatList_title,
+.cirqle_NewChat_title,
+.cirqle-heading,
+.mx_Dialog_title {
+    color: var(--cirqle-ink);
+}
+
+.cirqle_GroupInfo_message:hover {
+    background: #1d6e50;
+}
+
+/* The time in an own bubble: Element's secondary grey falls under AA on the dark green */
+[class*="_layoutBubble_"][class*="_stateOwnEvent_"] [data-testid="event-tile-slot-timestamp"] > * {
+    color: #9fc4b2;
+}
+
+/* Letter avatars in the green of the sample, instead of Compound's decorative colours */
+.mx_BaseAvatar[data-color] {
+    --cpd-avatar-bg: var(--cirqle-green-soft);
+    --cpd-avatar-color: var(--cirqle-green-text);
+}
+
+/* Tooltips on a dark panel, instead of Compound's inverted light ones */
+[class*="_tooltip_"] {
+    background: var(--cirqle-hover);
+    color: var(--cirqle-ink);
+    outline: 1px solid var(--cirqle-pill-line);
+}
+
+[class*="_tooltip_"] [class*="_arrow_"] {
+    fill: var(--cirqle-hover);
+}
