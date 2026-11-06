@@ -30,6 +30,7 @@ import { chatPreview } from "./CirqlePreview";
 import {
     ChannelIcon,
     ChatsIcon,
+    ContactsIcon,
     GroupIcon,
     KebabIcon,
     LeaveIcon,
@@ -220,6 +221,9 @@ export function CirqleChatList({ section }: { section: CirqleSection }): JSX.Ele
                     )}
                     {phone && section === "channels" && (
                         <MenuItem Icon={ChatsIcon} label="Chats" onSelect={() => CirqleUiStore.showSection("chats")} />
+                    )}
+                    {phone && (
+                        <MenuItem Icon={ContactsIcon} label="Contacts" onSelect={() => CirqleUiStore.openContacts()} />
                     )}
                     <MenuItem Icon={SettingsIcon} label="Settings" onSelect={() => dis.fire(Action.ViewUserSettings)} />
                     {phone && (

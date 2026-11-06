@@ -5,15 +5,16 @@ SPDX-License-Identifier: AGPL-3.0-only
 */
 
 // What the left column shows: the chat list or the channel list (picked on the
-// rail), or the New chat, New group or New channel panel in its place; and the
-// numbers picked in the number picker, kept in this browser.
+// rail), or the New chat, New group, New channel, Contacts or contact form panel
+// in its place; and the numbers picked in the number picker, kept in this browser.
 
 import { EventEmitter } from "events";
 
 import { useEventEmitterState } from "../hooks/useEventEmitter";
+import { type SharedContact } from "./CirqleSharedContacts";
 
 export type CirqleSection = "chats" | "channels";
-export type CirqlePanel = "list" | "newChat" | "newGroup" | "newChannel";
+export type CirqlePanel = "list" | "newChat" | "newGroup" | "newChannel" | "contacts" | "contactForm";
 
 export const CIRQLE_UI_CHANGED = "changed";
 
@@ -34,6 +35,10 @@ class CirqleUiStoreClass extends EventEmitter {
     public panel: CirqlePanel = "list";
     /** What the person had typed into the list search when they opened New chat */
     public newChatQuery = "";
+    /** The contact Edit contact changes; none for New contact */
+    public editedContact?: SharedContact;
+    /** Where the contact form goes back to: Contacts or New chat */
+    public contactFormFrom: CirqlePanel = "contacts";
     /** The numbers' spaces picked in the number picker; none is All numbers */
     public pickedNumbers: string[] = readPickedNumbers() ?? [];
     /** Nothing was picked in this browser yet: the picker may take over Element's active space once */
@@ -74,7 +79,26 @@ class CirqleUiStoreClass extends EventEmitter {
         this.emit(CIRQLE_UI_CHANGED);
     }
 
-    /** Back to the list from New chat, New group or New channel */
+    public openContacts(): void {
+        this.panel = "contacts";
+        this.emit(CIRQLE_UI_CHANGED);
+    }
+
+    /** New contact, or Edit contact for `contact`, over the panel it was opened from */
+    public openContactForm(contact?: SharedContact): void {
+        this.editedContact = contact;
+        this.contactFormFrom = this.panel;
+        this.panel = "contactForm";
+        this.emit(CIRQLE_UI_CHANGED);
+    }
+
+    /** Back from the contact form to where it was opened, which reads the book again */
+    public closeContactForm(): void {
+        this.panel = this.contactFormFrom;
+        this.emit(CIRQLE_UI_CHANGED);
+    }
+
+    /** Back to the list from New chat, New group, New channel or Contacts */
     public closePanel(): void {
         this.panel = "list";
         this.emit(CIRQLE_UI_CHANGED);

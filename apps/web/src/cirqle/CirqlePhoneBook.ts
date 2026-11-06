@@ -4,11 +4,11 @@ Copyright 2026 CIRQLE.
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
-// The phone book of the number New chat writes from. The relay bot answers
-// POST /_matrix/client/unstable/com.cirqle/phone_book with every contact of the
-// number, as the same @newchat_<bridge>_<inbox>_<contact> users the search
-// offers (relay bot README, «Phone book»), so picking one starts the chat the
-// same way.
+// The contacts New chat offers on the number it writes from. The relay bot answers
+// POST /_matrix/client/unstable/com.cirqle/phone_book with CIRQLE's shared book
+// (CirqleSharedContacts, the same on every number; not the book of the number's
+// phone), as the same @newchat_<bridge>_<inbox>_=<digits> users the search offers
+// (relay bot README, «Phone book»), so picking one starts the chat the same way.
 
 import { useEffect, useState } from "react";
 import { Method, type MatrixClient } from "matrix-js-sdk/src/matrix";
@@ -18,13 +18,25 @@ import { formatPhone, type Network } from "./CirqleInboxes";
 
 export interface BookContact {
     user_id: string;
-    /** The name in the number's phone book, else the number */
+    /** The name in the book, else the number */
+    name: string;
+    number?: string;
+}
+
+interface Named {
     name: string;
     number?: string;
 }
 
 const collator = new Intl.Collator(undefined, { sensitivity: "base", numeric: true });
 const isNumber = (text: string): boolean => /^\+?[\d\s().-]{7,}$/.test(text);
+
+/** By name, contacts known only by their number last */
+export function sortBook<T extends Named>(book: T[]): T[] {
+    return [...book].sort(
+        (a, b) => Number(isNumber(a.name)) - Number(isNumber(b.name)) || collator.compare(a.name, b.name),
+    );
+}
 
 /** The book sorted by name, contacts it knows only by their number last; undefined while it loads, null if it failed */
 export function usePhoneBook(
@@ -46,13 +58,7 @@ export function usePhoneBook(
                 { prefix: "/_matrix/client/unstable" },
             )
             .then((r) => {
-                if (stale) return;
-                setBook(
-                    [...r.contacts].sort(
-                        (a, b) =>
-                            Number(isNumber(a.name)) - Number(isNumber(b.name)) || collator.compare(a.name, b.name),
-                    ),
-                );
+                if (!stale) setBook(sortBook(r.contacts));
             })
             .catch((e) => {
                 logger.warn("CIRQLE phone book failed", e);
@@ -66,7 +72,7 @@ export function usePhoneBook(
 }
 
 /** Contacts whose name contains the term, or whose number has the digits of a typed number */
-export function filterBook(book: BookContact[], term: string): BookContact[] {
+export function filterBook<T extends Named>(book: T[], term: string): T[] {
     const needle = term.trim().toLocaleLowerCase();
     if (!needle) return book;
     const digits = /^\+?[\d\s().-]+$/.test(needle) ? needle.replace(/[^\d]/g, "") : "";

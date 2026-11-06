@@ -14,9 +14,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 // search to that number's contacts; under All numbers nothing is offered until
 // staff pick the number. A disconnected number is not offered: nothing sends from it.
 // The New chat row above New group says where a new chat starts: it puts the
-// cursor in the search. Below New group is the picked number's whole phone book
-// (CirqlePhoneBook), which the search filters; when the book is empty or the
-// relay bot cannot list it, the number's private chats are listed instead.
+// cursor in the search; New contact under New group is for staff who may change
+// the shared book. Below them are Contacts, CIRQLE's shared book on the picked
+// number (CirqlePhoneBook), and "Chats on <number>", the number's private chats
+// with anyone the book does not have; the search filters both. A name is the
+// book's to answer: only a typed number or Telegram username goes to the bridge.
 
 import React, { type JSX, useDeferredValue, useEffect, useId, useMemo, useRef, useState } from "react";
 import { type Room } from "matrix-js-sdk/src/matrix";
@@ -35,6 +37,8 @@ import { BackIcon, ChevronDownIcon, ChevronUpIcon, GroupIcon, PencilIcon, Search
 import { chatKind, contactNumber, formatPhone, type Inbox, type Network, stripNetworkSuffix } from "./CirqleInboxes";
 import { NumberLabel } from "./CirqleNumberPicker";
 import { bookLabel, filterBook, usePhoneBook } from "./CirqlePhoneBook";
+import { useSharedContacts } from "./CirqleSharedContacts";
+import { NewContactRow } from "./CirqleContacts";
 import { CirqleUiStore } from "./CirqleUiStore";
 import { useCirqleInboxes } from "./useCirqleChats";
 
@@ -173,15 +177,15 @@ export function CirqleNewChat(): JSX.Element {
     const fromNetwork = from?.network;
     const fromAccount = from?.accountName;
     const book = usePhoneBook(client, fromNetwork, fromAccount);
-    // A book answers the search itself; the bridge is asked only for a typed number or
+    const canEdit = useSharedContacts(client)?.canEdit === true;
+    // The book answers a name; the bridge is asked only for a typed number or
     // Telegram username, which may be someone the book does not have
-    const bookAnswers = book === undefined || (book !== null && book.length > 0);
     useEffect(() => {
         const term = query.trim();
         const typed =
             /^\+?[\d\s().-]{7,}$/.test(term) ||
             (fromNetwork === "telegram" && /^(@|(https?:\/\/)?t\.me\/)\w/.test(term));
-        if (!term || !fromNetwork || !fromAccount || (bookAnswers && !typed)) {
+        if (!fromNetwork || !fromAccount || !typed) {
             setFound([]);
             return;
         }
@@ -208,7 +212,7 @@ export function CirqleNewChat(): JSX.Element {
             stale = true;
             window.clearTimeout(timer);
         };
-    }, [client, query, fromNetwork, fromAccount, bookAnswers]);
+    }, [client, query, fromNetwork, fromAccount]);
 
     const bookQuery = useDeferredValue(query);
     const bookShown = useMemo((): Found[] => {
@@ -225,13 +229,15 @@ export function CirqleNewChat(): JSX.Element {
         });
     }, [book, found]);
 
-    // The private chats this number already has, as its contacts, when there is no book to show
-    const contacts = useMemo((): Room[] => {
-        if (!from || book === undefined || book?.length) return [];
+    // The private chats this number already has, under the book, except with anyone the book has
+    const chats = useMemo((): Room[] => {
+        if (!from || book === undefined) return [];
         const needle = query.trim().toLocaleLowerCase();
+        const inBook = new Set(book?.flatMap((contact) => (contact.number ? [contact.number.replace(/\D/g, "")] : [])));
         return RoomListStoreV3.instance
             .getSortedRooms()
             .filter((room) => from.childIds.has(room.roomId) && chatKind(room) === "chat")
+            .filter((room) => !inBook.has(contactNumber(room)?.replace(/\D/g, "") ?? ""))
             .filter((room) => !needle || room.name.toLocaleLowerCase().includes(needle))
             .sort((a, b) => a.name.localeCompare(b.name))
             .slice(0, 200);
@@ -339,14 +345,14 @@ export function CirqleNewChat(): JSX.Element {
                     </span>
                     <span className="cirqle_NewChat_actionLabel">New group</span>
                 </button>
-                {from && (bookShown.length > 0 || contacts.length > 0) && (
-                    <div className="cirqle_NewChat_section">Contacts on {from.label}</div>
+                {canEdit && <NewContactRow />}
+                {from && book !== undefined && (bookShown.length > 0 || !book?.length) && (
+                    <div className="cirqle_NewChat_section">Contacts</div>
                 )}
                 {from && book === undefined && <p className="cirqle_NewChat_empty">Loading contacts…</p>}
+                {from && book === null && <p className="cirqle_NewChat_empty">Couldn't load contacts</p>}
                 {from && book?.length === 0 && (
-                    <p className="cirqle_NewChat_empty">
-                        No contacts in this number's phone book. Type a number to start a chat.
-                    </p>
+                    <p className="cirqle_NewChat_empty">No contacts yet. Type a number to start a chat.</p>
                 )}
                 {bookShown.map((person) => (
                     <button
@@ -363,7 +369,8 @@ export function CirqleNewChat(): JSX.Element {
                         </span>
                     </button>
                 ))}
-                {contacts.map((room) => (
+                {chats.length > 0 && <div className="cirqle_NewChat_section">Chats on {from?.label}</div>}
+                {chats.map((room) => (
                     <button
                         key={room.roomId}
                         className="cirqle_NewChat_row cirqle_NewChat_contact"
