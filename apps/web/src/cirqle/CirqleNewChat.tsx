@@ -21,33 +21,30 @@ SPDX-License-Identifier: AGPL-3.0-only
 // book's to answer: only a typed number or Telegram username goes to the bridge.
 
 import React, { type JSX, useDeferredValue, useEffect, useId, useMemo, useRef, useState } from "react";
-import { type Room } from "matrix-js-sdk/src/matrix";
+import { type MatrixClient, type Room } from "matrix-js-sdk/src/matrix";
 import { logger } from "matrix-js-sdk/src/logger";
 
 import { useMatrixClientContext } from "../contexts/MatrixClientContext";
 import { SDKContextClass } from "../contexts/SDKContextClass";
-import dis from "../dispatcher/dispatcher";
-import { Action } from "../dispatcher/actions";
-import { type ViewRoomPayload } from "../dispatcher/payloads/ViewRoomPayload";
 import { DirectoryMember, startDmOnFirstMessage } from "../utils/direct-messages";
-import RoomAvatar from "../components/views/avatars/RoomAvatar";
-import BaseAvatar from "../components/views/avatars/BaseAvatar";
 import RoomListStoreV3 from "../stores/room-list-v3/RoomListStoreV3";
-import { BackIcon, ChevronDownIcon, ChevronUpIcon, GroupIcon, PencilIcon, SearchIcon } from "./CirqleIcons";
-import { chatKind, contactNumber, formatPhone, type Inbox, type Network, stripNetworkSuffix } from "./CirqleInboxes";
+import { ChevronDownIcon, ChevronUpIcon } from "./CirqleIcons";
+import { chatKind, contactNumber, formatPhone, type Inbox, type Network } from "./CirqleInboxes";
 import { NumberLabel } from "./CirqleNumberPicker";
-import { bookLabel, filterBook, usePhoneBook } from "./CirqlePhoneBook";
+import { type BookContact, bookLabel, filterBook, usePhoneBook } from "./CirqlePhoneBook";
 import { useSharedContacts } from "./CirqleSharedContacts";
-import { NewContactRow } from "./CirqleContacts";
+import { PanelHeader } from "./CirqleContacts";
+import {
+    ChatsSection,
+    ContactsSection,
+    type Found,
+    FoundRows,
+    NewChatActions,
+    NewChatNotes,
+    NewChatSearch,
+} from "./CirqleNewChatSections";
 import { CirqleUiStore } from "./CirqleUiStore";
 import { useCirqleInboxes } from "./useCirqleChats";
-
-interface Found {
-    userId: string;
-    name: string;
-    sub: string;
-    avatarUrl?: string;
-}
 
 /**
  * "Write from": the number shown as the number picker lists it, the name over the
@@ -149,37 +146,13 @@ export function splitLabel(displayName: string, network: Network, userId = ""): 
         : { name: asNumber(name || person), sub: `${messenger} · start chat` };
 }
 
-/** The contact's number, unless the chat is already named by it */
-export function contactSub(room: Room): string {
-    const number = contactNumber(room);
-    if (!number) return "";
-    return room.name.replace(/[^\d]/g, "").includes(number.replace(/[^\d]/g, "")) ? "" : number;
-}
-
-export function CirqleNewChat(): JSX.Element {
-    const client = useMatrixClientContext();
-    const inboxes = useCirqleInboxes().filter((inbox) => inbox.connected);
-    const [query, setQuery] = useState(CirqleUiStore.newChatQuery);
-    const activeSpace = SDKContextClass.instance.spaceStore.activeSpace;
-    const [fromId, setFromId] = useState<string | undefined>(
-        () => inboxes.find((inbox) => inbox.spaceId === activeSpace)?.spaceId,
-    );
-    // No number is assumed under All numbers: staff pick the one they write from
-    const from = inboxes.find((inbox) => inbox.spaceId === fromId) ?? (inboxes.length === 1 ? inboxes[0] : undefined);
+/** People the bridge finds for a typed number or Telegram username on the number written from; a name is the book's to answer */
+function useBridgeSearch(client: MatrixClient, from: Inbox | undefined, query: string): Found[] {
     const [found, setFound] = useState<Found[]>([]);
-    const [busy, setBusy] = useState(false);
-    const inputRef = useRef<HTMLInputElement>(null);
-
-    useEffect(() => inputRef.current?.focus(), []);
-
     // Keyed by the number, not the inbox object: inboxes are re-read on every room list
     // update, and each search makes the relay bot look the contact up on WhatsApp/Telegram.
     const fromNetwork = from?.network;
     const fromAccount = from?.accountName;
-    const book = usePhoneBook(client, fromNetwork, fromAccount);
-    const canEdit = useSharedContacts(client)?.canEdit === true;
-    // The book answers a name; the bridge is asked only for a typed number or
-    // Telegram username, which may be someone the book does not have
     useEffect(() => {
         const term = query.trim();
         const typed =
@@ -213,7 +186,30 @@ export function CirqleNewChat(): JSX.Element {
             window.clearTimeout(timer);
         };
     }, [client, query, fromNetwork, fromAccount]);
+    return found;
+}
 
+/** The private chats the number already has, except with anyone the book has (by the number) */
+function numberChats(from: Inbox, book: BookContact[] | null, query: string): Room[] {
+    const needle = query.trim().toLocaleLowerCase();
+    const inBook = new Set(book?.flatMap((contact) => (contact.number ? [contact.number.replace(/\D/g, "")] : [])));
+    return RoomListStoreV3.instance
+        .getSortedRooms()
+        .filter((room) => from.childIds.has(room.roomId) && chatKind(room) === "chat")
+        .filter((room) => !inBook.has(contactNumber(room)?.replace(/\D/g, "") ?? ""))
+        .filter((room) => !needle || room.name.toLocaleLowerCase().includes(needle))
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .slice(0, 200);
+}
+
+/** What New chat offers for the query: the book, people the bridge found who are not in it, and the number's other chats */
+function useNewChatPeople(
+    client: MatrixClient,
+    from: Inbox | undefined,
+    query: string,
+): { book: BookContact[] | null | undefined; bookShown: Found[]; foundShown: Found[]; chats: Room[] } {
+    const book = usePhoneBook(client, from?.network, from?.accountName);
+    const found = useBridgeSearch(client, from, query);
     const bookQuery = useDeferredValue(query);
     const bookShown = useMemo((): Found[] => {
         if (!book) return [];
@@ -228,21 +224,16 @@ export function CirqleNewChat(): JSX.Element {
             return !inBook.has(person.userId) && !(digits && inBook.has(digits));
         });
     }, [book, found]);
+    const chats = useMemo(
+        (): Room[] => (from && book !== undefined ? numberChats(from, book, query) : []),
+        [from, query, book],
+    );
+    return { book, bookShown, foundShown, chats };
+}
 
-    // The private chats this number already has, under the book, except with anyone the book has
-    const chats = useMemo((): Room[] => {
-        if (!from || book === undefined) return [];
-        const needle = query.trim().toLocaleLowerCase();
-        const inBook = new Set(book?.flatMap((contact) => (contact.number ? [contact.number.replace(/\D/g, "")] : [])));
-        return RoomListStoreV3.instance
-            .getSortedRooms()
-            .filter((room) => from.childIds.has(room.roomId) && chatKind(room) === "chat")
-            .filter((room) => !inBook.has(contactNumber(room)?.replace(/\D/g, "") ?? ""))
-            .filter((room) => !needle || room.name.toLocaleLowerCase().includes(needle))
-            .sort((a, b) => a.name.localeCompare(b.name))
-            .slice(0, 200);
-    }, [from, query, book]);
-
+/** Starts the chat with a picked person (Element's startDmOnFirstMessage) and goes back to the list */
+function useStartChat(client: MatrixClient): { busy: boolean; start: (person: Found) => Promise<void> } {
+    const [busy, setBusy] = useState(false);
     const start = async (person: Found): Promise<void> => {
         setBusy(true);
         try {
@@ -260,129 +251,56 @@ export function CirqleNewChat(): JSX.Element {
             setBusy(false);
         }
     };
+    return { busy, start };
+}
 
-    const open = (room: Room): void => {
-        dis.dispatch<ViewRoomPayload>({ action: Action.ViewRoom, room_id: room.roomId, metricsTrigger: "RoomList" });
-        CirqleUiStore.closePanel();
-    };
+export function CirqleNewChat(): JSX.Element {
+    const client = useMatrixClientContext();
+    const inboxes = useCirqleInboxes().filter((inbox) => inbox.connected);
+    const [query, setQuery] = useState(CirqleUiStore.newChatQuery);
+    const [fromId, setFromId] = useState(() => SDKContextClass.instance.spaceStore.activeSpace);
+    // No number is assumed under All numbers: staff pick the one they write from
+    const from = inboxes.find((inbox) => inbox.spaceId === fromId) ?? (inboxes.length === 1 ? inboxes[0] : undefined);
+    const { book, bookShown, foundShown, chats } = useNewChatPeople(client, from, query);
+    const canEdit = useSharedContacts(client)?.canEdit === true;
+    const { busy, start } = useStartChat(client);
+    const inputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => inputRef.current?.focus(), []);
 
     return (
         <section className="cirqle_NewChat" aria-labelledby="cirqle_NewChat_title">
-            <div className="cirqle_NewChat_header">
-                <button
-                    className="cirqle_iconButton cirqle_iconButton_green cirqle_NewChat_back"
-                    aria-label="Back to chats"
-                    onClick={() => CirqleUiStore.closePanel()}
-                >
-                    <BackIcon />
-                </button>
-                <h2 id="cirqle_NewChat_title" className="cirqle_NewChat_title">
-                    New chat
-                </h2>
-            </div>
-            <div className="cirqle_ChatList_search cirqle_NewChat_search">
-                <SearchIcon />
-                <input
-                    ref={inputRef}
-                    aria-label="Search name or number"
-                    placeholder="Search name or number"
-                    value={query}
-                    onChange={(ev) => setQuery(ev.target.value)}
-                    onKeyDown={(ev) => {
-                        if (ev.key === "Escape") CirqleUiStore.closePanel();
-                        const first = foundShown[0] ?? bookShown[0];
-                        if (ev.key === "Enter" && from && first && !busy) void start(first);
-                    }}
-                />
-            </div>
+            <PanelHeader
+                id="cirqle_NewChat_title"
+                title="New chat"
+                back="Back to chats"
+                onBack={() => CirqleUiStore.closePanel()}
+            />
+            <NewChatSearch
+                inputRef={inputRef}
+                query={query}
+                setQuery={setQuery}
+                onEnter={() => {
+                    const first = foundShown[0] ?? bookShown[0];
+                    if (from && first && !busy) void start(first);
+                }}
+            />
             {inboxes.length > 0 && (
                 <CirqleWriteFrom label="Write from" inboxes={inboxes} from={from} onPick={setFromId} />
             )}
-            {from?.network === "whatsapp" && /^\d{7,15}$/.test(query.replace(/[\s().-]/g, "")) && (
-                <p className="cirqle_NewChat_note" role="status">
-                    Type the number with its country code, like +1 214 555 0100
-                </p>
-            )}
-            {inboxes.length > 0 && !from && (
-                <p className="cirqle_NewChat_hint" role="status">
-                    Choose the number to write from
-                </p>
-            )}
+            <NewChatNotes inboxes={inboxes} from={from} query={query} />
             <div className="cirqle_NewChat_rows">
-                {foundShown.map((person) => (
-                    <button
-                        key={person.userId}
-                        className="cirqle_NewChat_row cirqle_NewChat_found"
-                        disabled={busy || !from}
-                        onClick={() => void start(person)}
-                    >
-                        <BaseAvatar name={person.name} idName={person.userId} url={person.avatarUrl} size="48px" />
-                        <span className="cirqle_NewChat_text">
-                            <span className="cirqle_NewChat_name">{person.name}</span>
-                            <span className="cirqle_NewChat_sub cirqle_NewChat_sub_green">{person.sub}</span>
-                        </span>
-                    </button>
-                ))}
-                <button
-                    type="button"
-                    className="cirqle_NewChat_row cirqle_NewChat_action"
-                    onClick={() => inputRef.current?.focus()}
-                >
-                    <span className="cirqle_NewChat_actionIcon">
-                        <PencilIcon />
-                    </span>
-                    <span className="cirqle_NewChat_text">
-                        <span className="cirqle_NewChat_actionLabel">New chat</span>
-                        <span className="cirqle_NewChat_sub">Search a name or type a number</span>
-                    </span>
-                </button>
-                <button
-                    className="cirqle_NewChat_row cirqle_NewChat_action"
-                    onClick={() => CirqleUiStore.openNewGroup()}
-                >
-                    <span className="cirqle_NewChat_actionIcon">
-                        <GroupIcon />
-                    </span>
-                    <span className="cirqle_NewChat_actionLabel">New group</span>
-                </button>
-                {canEdit && <NewContactRow />}
-                {from && book !== undefined && (bookShown.length > 0 || !book?.length) && (
-                    <div className="cirqle_NewChat_section">Contacts</div>
+                <FoundRows found={foundShown} disabled={busy || !from} onStart={(person) => void start(person)} />
+                <NewChatActions onNewChat={() => inputRef.current?.focus()} canEdit={canEdit} />
+                {from && (
+                    <ContactsSection
+                        book={book}
+                        shown={bookShown}
+                        busy={busy}
+                        onStart={(person) => void start(person)}
+                    />
                 )}
-                {from && book === undefined && <p className="cirqle_NewChat_empty">Loading contacts…</p>}
-                {from && book === null && <p className="cirqle_NewChat_empty">Couldn't load contacts</p>}
-                {from && book?.length === 0 && (
-                    <p className="cirqle_NewChat_empty">No contacts yet. Type a number to start a chat.</p>
-                )}
-                {bookShown.map((person) => (
-                    <button
-                        type="button"
-                        key={person.userId}
-                        className="cirqle_NewChat_row cirqle_NewChat_contact cirqle_NewChat_bookRow"
-                        disabled={busy}
-                        onClick={() => void start(person)}
-                    >
-                        <BaseAvatar name={person.name} idName={person.userId} size="44px" />
-                        <span className="cirqle_NewChat_text cirqle_NewChat_text_ruled">
-                            <span className="cirqle_NewChat_name">{person.name}</span>
-                            <span className="cirqle_NewChat_sub">{person.sub}</span>
-                        </span>
-                    </button>
-                ))}
-                {chats.length > 0 && <div className="cirqle_NewChat_section">Chats on {from?.label}</div>}
-                {chats.map((room) => (
-                    <button
-                        key={room.roomId}
-                        className="cirqle_NewChat_row cirqle_NewChat_contact"
-                        onClick={() => open(room)}
-                    >
-                        <RoomAvatar room={room} size="44px" />
-                        <span className="cirqle_NewChat_text cirqle_NewChat_text_ruled">
-                            <span className="cirqle_NewChat_name">{stripNetworkSuffix(room.name)}</span>
-                            <span className="cirqle_NewChat_sub">{contactSub(room)}</span>
-                        </span>
-                    </button>
-                ))}
+                {from && <ChatsSection from={from} chats={chats} />}
             </div>
         </section>
     );

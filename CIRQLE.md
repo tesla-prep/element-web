@@ -197,7 +197,14 @@ sits under New group for staff who may change the book. The number's own phone b
 (what WhatsApp copied from its phone) is no longer offered. Contacts and New chat
 read the book when they open, every 30 s while open and when the window comes back
 to the front (`useLiveBook` in `cirqle/CirqlePhoneBook.ts`), so a change anyone makes
-shows on every open screen within a minute.
+shows on every open screen within a minute. The panel's parts are in
+`cirqle/CirqleNewChatSections.tsx`.
+
+The e2e `playwright/e2e/cirqle/contacts.spec.ts` goes rail → Contacts → New contact →
+Save → New chat on a real Synapse (testcontainers), with the relay bot's API answered
+by `page.route`. With colima on a Mac: `colima start`, then run it with
+`DOCKER_HOST=unix://$HOME/.colima/default/docker.sock TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE=/var/run/docker.sock`
+(`cd apps/web && pnpm test:playwright -- playwright/e2e/cirqle/contacts.spec.ts --project=Chrome --ignore-snapshots`).
 
 ## Leave group
 
