@@ -8,7 +8,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 import React from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { type MatrixClient, Method } from "matrix-js-sdk/src/matrix";
+import { type MatrixClient, MatrixEvent, Method, Room } from "matrix-js-sdk/src/matrix";
 import { act, fireEvent, render, screen } from "test-utils-rtl";
 import { stubClient } from "test-utils";
 
@@ -16,13 +16,18 @@ import MatrixClientContext from "../contexts/MatrixClientContext";
 import { SDKContextClass } from "../contexts/SDKContextClass";
 import { MetaSpace } from "../stores/spaces";
 import { CirqleNewChat, splitLabel } from "./CirqleNewChat";
+import { CirqleContacts } from "./CirqleContacts";
 import { bookLabel, filterBook } from "./CirqlePhoneBook";
 import { type Inbox } from "./CirqleInboxes";
 
 const SLAVA_TEST = "!slava-test:server";
 const OTHER = "!other:server";
 
-const mocked = vi.hoisted(() => ({ spaces: [] as string[], disconnected: [] as string[] }));
+const mocked = vi.hoisted(() => ({
+    spaces: [] as string[],
+    disconnected: [] as string[],
+    rooms: [] as Room[],
+}));
 
 vi.mock("./useCirqleChats", () => ({
     // The inboxes are read again on every room list update: new objects each render
@@ -33,15 +38,17 @@ vi.mock("./useCirqleChats", () => ({
             label: spaceId === "!slava-test:server" ? "slava test" : "Other",
             phone: undefined,
             accountName: spaceId === "!slava-test:server" ? "wa-efa4b19c" : "wa-bba81064",
-            childIds: new Set(),
+            childIds: new Set(spaceId === "!slava-test:server" ? mocked.rooms.map((room) => room.roomId) : []),
             connected: !mocked.disconnected.includes(spaceId),
             contactPhones: new Map(),
             ownUsers: new Set(),
         })),
 }));
 
+vi.mock("../components/views/avatars/RoomAvatar", () => ({ default: () => null }));
+
 vi.mock("../stores/room-list-v3/RoomListStoreV3", () => ({
-    default: { instance: { getSortedRooms: () => [] } },
+    default: { instance: { getSortedRooms: () => mocked.rooms } },
 }));
 
 describe("splitLabel", () => {
@@ -86,61 +93,74 @@ describe("phone book", () => {
     });
 });
 
+let client: MatrixClient;
+let book: typeof BOOK;
+let canEdit: boolean;
+let activeSpace: string;
+
+function setUp(): void {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    client = stubClient();
+    activeSpace = MetaSpace.Home;
+    mocked.spaces = [OTHER, SLAVA_TEST];
+    mocked.disconnected = [];
+    mocked.rooms = [];
+    book = BOOK;
+    canEdit = false;
+    Object.assign(client, {
+        http: {
+            authedRequest: vi.fn().mockImplementation(async (_method: Method, path: string) =>
+                path === "/com.cirqle/contacts"
+                    ? {
+                          contacts: book.map((contact) => ({ number: contact.number, name: contact.name })),
+                          can_edit: canEdit,
+                      }
+                    : { contacts: book },
+            ),
+        },
+    });
+    vi.spyOn(SDKContextClass.instance.spaceStore, "activeSpace", "get").mockImplementation(() => activeSpace);
+    client.searchUserDirectory = vi.fn().mockResolvedValue({
+        limited: false,
+        results: [
+            {
+                user_id: "@newchat_whatsapp_wa-efa4b19c_=79990001122:server",
+                display_name: "Test Person, +79990001122 · slava test",
+            },
+            { user_id: "@newchat_whatsapp_wa-bba81064_=79990001122:server", display_name: "+79990001122 · Other" },
+        ],
+    });
+}
+
+function tearDown(): void {
+    vi.useRealTimers();
+}
+
+const panel = (): React.ReactElement => (
+    <MatrixClientContext.Provider value={client}>
+        <CirqleNewChat />
+    </MatrixClientContext.Provider>
+);
+const writeFrom = (): HTMLButtonElement => screen.getByRole("button", { name: /^Write from/ });
+// The name of the number written from, as Write from shows it
+const writtenFrom = (): string => writeFrom().querySelector(".cirqle_NumberPicker_name")?.textContent ?? "";
+const offered = (): string[] => {
+    fireEvent.click(writeFrom());
+    const names = screen.getAllByRole("option").map((o) => o.querySelector(".cirqle_NumberPicker_name")?.textContent);
+    fireEvent.click(writeFrom());
+    return names as string[];
+};
+const pickNumber = (name: string): void => {
+    fireEvent.click(writeFrom());
+    fireEvent.click(screen.getByRole("option", { name: new RegExp(`^${name}`) }));
+};
+const search = (term: string): void => {
+    fireEvent.change(screen.getByRole("textbox", { name: "Search name or number" }), { target: { value: term } });
+};
+
 describe("CirqleNewChat", () => {
-    let client: MatrixClient;
-    let book: typeof BOOK;
-    let activeSpace: string;
-
-    beforeEach(() => {
-        vi.useFakeTimers({ shouldAdvanceTime: true });
-        client = stubClient();
-        activeSpace = MetaSpace.Home;
-        mocked.spaces = [OTHER, SLAVA_TEST];
-        mocked.disconnected = [];
-        book = BOOK;
-        Object.assign(client, {
-            http: { authedRequest: vi.fn().mockImplementation(async () => ({ contacts: book })) },
-        });
-        vi.spyOn(SDKContextClass.instance.spaceStore, "activeSpace", "get").mockImplementation(() => activeSpace);
-        client.searchUserDirectory = vi.fn().mockResolvedValue({
-            limited: false,
-            results: [
-                {
-                    user_id: "@newchat_whatsapp_wa-efa4b19c_=79990001122:server",
-                    display_name: "Test Person, +79990001122 · slava test",
-                },
-                { user_id: "@newchat_whatsapp_wa-bba81064_=79990001122:server", display_name: "+79990001122 · Other" },
-            ],
-        });
-    });
-
-    afterEach(() => {
-        vi.useRealTimers();
-    });
-
-    const panel = (): React.ReactElement => (
-        <MatrixClientContext.Provider value={client}>
-            <CirqleNewChat />
-        </MatrixClientContext.Provider>
-    );
-    const writeFrom = (): HTMLButtonElement => screen.getByRole("button", { name: /^Write from/ });
-    // The name of the number written from, as Write from shows it
-    const writtenFrom = (): string => writeFrom().querySelector(".cirqle_NumberPicker_name")?.textContent ?? "";
-    const offered = (): string[] => {
-        fireEvent.click(writeFrom());
-        const names = screen
-            .getAllByRole("option")
-            .map((o) => o.querySelector(".cirqle_NumberPicker_name")?.textContent);
-        fireEvent.click(writeFrom());
-        return names as string[];
-    };
-    const pickNumber = (name: string): void => {
-        fireEvent.click(writeFrom());
-        fireEvent.click(screen.getByRole("option", { name: new RegExp(`^${name}`) }));
-    };
-    const search = (term: string): void => {
-        fireEvent.change(screen.getByRole("textbox", { name: "Search name or number" }), { target: { value: term } });
-    };
+    beforeEach(setUp);
+    afterEach(tearDown);
 
     it("searches once per typed term although the inboxes are re-read", async () => {
         activeSpace = SLAVA_TEST;
@@ -213,7 +233,7 @@ describe("CirqleNewChat", () => {
         expect(writtenFrom()).toBe("Other");
     });
 
-    it("lists the number's whole phone book by name, and the search filters it", async () => {
+    it("lists the shared book by name as Contacts, and the search filters it", async () => {
         activeSpace = SLAVA_TEST;
         render(panel());
         expect(await screen.findByText("Anna Client")).toBeTruthy();
@@ -228,7 +248,7 @@ describe("CirqleNewChat", () => {
             [...document.querySelectorAll(".cirqle_NewChat_bookRow .cirqle_NewChat_name")].map(
                 (n) => n.textContent ?? "",
             );
-        expect(screen.getByText("Contacts on slava test")).toBeTruthy();
+        expect(screen.getByText("Contacts")).toBeTruthy();
         expect(listed()).toEqual(["Anna Client", "boris", "+1 469 555 8888"]);
         search("BOR");
         await act(() => vi.advanceTimersByTimeAsync(400));
@@ -277,15 +297,17 @@ describe("CirqleNewChat", () => {
         expect(document.querySelectorAll(".cirqle_NewChat_found")).toHaveLength(1);
     });
 
-    it("says so when the number's phone book is empty", async () => {
+    it("says so when the book is empty, and still asks the bridge only for a typed number", async () => {
         activeSpace = SLAVA_TEST;
         book = [];
         render(panel());
-        expect(await screen.findByText(/^No contacts in this number's phone book/)).toBeTruthy();
-        // Without a book the search asks the bridge, as before
+        expect(await screen.findByText("No contacts yet. Type a number to start a chat.")).toBeTruthy();
         search("Test");
         await act(() => vi.advanceTimersByTimeAsync(400));
-        expect(client.searchUserDirectory).toHaveBeenCalledWith({ term: "Test", limit: 30 });
+        expect(client.searchUserDirectory).not.toHaveBeenCalled();
+        search("+7 918 188 8877");
+        await act(() => vi.advanceTimersByTimeAsync(400));
+        expect(client.searchUserDirectory).toHaveBeenCalledWith({ term: "+7 918 188 8877", limit: 30 });
     });
 
     it("New chat puts the cursor in the search", () => {
@@ -295,5 +317,104 @@ describe("CirqleNewChat", () => {
         fireEvent.click(screen.getByRole("button", { name: /^New chat/ }));
         expect(document.activeElement).toBe(input);
         expect(screen.getByRole("button", { name: "New group" })).toBeTruthy();
+    });
+});
+
+describe("CirqleNewChat chats under the book", () => {
+    beforeEach(setUp);
+    afterEach(tearDown);
+
+    it("lists the number's chats under the book, without anyone the book has", async () => {
+        const chat = (id: string, name: string): Room => {
+            const room = new Room(id, client, client.getSafeUserId());
+            room.name = name;
+            room.currentState.setStateEvents([
+                new MatrixEvent({
+                    type: "m.bridge",
+                    state_key: "server/whatsapp",
+                    event_id: `$bridge${id}`,
+                    room_id: id,
+                    sender: "@whatsappbot:server",
+                    content: { "protocol": { id: "whatsapp" }, "com.beeper.room_type": "dm" },
+                }),
+            ]);
+            return room;
+        };
+        mocked.rooms = [chat("!boris:server", "+14695552222"), chat("!zoe:server", "Zoe Parent +79181888877")];
+        activeSpace = SLAVA_TEST;
+        render(panel());
+        expect(await screen.findByText("Chats on slava test")).toBeTruthy();
+        const sections = [...document.querySelectorAll(".cirqle_NewChat_section")].map((n) => n.textContent);
+        expect(sections).toEqual(["Contacts", "Chats on slava test"]);
+        const chats = [...document.querySelectorAll(".cirqle_NewChat_contact:not(.cirqle_NewChat_bookRow)")];
+        expect(chats.map((n) => n.querySelector(".cirqle_NewChat_name")?.textContent)).toEqual([
+            "Zoe Parent +79181888877",
+        ]);
+        search("zoe");
+        await act(() => vi.advanceTimersByTimeAsync(400));
+        expect(document.querySelectorAll(".cirqle_NewChat_bookRow")).toHaveLength(0);
+        expect(screen.getByText("Chats on slava test")).toBeTruthy();
+    });
+});
+
+describe("CirqleNewChat book refresh", () => {
+    beforeEach(setUp);
+    afterEach(tearDown);
+
+    it("drops a contact deleted elsewhere from both open New chat and Contacts within a minute", async () => {
+        activeSpace = SLAVA_TEST;
+        render(
+            <MatrixClientContext.Provider value={client}>
+                <CirqleNewChat />
+                <CirqleContacts />
+            </MatrixClientContext.Provider>,
+        );
+        expect(await screen.findAllByText("boris")).toHaveLength(2);
+        const reads = vi.mocked(client.http.authedRequest).mock.calls.length;
+
+        book = BOOK.filter((contact) => contact.name !== "boris");
+        await act(() => vi.advanceTimersByTimeAsync(60 * 1000));
+        expect(screen.queryAllByText("boris")).toHaveLength(0);
+        expect(screen.getAllByText("Anna Client")).toHaveLength(2);
+        expect(vi.mocked(client.http.authedRequest).mock.calls.length).toBeGreaterThan(reads);
+    });
+
+    it("reads the book again when the window comes back to the front", async () => {
+        activeSpace = SLAVA_TEST;
+        render(panel());
+        expect(await screen.findByText("boris")).toBeTruthy();
+        book = [
+            ...BOOK,
+            { user_id: "@newchat_whatsapp_wa-efa4b19c_=79181888877:server", name: "Zoe", number: "+79181888877" },
+        ];
+        await act(async () => {
+            window.dispatchEvent(new Event("focus"));
+        });
+        expect(await screen.findByText("Zoe")).toBeTruthy();
+    });
+});
+
+describe("CirqleNewChat New contact", () => {
+    beforeEach(setUp);
+    afterEach(tearDown);
+
+    it("offers New contact under New group only to staff who may change the book", async () => {
+        const { unmount } = render(panel());
+        await act(() => vi.advanceTimersByTimeAsync(10));
+        expect(screen.queryByRole("button", { name: "New contact" })).toBeNull();
+        unmount();
+
+        canEdit = true;
+        render(panel());
+        expect(await screen.findByRole("button", { name: "New contact" })).toBeTruthy();
+        expect(client.http.authedRequest).toHaveBeenCalledWith(
+            Method.Post,
+            "/com.cirqle/contacts",
+            undefined,
+            {},
+            { prefix: "/_matrix/client/unstable" },
+        );
+        const actions = [...document.querySelectorAll(".cirqle_NewChat_actionLabel")].map((n) => n.textContent);
+        expect(actions).toEqual(["New chat", "New group", "New contact"]);
     });
 });

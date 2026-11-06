@@ -98,6 +98,14 @@ export const ProfileIcon = (p: IconProps): JSX.Element => (
     </Stroke>
 );
 
+export const ContactsIcon = (p: IconProps): JSX.Element => (
+    <Stroke {...p}>
+        <rect x="5" y="3" width="15" height="18" rx="2" />
+        <circle cx="12.5" cy="10" r="2.5" />
+        <path d="M8.5 17a4 4 0 0 1 8 0M3 7.5h3M3 12h3M3 16.5h3" />
+    </Stroke>
+);
+
 export const AddMemberIcon = (p: IconProps): JSX.Element => (
     <Stroke size={20} {...p}>
         <circle cx="9" cy="8" r="3.5" />

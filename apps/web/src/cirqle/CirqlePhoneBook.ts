@@ -4,13 +4,13 @@ Copyright 2026 CIRQLE.
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
-// The phone book of the number New chat writes from. The relay bot answers
-// POST /_matrix/client/unstable/com.cirqle/phone_book with every contact of the
-// number, as the same @newchat_<bridge>_<inbox>_<contact> users the search
-// offers (relay bot README, «Phone book»), so picking one starts the chat the
-// same way.
+// The contacts New chat offers on the number it writes from. The relay bot answers
+// POST /_matrix/client/unstable/com.cirqle/phone_book with CIRQLE's shared book
+// (CirqleSharedContacts, the same on every number; not the book of the number's
+// phone), as the same @newchat_<bridge>_<inbox>_=<digits> users the search offers
+// (relay bot README, «Phone book»), so picking one starts the chat the same way.
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Method, type MatrixClient } from "matrix-js-sdk/src/matrix";
 import { logger } from "matrix-js-sdk/src/logger";
 
@@ -18,7 +18,12 @@ import { formatPhone, type Network } from "./CirqleInboxes";
 
 export interface BookContact {
     user_id: string;
-    /** The name in the number's phone book, else the number */
+    /** The name in the book, else the number */
+    name: string;
+    number?: string;
+}
+
+interface Named {
     name: string;
     number?: string;
 }
@@ -26,17 +31,58 @@ export interface BookContact {
 const collator = new Intl.Collator(undefined, { sensitivity: "base", numeric: true });
 const isNumber = (text: string): boolean => /^\+?[\d\s().-]{7,}$/.test(text);
 
-/** The book sorted by name, contacts it knows only by their number last; undefined while it loads, null if it failed */
+/** By name, contacts known only by their number last */
+export function sortBook<T extends Named>(book: T[]): T[] {
+    return [...book].sort(
+        (a, b) => Number(isNumber(a.name)) - Number(isNumber(b.name)) || collator.compare(a.name, b.name),
+    );
+}
+
+/** How often an open Contacts or New chat reads the book again: a change made elsewhere shows within a minute */
+export const BOOK_REFRESH_MS = 30 * 1000;
+
+/**
+ * What `read` answers for `key`, read when the key changes, every BOOK_REFRESH_MS and when the
+ * window comes back to the front; undefined while it first loads, null if that failed. A later
+ * read that fails keeps what was shown.
+ */
+export function useLiveBook<T>(key: string | undefined, read: () => Promise<T>): T | null | undefined {
+    const [book, setBook] = useState<{ key: string; value: T | null }>();
+    const readRef = useRef(read);
+    readRef.current = read;
+    useEffect(() => {
+        if (!key) return;
+        let stale = false;
+        const load = (): void => {
+            readRef.current().then(
+                (value) => {
+                    if (!stale) setBook({ key, value });
+                },
+                (e) => {
+                    logger.warn("CIRQLE contact book failed", e);
+                    if (!stale) setBook((shown) => (shown?.key === key ? shown : { key, value: null }));
+                },
+            );
+        };
+        load();
+        const timer = window.setInterval(load, BOOK_REFRESH_MS);
+        window.addEventListener("focus", load);
+        return () => {
+            stale = true;
+            window.clearInterval(timer);
+            window.removeEventListener("focus", load);
+        };
+    }, [key]);
+    return book && book.key === key ? book.value : undefined;
+}
+
+/** The book on the number New chat writes from, sorted by name, contacts it knows only by their number last */
 export function usePhoneBook(
     client: MatrixClient,
     network: Network | undefined,
     account: string | undefined,
 ): BookContact[] | null | undefined {
-    const [book, setBook] = useState<BookContact[] | null>();
-    useEffect(() => {
-        setBook(undefined);
-        if (!network || !account) return;
-        let stale = false;
+    return useLiveBook(network && account ? `${network}/${account}` : undefined, () =>
         client.http
             .authedRequest<{ contacts: BookContact[] }>(
                 Method.Post,
@@ -45,28 +91,12 @@ export function usePhoneBook(
                 { network, account },
                 { prefix: "/_matrix/client/unstable" },
             )
-            .then((r) => {
-                if (stale) return;
-                setBook(
-                    [...r.contacts].sort(
-                        (a, b) =>
-                            Number(isNumber(a.name)) - Number(isNumber(b.name)) || collator.compare(a.name, b.name),
-                    ),
-                );
-            })
-            .catch((e) => {
-                logger.warn("CIRQLE phone book failed", e);
-                if (!stale) setBook(null);
-            });
-        return () => {
-            stale = true;
-        };
-    }, [client, network, account]);
-    return book;
+            .then((r) => sortBook(r.contacts)),
+    );
 }
 
 /** Contacts whose name contains the term, or whose number has the digits of a typed number */
-export function filterBook(book: BookContact[], term: string): BookContact[] {
+export function filterBook<T extends Named>(book: T[], term: string): T[] {
     const needle = term.trim().toLocaleLowerCase();
     if (!needle) return book;
     const digits = /^\+?[\d\s().-]+$/.test(needle) ? needle.replace(/[^\d]/g, "") : "";

@@ -30,6 +30,7 @@ import { chatPreview } from "./CirqlePreview";
 import {
     ChannelIcon,
     ChatsIcon,
+    ContactsIcon,
     GroupIcon,
     KebabIcon,
     LeaveIcon,
@@ -133,6 +134,21 @@ const CHIP_LABELS: Record<CirqleChip, string> = {
     groups: "Groups",
 };
 
+/** What the rail holds on a computer, in the list's menu on a phone: Channels or Chats, and Contacts */
+function PhoneRailItems({ section, channels }: { section: CirqleSection; channels: boolean }): JSX.Element {
+    return (
+        <>
+            {section === "chats" && channels && (
+                <MenuItem Icon={ChannelIcon} label="Channels" onSelect={() => CirqleUiStore.showSection("channels")} />
+            )}
+            {section === "channels" && (
+                <MenuItem Icon={ChatsIcon} label="Chats" onSelect={() => CirqleUiStore.showSection("chats")} />
+            )}
+            <MenuItem Icon={ContactsIcon} label="Contacts" onSelect={() => CirqleUiStore.openContacts()} />
+        </>
+    );
+}
+
 export function CirqleChatList({ section }: { section: CirqleSection }): JSX.Element {
     const sdkContext = useContext(SDKContext);
     const inboxes = useCirqleInboxes();
@@ -211,16 +227,7 @@ export function CirqleChatList({ section }: { section: CirqleSection }): JSX.Ele
                         />
                     )}
                     {/* A phone has no rail: what it holds is here, as in WhatsApp's menu */}
-                    {phone && section === "chats" && channels && (
-                        <MenuItem
-                            Icon={ChannelIcon}
-                            label="Channels"
-                            onSelect={() => CirqleUiStore.showSection("channels")}
-                        />
-                    )}
-                    {phone && section === "channels" && (
-                        <MenuItem Icon={ChatsIcon} label="Chats" onSelect={() => CirqleUiStore.showSection("chats")} />
-                    )}
+                    {phone && <PhoneRailItems section={section} channels={channels} />}
                     <MenuItem Icon={SettingsIcon} label="Settings" onSelect={() => dis.fire(Action.ViewUserSettings)} />
                     {phone && (
                         <MenuItem

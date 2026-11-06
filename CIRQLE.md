@@ -16,7 +16,7 @@ Everything lives in two places; upstream files only get one-line hooks marked
 
 | Where | What |
 |---|---|
-| `apps/web/src/cirqle/` | rail (Channels only while a number has a channel), chat list and its order, number picker, New chat, New group, Group info, Contact info, member card, header, empty side, composer buttons, timeline sides, forced settings |
+| `apps/web/src/cirqle/` | rail (Channels only while a number has a channel), chat list and its order, number picker, New chat, New group, Contacts and the contact form, Group info, Contact info, member card, header, empty side, composer buttons, timeline sides, forced settings |
 | `apps/web/res/themes/light/css/cirqle/` | the look, imported unlayered at the end of `light.pcss` so it wins over Element's layered CSS |
 | `apps/web/res/fonts/Source_Serif_4/`, `apps/web/res/img/cirqle/` | heading font (OFL) and the shield logo |
 | `cirqle/` | `config.json`, `manifest.json`, `deploy.sh`, `nginx.conf` |
@@ -138,7 +138,7 @@ The same app on a phone, laid out like WhatsApp there (`_narrow.pcss`, `cirqle/C
   list fills the screen and an open chat covers it, with a back arrow; a tablet keeps the
   computer layout, and the list never collapses there;
 - the ⋮ menu of the list holds what the rail holds on a computer: New group, Channels,
-  Settings, Profile, Sign out;
+  Contacts, Settings, Profile, Sign out;
 - every field has 16 px text on a touch screen (iOS zooms into smaller ones), and the app
   is as tall as the visual viewport, so the keyboard raises the composer instead of
   scrolling the page away;
@@ -167,6 +167,44 @@ storage, separate from Safari: staff sign in once more inside it.
 
 The icons are drawn from `res/img/cirqle/cirqle-shield-outlined-marble.svg` on
 CIRQLE green; to redraw them, render that SVG at the sizes in `res/cirqle-icons/`.
+
+## New chat and Contacts
+
+CIRQLE has one contact book, the same on every number (VLA-864). The relay bot
+keeps it (tesla-prep/cirqle-agents, one state event per contact keyed by the
+number in E.164) and answers, all `POST` under `/_matrix/client/unstable`:
+
+- `/com.cirqle/contacts` `{}`: the book and `can_edit`, true for staff with Write on
+  "Messenger contacts" in Directory;
+- `/com.cirqle/contacts/save` `{number, name, previous_number?}`: add, or change the
+  contact that has `previous_number` (its name, its number or both);
+- `/com.cirqle/contacts/delete` `{number}`;
+- `/com.cirqle/phone_book` `{network, account}`: the same book as the number's
+  `@newchat_<bridge>_<inbox>_=<digits>` users, which start a chat as the search does.
+
+Contacts (the rail, or ⋮ on a phone; `cirqle/CirqleContacts.tsx`, the form `cirqle/CirqleContactForm.tsx`, `cirqle/CirqleSharedContacts.ts`)
+lists the book by name, searched by name or digits. Staff who may change it get
+New contact on top and Edit contact (with Delete contact… after a confirmation)
+on a click; for everyone else a click opens New chat with the number, where they
+pick the number to write from. The bot's refusals ("… is already in contacts as «…»")
+are shown under the form as they are.
+
+New chat (`cirqle/CirqleNewChat.tsx`) lists Contacts, the book on the picked number,
+and under it "Chats on <number>", the number's private chats with anyone the book
+does not have (by the number). The book answers a name; the bridge is asked
+(`user_directory/search`) only for a typed number or Telegram username. New contact
+sits under New group for staff who may change the book. The number's own phone book
+(what WhatsApp copied from its phone) is no longer offered. Contacts and New chat
+read the book when they open, every 30 s while open and when the window comes back
+to the front (`useLiveBook` in `cirqle/CirqlePhoneBook.ts`), so a change anyone makes
+shows on every open screen within a minute. The panel's parts are in
+`cirqle/CirqleNewChatSections.tsx`.
+
+The e2e `playwright/e2e/cirqle/contacts.spec.ts` goes rail → Contacts → New contact →
+Save → New chat on a real Synapse (testcontainers), with the relay bot's API answered
+by `page.route`. With colima on a Mac: `colima start`, then run it with
+`DOCKER_HOST=unix://$HOME/.colima/default/docker.sock TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE=/var/run/docker.sock`
+(`cd apps/web && pnpm test:playwright -- playwright/e2e/cirqle/contacts.spec.ts --project=Chrome --ignore-snapshots`).
 
 ## Leave group
 

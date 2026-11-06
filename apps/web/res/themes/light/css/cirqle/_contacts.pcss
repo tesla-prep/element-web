@@ -1,0 +1,91 @@
+/*
+Copyright 2026 CIRQLE.
+
+SPDX-License-Identifier: AGPL-3.0-only
+
+Contacts and the New contact / Edit contact form (VLA-864), WhatsApp Web style:
+panels in place of the chat list, drawn with New chat's header, search and rows
+(_panels.pcss); the colours are the palette's, so the dark theme follows.
+*/
+
+.cirqle_ContactForm {
+    overflow-y: auto;
+}
+
+.cirqle_ContactForm_field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px 20px 14px;
+}
+
+.cirqle_ContactForm_field label {
+    font-size: 13px;
+    color: var(--cirqle-ink-2);
+}
+
+.cirqle_ContactForm_field input {
+    min-width: 0;
+    height: 40px;
+    padding: 0 2px;
+    border: 0;
+    border-bottom: 1px solid var(--cirqle-pill-line);
+    border-radius: 0;
+    background: transparent;
+    font: inherit;
+    font-size: 16px;
+    color: var(--cirqle-ink);
+    outline: none;
+}
+
+.cirqle_ContactForm_field input:focus {
+    border-bottom: 2px solid var(--cirqle-green-text);
+    margin-bottom: -1px;
+}
+
+.cirqle_ContactForm_field input::placeholder {
+    color: var(--cirqle-ink-3);
+}
+
+.cirqle_ContactForm_field input:disabled {
+    opacity: 0.6;
+}
+
+.cirqle_ContactForm_note,
+.cirqle_ContactForm_error {
+    margin: -4px 20px 14px;
+    font-size: 13px;
+    color: var(--cirqle-ink-3);
+}
+
+.cirqle_ContactForm_error {
+    color: var(--cirqle-danger);
+}
+
+.cirqle_ContactForm .cirqle_NewGroup_create {
+    margin-top: 6px;
+}
+
+/* WhatsApp's red "Delete contact" row under the form */
+.cirqle_ContactForm_delete {
+    align-self: stretch;
+    margin-top: 24px;
+    padding: 14px 20px;
+    border: 0;
+    border-top: 1px solid var(--cirqle-line-soft);
+    background: transparent;
+    font: inherit;
+    font-size: 15px;
+    text-align: left;
+    color: var(--cirqle-danger);
+    cursor: pointer;
+}
+
+.cirqle_ContactForm_delete:hover {
+    background: var(--cirqle-hover);
+}
+
+.cirqle_ContactForm_delete:disabled {
+    cursor: default;
+    opacity: 0.6;
+}

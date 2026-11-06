@@ -28,7 +28,8 @@ import BaseAvatar from "../components/views/avatars/BaseAvatar";
 import RoomListStoreV3 from "../stores/room-list-v3/RoomListStoreV3";
 import { ArrowRightIcon, BackIcon, CheckIcon, CloseIcon, SearchIcon } from "./CirqleIcons";
 import { chatKind, type Inbox, type Network, privateChatContact, stripNetworkSuffix } from "./CirqleInboxes";
-import { CirqleWriteFrom, contactSub, splitLabel } from "./CirqleNewChat";
+import { CirqleWriteFrom, splitLabel } from "./CirqleNewChat";
+import { contactSub } from "./CirqleNewChatSections";
 import { CirqleUiStore } from "./CirqleUiStore";
 import { useCirqleInboxes } from "./useCirqleChats";
 

@@ -154,6 +154,11 @@ Contact info and the member card share Group info's look.
     cursor: pointer;
 }
 
+/* A long name is cut, not the avatar squeezed */
+.cirqle_NewChat_row > .mx_BaseAvatar {
+    flex-shrink: 0;
+}
+
 .cirqle_NewChat_row:hover {
     background: var(--cirqle-hover);
 }
