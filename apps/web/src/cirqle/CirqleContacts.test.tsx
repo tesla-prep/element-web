@@ -25,59 +25,59 @@ vi.mock("./CirqleNewChat", () => ({ CirqleNewChat: () => <p>New chat {CirqleUiSt
 const UNSTABLE = { prefix: "/_matrix/client/unstable" };
 const LONG = "qa-Alexandra Konstantinopolskaya-Vasilyeva Junior";
 
-describe("Contacts", () => {
-    let client: MatrixClient;
-    let contacts: SharedContact[];
-    let canEdit: boolean;
-    let answers: boolean[];
-    let refusal: MatrixError | undefined;
+let client: MatrixClient;
+let contacts: SharedContact[];
+let canEdit: boolean;
+let answers: boolean[];
+let refusal: MatrixError | undefined;
 
-    beforeEach(() => {
-        client = stubClient();
-        contacts = [
-            { number: "+79181888877", name: "qa-Boris" },
-            { number: "+14695550123", name: LONG },
-            { number: "+14695551111", name: "anna qa" },
-        ];
-        canEdit = true;
-        answers = [true];
-        refusal = undefined;
-        Object.assign(client, {
-            http: {
-                authedRequest: vi.fn().mockImplementation(async (_method: Method, path: string) => {
-                    if (path === "/com.cirqle/contacts") return { contacts, can_edit: canEdit };
-                    if (refusal) throw refusal;
-                    return {};
-                }),
-            },
-        });
-        vi.spyOn(Modal, "createDialog").mockImplementation(
-            () =>
-                ({ finished: Promise.resolve([answers.shift()]), close: vi.fn() }) as unknown as ReturnType<
-                    typeof Modal.createDialog
-                >,
-        );
-        CirqleUiStore.openContacts();
+beforeEach(() => {
+    client = stubClient();
+    contacts = [
+        { number: "+79181888877", name: "qa-Boris" },
+        { number: "+14695550123", name: LONG },
+        { number: "+14695551111", name: "anna qa" },
+    ];
+    canEdit = true;
+    answers = [true];
+    refusal = undefined;
+    Object.assign(client, {
+        http: {
+            authedRequest: vi.fn().mockImplementation(async (_method: Method, path: string) => {
+                if (path === "/com.cirqle/contacts") return { contacts, can_edit: canEdit };
+                if (refusal) throw refusal;
+                return {};
+            }),
+        },
     });
-
-    afterEach(() => {
-        act(() => CirqleUiStore.closePanel());
-        vi.restoreAllMocks();
-    });
-
-    const column = (): React.ReactElement => (
-        <MatrixClientContext.Provider value={client}>
-            <CirqleLeftColumn />
-        </MatrixClientContext.Provider>
+    vi.spyOn(Modal, "createDialog").mockImplementation(
+        () =>
+            ({ finished: Promise.resolve([answers.shift()]), close: vi.fn() }) as unknown as ReturnType<
+                typeof Modal.createDialog
+            >,
     );
-    const names = (): string[] =>
-        [...document.querySelectorAll(".cirqle_NewChat_bookRow .cirqle_NewChat_name")].map((n) => n.textContent ?? "");
-    const requests = (): unknown[][] =>
-        vi.mocked(client.http.authedRequest).mock.calls.filter((call) => call[1] !== "/com.cirqle/contacts");
-    const type = (label: string, value: string): void => {
-        fireEvent.change(screen.getByLabelText(label), { target: { value } });
-    };
+    CirqleUiStore.openContacts();
+});
 
+afterEach(() => {
+    act(() => CirqleUiStore.closePanel());
+    vi.restoreAllMocks();
+});
+
+const column = (): React.ReactElement => (
+    <MatrixClientContext.Provider value={client}>
+        <CirqleLeftColumn />
+    </MatrixClientContext.Provider>
+);
+const names = (): string[] =>
+    [...document.querySelectorAll(".cirqle_NewChat_bookRow .cirqle_NewChat_name")].map((n) => n.textContent ?? "");
+const requests = (): unknown[][] =>
+    vi.mocked(client.http.authedRequest).mock.calls.filter((call) => call[1] !== "/com.cirqle/contacts");
+const type = (label: string, value: string): void => {
+    fireEvent.change(screen.getByLabelText(label), { target: { value } });
+};
+
+describe("Contacts", () => {
     it("lists the shared book by name with each number, and filters by name or digits", async () => {
         render(column());
         expect(await screen.findByText(LONG)).toBeTruthy();
@@ -119,7 +119,9 @@ describe("Contacts", () => {
         fireEvent.click(screen.getByText("qa-Boris"));
         expect(screen.getByText("New chat +7 918 188 8877")).toBeTruthy();
     });
+});
 
+describe("Contacts: new contact", () => {
     it("adds a contact, then goes back to the list and reads it again", async () => {
         render(column());
         fireEvent.click(await screen.findByRole("button", { name: "New contact" }));
@@ -151,6 +153,22 @@ describe("Contacts", () => {
         ).toHaveLength(2);
     });
 
+    it("shows the relay bot's refusal as it is and stays on the form", async () => {
+        refusal = new MatrixError(
+            { errcode: "M_UNKNOWN", error: "+14695551111 is already in contacts as «anna qa»" },
+            409,
+        );
+        render(column());
+        fireEvent.click(await screen.findByRole("button", { name: "New contact" }));
+        type("Name", "qa-Anna 2");
+        type("Phone number", "+1 469 555 1111");
+        await act(async () => fireEvent.keyDown(screen.getByLabelText("Phone number"), { key: "Enter" }));
+        expect((await screen.findByRole("alert")).textContent).toBe("+14695551111 is already in contacts as «anna qa»");
+        expect(screen.getByRole("heading", { name: "New contact" })).toBeTruthy();
+    });
+});
+
+describe("Contacts: edit contact", () => {
     it("changes a contact's name and number by its previous number", async () => {
         render(column());
         fireEvent.click(await screen.findByText("qa-Boris"));
@@ -174,20 +192,6 @@ describe("Contacts", () => {
         expect(await screen.findByRole("heading", { name: "Contacts" })).toBeTruthy();
     });
 
-    it("shows the relay bot's refusal as it is and stays on the form", async () => {
-        refusal = new MatrixError(
-            { errcode: "M_UNKNOWN", error: "+14695551111 is already in contacts as «anna qa»" },
-            409,
-        );
-        render(column());
-        fireEvent.click(await screen.findByRole("button", { name: "New contact" }));
-        type("Name", "qa-Anna 2");
-        type("Phone number", "+1 469 555 1111");
-        await act(async () => fireEvent.keyDown(screen.getByLabelText("Phone number"), { key: "Enter" }));
-        expect((await screen.findByRole("alert")).textContent).toBe("+14695551111 is already in contacts as «anna qa»");
-        expect(screen.getByRole("heading", { name: "New contact" })).toBeTruthy();
-    });
-
     it("deletes a contact after the confirmation, and not without it", async () => {
         render(column());
         fireEvent.click(await screen.findByText("qa-Boris"));
@@ -208,7 +212,9 @@ describe("Contacts", () => {
         ]);
         expect(await screen.findByRole("heading", { name: "Contacts" })).toBeTruthy();
     });
+});
 
+describe("Contacts: New contact from New chat", () => {
     it("goes back to New chat when New contact was opened there", async () => {
         act(() => CirqleUiStore.openNewChat());
         render(column());

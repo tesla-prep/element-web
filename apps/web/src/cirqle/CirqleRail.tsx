@@ -39,30 +39,19 @@ export function confirmSignOut(): void {
     });
 }
 
-export function CirqleRail(): JSX.Element {
-    const client = useMatrixClientContext();
+/** Chats (with the number of unread chats), Channels while a number has one, Contacts */
+function RailSections(): JSX.Element {
     const { section, panel } = useCirqleUi();
     const unreadChats = useCirqleUnreadChats();
     const channels = useCirqleHasChannels();
-    const [profileOpen, setProfileOpen] = useState(false);
-    const profile = useEventEmitterState(OwnProfileStore.instance, UPDATE_EVENT, () => ({
-        name: OwnProfileStore.instance.displayName ?? client.getUserId() ?? "",
-        avatarUrl: OwnProfileStore.instance.getHttpAvatarUrl(72),
-    }));
-
-    useEffect(() => watchCirqleInviteRefusals(client), [client]);
-    useEffect(() => watchCirqlePush(client), [client]);
     useEffect(() => {
         if (!channels && CirqleUiStore.section === "channels") CirqleUiStore.showSection("chats");
     }, [channels]);
-
-    const openSettings = useCallback(() => dis.fire(Action.ViewUserSettings), []);
     const contactsActive = panel === "contacts" || panel === "contactForm";
     const chatsActive = !contactsActive && (section === "chats" || panel !== "list");
 
     return (
-        <nav className="cirqle_Rail" aria-label="Sections">
-            <img className="cirqle_Rail_logo" src={logoUrl} alt="CIRQLE" />
+        <>
             <button
                 className="cirqle_Rail_button"
                 aria-label="Chats"
@@ -91,30 +80,57 @@ export function CirqleRail(): JSX.Element {
             >
                 <ContactsIcon />
             </button>
+        </>
+    );
+}
+
+/** The staff member's avatar at the bottom, with Settings and Sign out… */
+function RailProfile({ openSettings }: { openSettings: () => void }): JSX.Element {
+    const client = useMatrixClientContext();
+    const [profileOpen, setProfileOpen] = useState(false);
+    const profile = useEventEmitterState(OwnProfileStore.instance, UPDATE_EVENT, () => ({
+        name: OwnProfileStore.instance.displayName ?? client.getUserId() ?? "",
+        avatarUrl: OwnProfileStore.instance.getHttpAvatarUrl(72),
+    }));
+    return (
+        <Menu
+            open={profileOpen}
+            onOpenChange={setProfileOpen}
+            title={profile.name}
+            side="right"
+            align="end"
+            trigger={
+                <button className="cirqle_Rail_profile" aria-label="Profile">
+                    <BaseAvatar
+                        name={profile.name}
+                        idName={client.getUserId() ?? undefined}
+                        url={profile.avatarUrl}
+                        size="36px"
+                    />
+                </button>
+            }
+        >
+            <MenuItem Icon={SettingsIcon} label="Settings" onSelect={openSettings} />
+            <MenuItem Icon={LeaveIcon} label="Sign out…" kind="critical" onSelect={confirmSignOut} />
+        </Menu>
+    );
+}
+
+export function CirqleRail(): JSX.Element {
+    const client = useMatrixClientContext();
+    useEffect(() => watchCirqleInviteRefusals(client), [client]);
+    useEffect(() => watchCirqlePush(client), [client]);
+    const openSettings = useCallback(() => dis.fire(Action.ViewUserSettings), []);
+
+    return (
+        <nav className="cirqle_Rail" aria-label="Sections">
+            <img className="cirqle_Rail_logo" src={logoUrl} alt="CIRQLE" />
+            <RailSections />
             <div className="cirqle_Rail_spacer" />
             <button className="cirqle_Rail_button" aria-label="Settings" onClick={openSettings}>
                 <SettingsIcon />
             </button>
-            <Menu
-                open={profileOpen}
-                onOpenChange={setProfileOpen}
-                title={profile.name}
-                side="right"
-                align="end"
-                trigger={
-                    <button className="cirqle_Rail_profile" aria-label="Profile">
-                        <BaseAvatar
-                            name={profile.name}
-                            idName={client.getUserId() ?? undefined}
-                            url={profile.avatarUrl}
-                            size="36px"
-                        />
-                    </button>
-                }
-            >
-                <MenuItem Icon={SettingsIcon} label="Settings" onSelect={openSettings} />
-                <MenuItem Icon={LeaveIcon} label="Sign out…" kind="critical" onSelect={confirmSignOut} />
-            </Menu>
+            <RailProfile openSettings={openSettings} />
         </nav>
     );
 }
