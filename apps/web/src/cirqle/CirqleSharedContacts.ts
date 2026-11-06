@@ -8,12 +8,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 // bot keeps it and answers POST /_matrix/client/unstable/com.cirqle/contacts
 // (the list, and whether this staff member may change it), /contacts/save and
 // /contacts/delete. Its refusals come in English and are shown as they are.
+// Contacts and New chat read it again every 30 s and when the window comes back
+// to the front (useLiveBook), so a change anyone makes shows within a minute.
 
-import { useEffect, useState } from "react";
 import { type MatrixClient, Method } from "matrix-js-sdk/src/matrix";
-import { logger } from "matrix-js-sdk/src/logger";
 
-import { sortBook } from "./CirqlePhoneBook";
+import { sortBook, useLiveBook } from "./CirqlePhoneBook";
 
 export interface SharedContact {
     /** E.164, `+14695551234`: the contact's key */
@@ -31,11 +31,9 @@ export interface ContactBook {
 
 const UNSTABLE = { prefix: "/_matrix/client/unstable" };
 
-/** The book sorted by name, read again each time a screen shows it; undefined while it loads, null if it failed */
+/** The book sorted by name, kept fresh while a screen shows it (useLiveBook); undefined while it loads, null if it failed */
 export function useSharedContacts(client: MatrixClient): ContactBook | null | undefined {
-    const [book, setBook] = useState<ContactBook | null>();
-    useEffect(() => {
-        let stale = false;
+    return useLiveBook("contacts", () =>
         client.http
             .authedRequest<{ contacts: SharedContact[]; can_edit?: boolean }>(
                 Method.Post,
@@ -44,18 +42,8 @@ export function useSharedContacts(client: MatrixClient): ContactBook | null | un
                 {},
                 UNSTABLE,
             )
-            .then((r) => {
-                if (!stale) setBook({ contacts: sortBook(r.contacts), canEdit: r.can_edit === true });
-            })
-            .catch((e) => {
-                logger.warn("CIRQLE contacts failed", e);
-                if (!stale) setBook(null);
-            });
-        return () => {
-            stale = true;
-        };
-    }, [client]);
-    return book;
+            .then((r) => ({ contacts: sortBook(r.contacts), canEdit: r.can_edit === true })),
+    );
 }
 
 /** Adds a contact, or changes the one that has `previous_number` (its name, its number or both) */

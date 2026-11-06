@@ -12,7 +12,8 @@ import { CirqleChatList } from "./CirqleChatList";
 import { CirqleNewChat } from "./CirqleNewChat";
 import { CirqleNewGroup } from "./CirqleNewGroup";
 import { CirqleNewChannel } from "./CirqleNewChannel";
-import { CirqleContactForm, CirqleContacts } from "./CirqleContacts";
+import { CirqleContacts } from "./CirqleContacts";
+import { CirqleContactForm } from "./CirqleContactForm";
 import { useCirqleUi } from "./CirqleUiStore";
 
 export function CirqleLeftColumn(): JSX.Element {

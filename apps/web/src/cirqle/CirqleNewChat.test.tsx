@@ -16,6 +16,7 @@ import MatrixClientContext from "../contexts/MatrixClientContext";
 import { SDKContextClass } from "../contexts/SDKContextClass";
 import { MetaSpace } from "../stores/spaces";
 import { CirqleNewChat, splitLabel } from "./CirqleNewChat";
+import { CirqleContacts } from "./CirqleContacts";
 import { bookLabel, filterBook } from "./CirqlePhoneBook";
 import { type Inbox } from "./CirqleInboxes";
 
@@ -109,11 +110,14 @@ describe("CirqleNewChat", () => {
         canEdit = false;
         Object.assign(client, {
             http: {
-                authedRequest: vi
-                    .fn()
-                    .mockImplementation(async (_method: Method, path: string) =>
-                        path === "/com.cirqle/contacts" ? { contacts: [], can_edit: canEdit } : { contacts: book },
-                    ),
+                authedRequest: vi.fn().mockImplementation(async (_method: Method, path: string) =>
+                    path === "/com.cirqle/contacts"
+                        ? {
+                              contacts: book.map((contact) => ({ number: contact.number, name: contact.name })),
+                              can_edit: canEdit,
+                          }
+                        : { contacts: book },
+                ),
             },
         });
         vi.spyOn(SDKContextClass.instance.spaceStore, "activeSpace", "get").mockImplementation(() => activeSpace);
@@ -335,6 +339,38 @@ describe("CirqleNewChat", () => {
         await act(() => vi.advanceTimersByTimeAsync(400));
         expect(document.querySelectorAll(".cirqle_NewChat_bookRow")).toHaveLength(0);
         expect(screen.getByText("Chats on slava test")).toBeTruthy();
+    });
+
+    it("drops a contact deleted elsewhere from both open New chat and Contacts within a minute", async () => {
+        activeSpace = SLAVA_TEST;
+        render(
+            <MatrixClientContext.Provider value={client}>
+                <CirqleNewChat />
+                <CirqleContacts />
+            </MatrixClientContext.Provider>,
+        );
+        expect(await screen.findAllByText("boris")).toHaveLength(2);
+        const reads = vi.mocked(client.http.authedRequest).mock.calls.length;
+
+        book = BOOK.filter((contact) => contact.name !== "boris");
+        await act(() => vi.advanceTimersByTimeAsync(60 * 1000));
+        expect(screen.queryAllByText("boris")).toHaveLength(0);
+        expect(screen.getAllByText("Anna Client")).toHaveLength(2);
+        expect(vi.mocked(client.http.authedRequest).mock.calls.length).toBeGreaterThan(reads);
+    });
+
+    it("reads the book again when the window comes back to the front", async () => {
+        activeSpace = SLAVA_TEST;
+        render(panel());
+        expect(await screen.findByText("boris")).toBeTruthy();
+        book = [
+            ...BOOK,
+            { user_id: "@newchat_whatsapp_wa-efa4b19c_=79181888877:server", name: "Zoe", number: "+79181888877" },
+        ];
+        await act(async () => {
+            window.dispatchEvent(new Event("focus"));
+        });
+        expect(await screen.findByText("Zoe")).toBeTruthy();
     });
 
     it("offers New contact under New group only to staff who may change the book", async () => {

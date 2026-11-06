@@ -182,7 +182,7 @@ number in E.164) and answers, all `POST` under `/_matrix/client/unstable`:
 - `/com.cirqle/phone_book` `{network, account}`: the same book as the number's
   `@newchat_<bridge>_<inbox>_=<digits>` users, which start a chat as the search does.
 
-Contacts (the rail, or ⋮ on a phone; `cirqle/CirqleContacts.tsx`, `cirqle/CirqleSharedContacts.ts`)
+Contacts (the rail, or ⋮ on a phone; `cirqle/CirqleContacts.tsx`, the form `cirqle/CirqleContactForm.tsx`, `cirqle/CirqleSharedContacts.ts`)
 lists the book by name, searched by name or digits. Staff who may change it get
 New contact on top and Edit contact (with Delete contact… after a confirmation)
 on a click; for everyone else a click opens New chat with the number, where they
@@ -194,9 +194,10 @@ and under it "Chats on <number>", the number's private chats with anyone the boo
 does not have (by the number). The book answers a name; the bridge is asked
 (`user_directory/search`) only for a typed number or Telegram username. New contact
 sits under New group for staff who may change the book. The number's own phone book
-(what WhatsApp copied from its phone) is no longer offered. Every opening of
-Contacts and New chat reads the book again, so a change shows for everyone the next
-time they open it.
+(what WhatsApp copied from its phone) is no longer offered. Contacts and New chat
+read the book when they open, every 30 s while open and when the window comes back
+to the front (`useLiveBook` in `cirqle/CirqlePhoneBook.ts`), so a change anyone makes
+shows on every open screen within a minute.
 
 ## Leave group
 
