@@ -89,23 +89,12 @@ describe("Channels on the rail", () => {
     const inbox = (label: string) => getInboxes(client).filter((i) => i.label === label);
 
     it("shows Channels only for a number that has a channel", () => {
-        const inboxes = getInboxes(client);
-        expect(hasChannels(rooms, inboxes, inbox("slava test"))).toBe(false);
-        expect(hasChannels(rooms, inboxes, inbox("Main #1"))).toBe(true);
+        expect(hasChannels(rooms, inbox("slava test"))).toBe(false);
+        expect(hasChannels(rooms, inbox("Main #1"))).toBe(true);
     });
 
-    it("under All numbers, counts the channels of connected numbers only", () => {
-        expect(hasChannels(rooms, getInboxes(client), [])).toBe(false);
-
-        setRooms([
-            ...rooms.filter((room) => room.roomId !== "!slava:server"),
-            mkInboxSpace(client, "!slava:server", "slava test", "79648986389", [
-                child("!anna:server"),
-                child("!slava-news:server"),
-            ]),
-            mkRoom(client, "!slava-news:server", "Deals", [bridge({ id: "120363000000000001@newsletter" })]),
-        ]);
-        expect(hasChannels(rooms, getInboxes(client), [])).toBe(true);
+    it("under All numbers, counts a disconnected number's channels too", () => {
+        expect(hasChannels(rooms, [])).toBe(true);
     });
 
     it("has no Groups chip inside Channels", () => {

@@ -18,6 +18,7 @@ import {
     contactNumber,
     contactPhone,
     getInboxes,
+    isDisconnectedChat,
     isStatusBroadcast,
     INBOX_STATE_EVENT,
     numberChats,
@@ -158,18 +159,17 @@ describe("numbers and their chats", () => {
 
     it("shows a picked number's own chats only, a disconnected one's too", () => {
         const [main1, slava] = getInboxes(client);
-        const inboxes = [main1, slava];
-        expect(ids(numberChats(chats(), inboxes, [main1]))).toEqual([
+        expect(ids(numberChats(chats(), [main1]))).toEqual([
             "!anna-main1:server",
             "!frisco-news:server",
             "!community:server",
         ]);
-        expect(ids(numberChats(chats(), inboxes, [slava]))).toEqual(["!tanya-1:server", "!tanya-2:server"]);
+        expect(ids(numberChats(chats(), [slava]))).toEqual(["!tanya-1:server", "!tanya-2:server"]);
     });
 
     it("shows the chats of every picked number together", () => {
         const [main1, slava] = getInboxes(client);
-        expect(ids(numberChats(chats(), [main1, slava], [main1, slava]))).toEqual([
+        expect(ids(numberChats(chats(), [main1, slava]))).toEqual([
             "!anna-main1:server",
             "!frisco-news:server",
             "!community:server",
@@ -206,23 +206,34 @@ describe("numbers and their chats", () => {
         );
     });
 
-    it("leaves disconnected numbers and WhatsApp's Status out of All numbers", () => {
-        const inboxes = getInboxes(client);
-        expect(ids(numberChats(chats(), inboxes, []))).toEqual([
+    it("shows a disconnected number's chats under All numbers, and leaves WhatsApp's Status out", () => {
+        expect(ids(numberChats(chats(), []))).toEqual([
+            "!anna-main1:server",
+            "!frisco-news:server",
+            "!community:server",
             "!tanya-1:server",
             "!tanya-2:server",
             "!unlisted:server",
         ]);
+        const inboxes = getInboxes(client);
+        expect(isDisconnectedChat(room("!anna-main1:server"), inboxes)).toBe(true);
+        expect(isDisconnectedChat(room("!tanya-1:server"), inboxes)).toBe(false);
+        expect(isDisconnectedChat(room("!unlisted:server"), inboxes)).toBe(false);
     });
 
     it("leaves out a chat staff left or were taken out of, which Element keeps after a reload", () => {
-        const [main1, slava] = getInboxes(client);
+        const [, slava] = getInboxes(client);
         room("!tanya-2:server").updateMyMembership(KnownMembership.Leave);
         room("!unlisted:server").updateMyMembership(KnownMembership.Ban);
-        expect(ids(numberChats(chats(), [main1, slava], []))).toEqual(["!tanya-1:server"]);
-        expect(ids(numberChats(chats(), [main1, slava], [slava]))).toEqual(["!tanya-1:server"]);
+        expect(ids(numberChats(chats(), []))).toEqual([
+            "!anna-main1:server",
+            "!frisco-news:server",
+            "!community:server",
+            "!tanya-1:server",
+        ]);
+        expect(ids(numberChats(chats(), [slava]))).toEqual(["!tanya-1:server"]);
         room("!tanya-2:server").updateMyMembership(KnownMembership.Invite);
-        expect(ids(numberChats(chats(), [main1, slava], [slava]))).toEqual(["!tanya-1:server", "!tanya-2:server"]);
+        expect(ids(numberChats(chats(), [slava]))).toEqual(["!tanya-1:server", "!tanya-2:server"]);
     });
 
     it("finds a chat by the customer's number, also when the chat goes by a name", () => {

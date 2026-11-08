@@ -87,15 +87,13 @@ export function pickedInboxes(inboxes: Inbox[]): Inbox[] {
 }
 
 /** The picked numbers' chats (All numbers when none) in a section, newest first. */
-function sectionChats(inboxes: Inbox[], picked: Inbox[], section: CirqleSection): Room[] {
-    return numberChats(RoomListStoreV3.instance.getSortedRooms(), inboxes, picked).filter((room) =>
-        inSection(room, section),
-    );
+function sectionChats(picked: Inbox[], section: CirqleSection): Room[] {
+    return numberChats(RoomListStoreV3.instance.getSortedRooms(), picked).filter((room) => inSection(room, section));
 }
 
-/** Whether the picked numbers (any connected number when none) have a channel: the rail shows Channels only then. */
-export function hasChannels(rooms: Room[], inboxes: Inbox[], picked: Inbox[]): boolean {
-    return numberChats(rooms, inboxes, picked).some((room) => inSection(room, "channels"));
+/** Whether the picked numbers (any number when none) have a channel: the rail shows Channels only then. */
+export function hasChannels(rooms: Room[], picked: Inbox[]): boolean {
+    return numberChats(rooms, picked).some((room) => inSection(room, "channels"));
 }
 
 export function useCirqleHasChannels(): boolean {
@@ -103,7 +101,7 @@ export function useCirqleHasChannels(): boolean {
     const version = useListVersion();
     const read = useCallback(() => {
         const inboxes = getInboxes(client);
-        return hasChannels(RoomListStoreV3.instance.getSortedRooms(), inboxes, pickedInboxes(inboxes));
+        return hasChannels(RoomListStoreV3.instance.getSortedRooms(), pickedInboxes(inboxes));
     }, [client]);
     const [has, setHas] = useState(read);
     useEffect(() => setHas(read()), [read, version]);
@@ -111,15 +109,14 @@ export function useCirqleHasChannels(): boolean {
 }
 
 /** Unread chats of the given numbers (All numbers when none) in a section. */
-export function countUnread(inboxes: Inbox[], picked: Inbox[], section: CirqleSection): number {
-    return sectionChats(inboxes, picked, section).filter(isUnreadChat).length;
+export function countUnread(picked: Inbox[], section: CirqleSection): number {
+    return sectionChats(picked, section).filter(isUnreadChat).length;
 }
 
-/** Unread chats in every connected number, for the rail. */
+/** Unread chats in every number, for the rail. */
 export function useCirqleUnreadChats(): number {
-    const client = useMatrixClientContext();
     const version = useListVersion();
-    const count = useCallback(() => countUnread(getInboxes(client), [], "chats"), [client]);
+    const count = useCallback(() => countUnread([], "chats"), []);
     const [unread, setUnread] = useState(count);
     useEffect(() => setUnread(count()), [count, version]);
     return unread;
@@ -143,7 +140,7 @@ export function matchesChatSearch(room: Room, inboxes: Inbox[], needle: string, 
 export function useCirqleRooms(inboxes: Inbox[], section: CirqleSection, chip: CirqleChip, query: string): CirqleRooms {
     const version = useListVersion();
     const read = useCallback((): CirqleRooms => {
-        const all = sectionChats(inboxes, pickedInboxes(inboxes), section);
+        const all = sectionChats(pickedInboxes(inboxes), section);
         const shown = all.filter(CHIP_MATCHES[chip]);
         const needle = query.trim().toLocaleLowerCase();
         const digits = needle.replace(/[^\d]/g, "");
