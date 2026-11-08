@@ -189,6 +189,7 @@ export default class MessageContextMenu extends React.Component<IProps, IState> 
         // Similarly for encryption events, since redacting them "breaks everything"
         const canRedact =
             cirqleMayDelete(cli, this.props.mxEvent) && // CIRQLE: as the network takes it
+            (this.context.canSendMessages || !isCirqleMessenger()) &&
             !!room?.currentState.maySendRedactionForEvent(this.props.mxEvent, cli.getSafeUserId()) &&
             this.props.mxEvent.getType() !== EventType.RoomServerAcl &&
             this.props.mxEvent.getType() !== EventType.RoomEncryption;

@@ -627,6 +627,29 @@ describe("MessageContextMenu", () => {
             }
         });
 
+        it("does not offer Delete for everyone in CIRQLE Messenger when the chat takes no messages", () => {
+            SdkConfig.put({ brand: CIRQLE_BRAND });
+            try {
+                const own = (): MatrixEvent =>
+                    new MatrixEvent({
+                        type: EventType.RoomMessage,
+                        room_id: roomId,
+                        sender: "@user:example.com",
+                        event_id: "$own",
+                        content: createMessageEventContent("hello"),
+                    });
+                const room = makeDefaultRoom();
+                vi.spyOn(room.currentState, "maySendRedactionForEvent").mockReturnValue(true);
+                createMenu(own(), { rightClick: true }, { canSendMessages: false }, undefined, room);
+                expect(document.querySelector('li[aria-label="Delete for everyone"]')).toBeFalsy();
+                cleanup();
+                createMenu(own(), { rightClick: true }, { canSendMessages: true }, undefined, room);
+                expect(document.querySelector('li[aria-label="Delete for everyone"]')).toBeTruthy();
+            } finally {
+                SdkConfig.reset();
+            }
+        });
+
         it("does not show edit button when we cannot edit", () => {
             const eventContent = createMessageEventContent("hello");
             vi.mocked(canEditContent).mockReturnValue(false);
