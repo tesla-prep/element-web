@@ -586,7 +586,7 @@ export class MessageComposer extends React.Component<IProps, IState> {
 
         const disconnected =
             isCirqleMessenger() && isDisconnectedChat(this.props.room, getInboxes(MatrixClientPeg.safeGet()));
-        const canSendMessages = this.context.canSendMessages && !this.context.tombstone && !disconnected;
+        const canSendMessages = this.context.canSendMessages && !this.context.tombstone;
         let composer: ReactNode;
         if (canSendMessages) {
             if (this.state.isWysiwygLabEnabled && menuPosition) {
@@ -710,7 +710,7 @@ export class MessageComposer extends React.Component<IProps, IState> {
                         replyToEvent={this.props.replyToEvent}
                         permalinkCreator={this.props.permalinkCreator}
                     />
-                    {isCirqleMessenger() && <CirqleComposerFrom room={this.props.room} />}
+                    {isCirqleMessenger() && canSendMessages && <CirqleComposerFrom room={this.props.room} />}
                     <div className="mx_MessageComposer_row">
                         {leftIcon}
                         {composer}

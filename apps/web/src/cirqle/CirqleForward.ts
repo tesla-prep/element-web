@@ -21,7 +21,7 @@ export function isCirqleForwardTarget(client: MatrixClient, event: MatrixEvent, 
     if (!source || !networkOf(target)) return false;
     const inboxes = getInboxes(client);
     const numbers = new Set(inboxesOf(source, inboxes).map((inbox) => inbox.spaceId));
-    return inboxesOf(target, inboxes).some((inbox) => numbers.has(inbox.spaceId));
+    return inboxesOf(target, inboxes).some((inbox) => inbox.connected && numbers.has(inbox.spaceId));
 }
 
 /** "Forward to Anna? It goes out from slava test." */

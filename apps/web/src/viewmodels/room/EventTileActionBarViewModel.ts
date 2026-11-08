@@ -45,6 +45,7 @@ import Modal from "../../Modal";
 import ErrorDialog from "../../components/views/dialogs/ErrorDialog";
 import { ModuleApi } from "../../modules/Api";
 import { cirqleActionBarActions } from "../../cirqle/CirqleMessages";
+import { isCirqleMessenger } from "../../cirqle/CirqleFeatures";
 
 /** Props for the event-tile action bar view model. */
 export interface EventTileActionBarViewModelProps {
@@ -197,7 +198,7 @@ export class EventTileActionBarViewModel
 
         return {
             showCancel: canCancel(mxEvent.status) || canCancel(editStatus) || canCancel(redactStatus),
-            showEdit: canEditContent(client, mxEvent),
+            showEdit: canEditContent(client, mxEvent) && (props.canSendMessages || !isCirqleMessenger()),
             showPinOrUnpin: PinningUtils.canPin(client, mxEvent) || PinningUtils.canUnpin(client, mxEvent),
             showReact: contentActionable && props.canReact && !props.isSearch,
             showReply: contentActionable && props.canSendMessages,

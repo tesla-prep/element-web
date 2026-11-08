@@ -10,7 +10,7 @@ Please see LICENSE files in the repository root for full details.
 
 import React from "react";
 import { describe, it, expect, beforeEach, afterEach, afterAll, vi, type MockInstance } from "vitest";
-import { fireEvent, render, type RenderResult, screen, waitFor } from "test-utils-rtl";
+import { cleanup, fireEvent, render, type RenderResult, screen, waitFor } from "test-utils-rtl";
 import {
     EventStatus,
     MatrixEvent,
@@ -40,6 +40,8 @@ import SettingsStore from "../../../settings/SettingsStore";
 import { ReadPinsEventId } from "../right_panel/types";
 import { Action } from "../../../dispatcher/actions";
 import { ScopedRoomContextProvider } from "../../../contexts/ScopedRoomContext.tsx";
+import SdkConfig from "../../../SdkConfig";
+import { CIRQLE_BRAND } from "../../../cirqle/CirqleFeatures";
 
 vi.mock("../../../utils/strings", () => ({
     copyPlaintext: vi.fn(),
@@ -609,6 +611,20 @@ describe("MessageContextMenu", () => {
             createRightClickMenuWithContent(eventContent);
             const editButton = document.querySelector('li[aria-label="Edit"]');
             expect(editButton).toBeTruthy();
+        });
+
+        it("does not show edit button in CIRQLE Messenger when the chat takes no messages", () => {
+            SdkConfig.put({ brand: CIRQLE_BRAND });
+            try {
+                vi.mocked(canEditContent).mockReturnValue(true);
+                createRightClickMenuWithContent(createMessageEventContent("hello"), { canSendMessages: false });
+                expect(document.querySelector('li[aria-label="Edit"]')).toBeFalsy();
+                cleanup();
+                createRightClickMenuWithContent(createMessageEventContent("hello"), { canSendMessages: true });
+                expect(document.querySelector('li[aria-label="Edit"]')).toBeTruthy();
+            } finally {
+                SdkConfig.reset();
+            }
         });
 
         it("does not show edit button when we cannot edit", () => {

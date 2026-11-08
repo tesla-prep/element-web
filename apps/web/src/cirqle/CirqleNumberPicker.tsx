@@ -10,8 +10,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 // WhatsApp numbers and a Telegram account together ("3 numbers"). The pick is
 // kept in this browser (CirqleUiStore). One picked number is also Element's
 // active space, as before; several or none is Home ("All numbers"). A
-// disconnected number is marked and left out of All numbers; its chats stay
-// readable when it is picked.
+// disconnected number is marked.
 
 import React, { type JSX, useEffect, useRef, useState } from "react";
 import classNames from "classnames";

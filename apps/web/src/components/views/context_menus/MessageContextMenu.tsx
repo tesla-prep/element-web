@@ -660,7 +660,7 @@ export default class MessageContextMenu extends React.Component<IProps, IState> 
         }
 
         let editButton: JSX.Element | undefined;
-        if (rightClick && canEditContent(cli, mxEvent)) {
+        if (rightClick && canEditContent(cli, mxEvent) && (canSendMessages || !isCirqleMessenger())) {
             editButton = (
                 <IconizedContextMenuOption icon={<EditIcon />} label={_t("action|edit")} onClick={this.onEditClick} />
             );

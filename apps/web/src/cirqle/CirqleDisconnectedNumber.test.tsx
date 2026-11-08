@@ -47,10 +47,10 @@ describe("the message field in a chat of a disconnected number", () => {
     const client = createTestClient();
     const room = mkStubRoom("!chat:server", "Anna", client);
 
-    const renderComposer = (): void => {
+    const renderComposer = (canSendMessages: boolean): void => {
         const context = {
             room,
-            canSendMessages: true,
+            canSendMessages,
             narrow: false,
             timelineRenderingType: TimelineRenderingType.Room,
         } satisfies Partial<RoomContextType> as RoomContextType;
@@ -73,15 +73,17 @@ describe("the message field in a chat of a disconnected number", () => {
 
     it("is replaced by a note that the number needs to be reconnected", () => {
         number.connected = false;
-        renderComposer();
+        renderComposer(false);
         expect(screen.queryByRole("textbox")).toBeNull();
         expect(screen.getByText(/This number is disconnected and needs to be reconnected/)).toBeInTheDocument();
+        expect(screen.queryByTitle("You write from this number")).toBeNull();
     });
 
     it("stays when the number is connected", () => {
         number.connected = true;
-        renderComposer();
+        renderComposer(true);
         expect(screen.getByRole("textbox")).toBeInTheDocument();
+        expect(screen.getByTitle("You write from this number")).toHaveTextContent("Main #1");
         expect(screen.queryByText(/This number is disconnected/)).toBeNull();
     });
 });
