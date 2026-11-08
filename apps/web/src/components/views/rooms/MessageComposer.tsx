@@ -65,6 +65,7 @@ import { useScopedRoomContext } from "../../../contexts/ScopedRoomContext";
 import PlatformPeg from "../../../PlatformPeg";
 import { ModuleApi } from "../../../modules/Api";
 import { isCirqleMessenger } from "../../../cirqle/CirqleFeatures";
+import { getInboxes, isDisconnectedChat } from "../../../cirqle/CirqleInboxes";
 import { CirqleComposerFrom } from "../../../cirqle/CirqleComposerFrom";
 
 // The prefix used when persisting editor drafts to localstorage.
@@ -583,6 +584,8 @@ export class MessageComposer extends React.Component<IProps, IState> {
         const controls: ReactNode[] = [];
         const menuPosition = this.getMenuPosition();
 
+        const disconnected =
+            isCirqleMessenger() && isDisconnectedChat(this.props.room, getInboxes(MatrixClientPeg.safeGet()));
         const canSendMessages = this.context.canSendMessages && !this.context.tombstone;
         let composer: ReactNode;
         if (canSendMessages) {
@@ -668,7 +671,9 @@ export class MessageComposer extends React.Component<IProps, IState> {
         } else {
             controls.push(
                 <div key="controls_error" className="mx_MessageComposer_noperm_error">
-                    {_t("composer|no_perms_notice")}
+                    {disconnected
+                        ? "This number is disconnected and needs to be reconnected. You can read this chat, but not write in it."
+                        : _t("composer|no_perms_notice")}
                 </div>,
             );
         }
@@ -705,7 +710,7 @@ export class MessageComposer extends React.Component<IProps, IState> {
                         replyToEvent={this.props.replyToEvent}
                         permalinkCreator={this.props.permalinkCreator}
                     />
-                    {isCirqleMessenger() && <CirqleComposerFrom room={this.props.room} />}
+                    {isCirqleMessenger() && canSendMessages && <CirqleComposerFrom room={this.props.room} />}
                     <div className="mx_MessageComposer_row">
                         {leftIcon}
                         {composer}

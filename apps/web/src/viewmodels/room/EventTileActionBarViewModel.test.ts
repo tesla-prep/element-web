@@ -36,6 +36,8 @@ import Modal from "../../Modal";
 import ErrorDialog from "../../components/views/dialogs/ErrorDialog";
 import SettingsStore from "../../settings/SettingsStore";
 import { ModuleApi } from "../../modules/Api";
+import SdkConfig from "../../SdkConfig";
+import { CIRQLE_BRAND } from "../../cirqle/CirqleFeatures";
 import { canCancel, canEditContent, editEvent, isContentActionable } from "../../utils/EventUtils";
 import { shouldDisplayReply } from "../../utils/Reply";
 import { MediaEventHelper } from "../../utils/MediaEventHelper";
@@ -214,6 +216,20 @@ describe("EventTileActionBarViewModel", () => {
     afterEach(() => {
         getHintsForMessageSpy.mockRestore();
         vi.restoreAllMocks();
+    });
+
+    it("hides Edit, Reply and React in CIRQLE Messenger when the chat takes no messages", async () => {
+        SdkConfig.put({ brand: CIRQLE_BRAND });
+        try {
+            const blocked = createVm({ canSendMessages: false, canReact: false });
+            await waitFor(() => expect(blocked.getSnapshot().actions).not.toContain(ActionBarAction.Edit));
+            expect(blocked.getSnapshot().actions).not.toContain(ActionBarAction.Reply);
+            expect(blocked.getSnapshot().actions).not.toContain(ActionBarAction.React);
+            const open = createVm();
+            await waitFor(() => expect(open.getSnapshot().actions).toContain(ActionBarAction.Edit));
+        } finally {
+            SdkConfig.reset();
+        }
     });
 
     it("builds the snapshot for an actionable message", async () => {

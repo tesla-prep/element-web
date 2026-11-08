@@ -10,8 +10,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 // WhatsApp numbers and a Telegram account together ("3 numbers"). The pick is
 // kept in this browser (CirqleUiStore). One picked number is also Element's
 // active space, as before; several or none is Home ("All numbers"). A
-// disconnected number is marked and left out of All numbers; its chats stay
-// readable when it is picked.
+// disconnected number is marked.
 
 import React, { type JSX, useEffect, useRef, useState } from "react";
 import classNames from "classnames";
@@ -133,10 +132,10 @@ export function CirqleNumberPicker({ inboxes, section }: { inboxes: Inbox[]; sec
                             </span>
                             <span className="cirqle_NumberPicker_text">
                                 <span className="cirqle_NumberPicker_name">All numbers</span>
-                                <span className="cirqle_NumberPicker_sub">Every connected number</span>
+                                <span className="cirqle_NumberPicker_sub">Every number</span>
                             </span>
                             <span className="cirqle_NumberPicker_count">
-                                <UnreadBadge count={countUnread(inboxes, [], section)} />
+                                <UnreadBadge count={countUnread([], section)} />
                             </span>
                         </button>
                         <span className="cirqle_NumberPicker_tick cirqle_NumberPicker_tick_all" aria-hidden="true">
@@ -160,7 +159,7 @@ export function CirqleNumberPicker({ inboxes, section }: { inboxes: Inbox[]; sec
                                 >
                                     <NumberLabel inbox={inbox} />
                                     <span className="cirqle_NumberPicker_count">
-                                        <UnreadBadge count={countUnread(inboxes, [inbox], section)} />
+                                        <UnreadBadge count={countUnread([inbox], section)} />
                                     </span>
                                 </button>
                                 <button

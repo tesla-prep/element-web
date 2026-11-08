@@ -77,6 +77,9 @@ import { TimelineRenderingType } from "../../contexts/RoomContext";
 import { ModuleApi } from "../../modules/Api";
 import MatrixClientBackedController from "../../settings/controllers/MatrixClientBackedController.ts";
 import { type ComposerInsertPayload, ComposerType } from "../../dispatcher/payloads/ComposerInsertPayload.ts";
+import SdkConfig from "../../SdkConfig";
+import { CIRQLE_BRAND } from "../../cirqle/CirqleFeatures";
+import { INBOX_STATE_EVENT } from "../../cirqle/CirqleInboxes";
 
 // Used by group calls
 vi.spyOn(MediaDeviceHandler, "getDevices").mockResolvedValue({
@@ -222,6 +225,74 @@ describe("RoomView", () => {
         await mountRoomView(ref);
         return ref.current!;
     };
+
+    describe("in CIRQLE Messenger, a chat only a disconnected number has", () => {
+        const spaceId = "!number:example.org";
+        let space: Room;
+        const state = (type: string, stateKey: string, content: Record<string, unknown>): MatrixEvent =>
+            new MatrixEvent({
+                type,
+                state_key: stateKey,
+                room_id: spaceId,
+                sender: "@whatsappbot:example.org",
+                event_id: "$" + type + stateKey + JSON.stringify(content),
+                content,
+            });
+        const reconnect = (): void => {
+            const ev = state(INBOX_STATE_EVENT, "", { connected: true, number: "+16463313251", state: "CONNECTED" });
+            space.currentState.setStateEvents([ev]);
+            act(() => cli.emit(RoomStateEvent.Events, ev, space.currentState, null));
+        };
+        const dragFile = (container: HTMLElement): void => {
+            fireEvent.dragEnter(container.querySelector(".mx_RoomView")!, { dataTransfer: { types: ["Files"] } });
+        };
+
+        beforeEach(() => {
+            SdkConfig.put({ brand: CIRQLE_BRAND });
+            space = new Room(spaceId, cli, "@alice:example.org");
+            space.currentState.setStateEvents([
+                state(EventType.RoomCreate, "", { type: "m.space" }),
+                state("m.bridge", "example.org/whatsapp", {
+                    "bridgebot": "@whatsappbot:example.org",
+                    "protocol": { id: "whatsapp" },
+                    "channel": { "id": "__personal_filtering_space__", "fi.mau.receiver": "16463313251" },
+                    "com.beeper.room_type.v2": "personal_filtering_space",
+                }),
+                state(EventType.SpaceChild, room.roomId, { via: ["example.org"] }),
+                state(INBOX_STATE_EVENT, "", { connected: false, number: "+16463313251", state: "BAD_CREDENTIALS" }),
+            ]);
+            vi.spyOn(space, "getMyMembership").mockReturnValue(KnownMembership.Join);
+            rooms.set(spaceId, space);
+            vi.spyOn(room, "getMyMembership").mockReturnValue(KnownMembership.Join);
+            vi.spyOn(room, "maySendMessage").mockReturnValue(true);
+            vi.spyOn(room.currentState, "maySendEvent").mockReturnValue(true);
+        });
+
+        afterEach(() => {
+            SdkConfig.reset();
+        });
+
+        it("takes no messages, replies or reactions until the number is reconnected", async () => {
+            const roomView = await getRoomViewInstance();
+            expect(roomView.state.canSendMessages).toBe(false);
+            expect(roomView.state.canReact).toBe(false);
+
+            reconnect();
+            expect(roomView.state.canSendMessages).toBe(true);
+            expect(roomView.state.canReact).toBe(true);
+        });
+
+        it("takes no dropped files until the number is reconnected", async () => {
+            const { container } = await mountRoomView();
+            dragFile(container);
+            expect(container.querySelector(".mx_FileDropTarget")).toBeNull();
+
+            reconnect();
+            await flushPromises();
+            dragFile(container);
+            await waitFor(() => expect(container.querySelector(".mx_FileDropTarget")).not.toBeNull());
+        });
+    });
 
     it("gets a room view store from MultiRoomViewStore when given a room ID", async () => {
         stores.multiRoomViewStore.getRoomViewStoreForRoom = vi.fn().mockReturnValue(stores.roomViewStore);

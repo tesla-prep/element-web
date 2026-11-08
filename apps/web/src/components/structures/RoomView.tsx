@@ -143,6 +143,8 @@ import { ModuleApi } from "../../modules/Api.ts";
 import { RoomUploadContextProvider } from "../../viewmodels/room/RoomUploadViewModel.tsx";
 import { EventPresentationContextProvider } from "../../utils/EventPresentationContextProvider";
 import { isCirqleNearTimelineEnd, isCirqleTouch } from "../../cirqle/CirqleMobile";
+import { isCirqleMessenger } from "../../cirqle/CirqleFeatures";
+import { getInboxes, INBOX_STATE_EVENT, isDisconnectedChat } from "../../cirqle/CirqleInboxes";
 
 const DEBUG = false;
 const PREVENT_MULTIPLE_JITSI_WITHIN = 30_000;
@@ -1604,6 +1606,10 @@ export class RoomView extends React.Component<IRoomProps, IRoomState> {
     };
 
     private onRoomStateEvents = async (ev: MatrixEvent, state: RoomState): Promise<void> => {
+        if (ev.getType() === INBOX_STATE_EVENT && this.state.room) {
+            this.updatePermissions(this.state.room);
+            return;
+        }
         // ignore if we don't have a room yet
         if (!this.state.room || this.state.room.roomId !== state.roomId || !this.context.client) return;
 
@@ -1653,10 +1659,12 @@ export class RoomView extends React.Component<IRoomProps, IRoomState> {
     private updatePermissions(room: Room): void {
         if (room && this.context.client) {
             const me = this.context.client.getSafeUserId();
+            const disconnected = isCirqleMessenger() && isDisconnectedChat(room, getInboxes(this.context.client));
             const canReact =
+                !disconnected &&
                 room.getMyMembership() === KnownMembership.Join &&
                 room.currentState.maySendEvent(EventType.Reaction, me);
-            const canSendMessages = room.maySendMessage();
+            const canSendMessages = !disconnected && room.maySendMessage();
             const canSelfRedact = room.currentState.maySendEvent(EventType.RoomRedaction, me);
 
             this.setState({
@@ -2663,7 +2671,7 @@ export class RoomView extends React.Component<IRoomProps, IRoomState> {
                         {auxPanel}
                         {pinnedMessageBanner}
                         <main className={timelineClasses} data-testid="timeline">
-                            <FileDropTarget parent={this.roomView.current} />
+                            {this.state.canSendMessages && <FileDropTarget parent={this.roomView.current} />}
                             {topUnreadMessagesBar}
                             {jumpToBottom}
                             {messagePanel}

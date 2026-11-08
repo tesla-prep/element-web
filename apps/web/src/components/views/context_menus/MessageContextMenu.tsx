@@ -78,6 +78,7 @@ import PosthogTrackers from "../../../PosthogTrackers.ts";
 import { cirqleMayDelete, cirqleMayDeleteForMe } from "../../../cirqle/CirqleMessages";
 import { deleteSomeoneElsesMessage } from "../../../cirqle/CirqleDeleteDialog";
 import { isCirqleMessenger } from "../../../cirqle/CirqleFeatures";
+import { getInboxes, isDisconnectedChat } from "../../../cirqle/CirqleInboxes";
 import { CirqleQuickReactions, cirqleCopyText } from "../../../cirqle/CirqleMessageMenu";
 
 interface IReplyInThreadButton {
@@ -189,6 +190,7 @@ export default class MessageContextMenu extends React.Component<IProps, IState> 
         // Similarly for encryption events, since redacting them "breaks everything"
         const canRedact =
             cirqleMayDelete(cli, this.props.mxEvent) && // CIRQLE: as the network takes it
+            !(isCirqleMessenger() && room && isDisconnectedChat(room, getInboxes(cli))) && // CIRQLE: deleting there never reaches the network
             !!room?.currentState.maySendRedactionForEvent(this.props.mxEvent, cli.getSafeUserId()) &&
             this.props.mxEvent.getType() !== EventType.RoomServerAcl &&
             this.props.mxEvent.getType() !== EventType.RoomEncryption;
@@ -660,7 +662,7 @@ export default class MessageContextMenu extends React.Component<IProps, IState> 
         }
 
         let editButton: JSX.Element | undefined;
-        if (rightClick && canEditContent(cli, mxEvent)) {
+        if (rightClick && canEditContent(cli, mxEvent) && (canSendMessages || !isCirqleMessenger())) {
             editButton = (
                 <IconizedContextMenuOption icon={<EditIcon />} label={_t("action|edit")} onClick={this.onEditClick} />
             );

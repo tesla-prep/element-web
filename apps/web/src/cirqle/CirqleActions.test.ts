@@ -14,6 +14,7 @@ import { mkEvent, stubClient } from "test-utils";
 import SdkConfig from "../SdkConfig";
 import { CIRQLE_BRAND } from "./CirqleFeatures";
 import { isCirqleForwardTarget } from "./CirqleForward";
+import { INBOX_STATE_EVENT } from "./CirqleInboxes";
 import { isCirqleMentionable } from "./CirqleMessages";
 import { cirqleReactionGroups, cirqleReplaceOwnReaction } from "./CirqleReactions";
 
@@ -118,6 +119,28 @@ describe("CIRQLE actions", () => {
         expect(isCirqleForwardTarget(client, message, client.getRoom("!staff:server")!)).toBe(false);
         SdkConfig.reset();
         expect(isCirqleForwardTarget(client, message, client.getRoom("!other-number:server")!)).toBe(true);
+    });
+
+    it("does not forward to the chats of a disconnected number", () => {
+        const message = mkEvent({
+            type: EventType.RoomMessage,
+            room: "!dm:server",
+            user: CUSTOMER,
+            content: { msgtype: MsgType.Text, body: "hello" },
+            event: true,
+        });
+        const space = client.getRoom(`!space-79648986389:${SERVER}`)!;
+        space.currentState.setStateEvents([
+            mkEvent({
+                type: INBOX_STATE_EVENT,
+                room: space.roomId,
+                user: ACCOUNT,
+                skey: "",
+                content: { connected: false, number: "+79648986389", state: "BAD_CREDENTIALS" },
+                event: true,
+            }),
+        ]);
+        expect(isCirqleForwardTarget(client, message, client.getRoom("!dm2:server")!)).toBe(false);
     });
 
     it("counts our number's reaction once and shows only its latest", () => {

@@ -17,7 +17,7 @@ import { type Inbox } from "./CirqleInboxes";
 import { CirqleUiStore, PICKED_NUMBERS_KEY } from "./CirqleUiStore";
 
 vi.mock("./useCirqleChats", () => ({
-    countUnread: (_inboxes: Inbox[], picked: Inbox[]) => (picked.length ? 3 : 5),
+    countUnread: (picked: Inbox[]) => (picked.length ? 3 : 5),
 }));
 
 const inbox = (spaceId: string, label: string, connected: boolean): Inbox => ({
@@ -51,7 +51,7 @@ describe("CirqleNumberPicker", () => {
         render(<CirqleNumberPicker inboxes={inboxes} section="chats" />);
         fireEvent.click(screen.getByRole("button", { name: "Choose number" }));
         const [all, main1, slava] = screen.getAllByRole("option");
-        expect(all.textContent).toBe("All numbersEvery connected number5");
+        expect(all.textContent).toBe("All numbersEvery number5");
         expect(main1.textContent).toBe("Main #1WhatsApp · +1 646 331 3251Disconnected3");
         expect(slava.textContent).toBe("slava testWhatsApp · +1 646 331 32513");
     });

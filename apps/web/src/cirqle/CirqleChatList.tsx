@@ -44,7 +44,14 @@ import { confirmSignOut } from "./CirqleRail";
 import { useCirqlePhone } from "./CirqleMobile";
 import { UserTab } from "../components/views/dialogs/UserTab";
 import { type OpenToTabPayload } from "../dispatcher/payloads/OpenToTabPayload";
-import { contactPhone, type Inbox, numberLine, repeatedNames, stripNetworkSuffix } from "./CirqleInboxes";
+import {
+    contactPhone,
+    type Inbox,
+    isDisconnectedChat,
+    numberLine,
+    repeatedNames,
+    stripNetworkSuffix,
+} from "./CirqleInboxes";
 import { CirqleUiStore, type CirqleSection } from "./CirqleUiStore";
 import { warmCirqleChat, warmCirqleChats } from "./CirqleWarmup";
 import {
@@ -98,7 +105,10 @@ function ChatRow({
 
     return (
         <button
-            className={classNames("cirqle_ChatRow", { cirqle_ChatRow_selected: selected })}
+            className={classNames("cirqle_ChatRow", {
+                cirqle_ChatRow_selected: selected,
+                cirqle_ChatRow_disconnected: isDisconnectedChat(room, inboxes),
+            })}
             onClick={open}
             onPointerDown={() => warmCirqleChat(room)}
             onPointerEnter={(e) => e.pointerType === "mouse" && warmCirqleChat(room)}

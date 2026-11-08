@@ -14,7 +14,7 @@ import { inboxesOf } from "./CirqleInboxes";
 import { useCirqleInboxes } from "./useCirqleChats";
 
 export function CirqleComposerFrom({ room }: { room: Room }): JSX.Element | null {
-    const own = inboxesOf(room, useCirqleInboxes());
+    const own = inboxesOf(room, useCirqleInboxes()).filter((inbox) => inbox.connected);
     if (!own.length) return null;
     return (
         <div className="cirqle_ComposerFrom" title="You write from this number">

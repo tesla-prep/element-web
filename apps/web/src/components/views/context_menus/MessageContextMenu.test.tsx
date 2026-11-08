@@ -10,7 +10,7 @@ Please see LICENSE files in the repository root for full details.
 
 import React from "react";
 import { describe, it, expect, beforeEach, afterEach, afterAll, vi, type MockInstance } from "vitest";
-import { fireEvent, render, type RenderResult, screen, waitFor } from "test-utils-rtl";
+import { cleanup, fireEvent, render, type RenderResult, screen, waitFor } from "test-utils-rtl";
 import {
     EventStatus,
     MatrixEvent,
@@ -27,6 +27,7 @@ import {
 } from "matrix-js-sdk/src/matrix";
 import { PollStartEvent } from "matrix-js-sdk/src/extensible_events_v1/PollStartEvent";
 import userEvent from "@testing-library/user-event";
+import { KnownMembership } from "matrix-js-sdk/src/types";
 import { makeBeaconEvent, makeBeaconInfoEvent, makeLocationEvent, stubClient } from "test-utils";
 import { createMessageEventContent } from "test-utils/events";
 
@@ -40,6 +41,10 @@ import SettingsStore from "../../../settings/SettingsStore";
 import { ReadPinsEventId } from "../right_panel/types";
 import { Action } from "../../../dispatcher/actions";
 import { ScopedRoomContextProvider } from "../../../contexts/ScopedRoomContext.tsx";
+import SdkConfig from "../../../SdkConfig";
+import { CIRQLE_BRAND } from "../../../cirqle/CirqleFeatures";
+import { INBOX_STATE_EVENT } from "../../../cirqle/CirqleInboxes";
+import { deleteSomeoneElsesMessage } from "../../../cirqle/CirqleDeleteDialog";
 
 vi.mock("../../../utils/strings", () => ({
     copyPlaintext: vi.fn(),
@@ -50,6 +55,10 @@ vi.mock("../../../utils/EventUtils", async () => ({
     canEditContent: vi.fn(),
 }));
 vi.mock("../../../dispatcher/dispatcher");
+vi.mock("../../../cirqle/CirqleDeleteDialog", async () => ({
+    ...(await vi.importActual("../../../cirqle/CirqleDeleteDialog")),
+    deleteSomeoneElsesMessage: vi.fn(),
+}));
 
 const roomId = "roomid";
 
@@ -609,6 +618,104 @@ describe("MessageContextMenu", () => {
             createRightClickMenuWithContent(eventContent);
             const editButton = document.querySelector('li[aria-label="Edit"]');
             expect(editButton).toBeTruthy();
+        });
+
+        it("does not show edit button in CIRQLE Messenger when the chat takes no messages", () => {
+            SdkConfig.put({ brand: CIRQLE_BRAND });
+            try {
+                vi.mocked(canEditContent).mockReturnValue(true);
+                createRightClickMenuWithContent(createMessageEventContent("hello"), { canSendMessages: false });
+                expect(document.querySelector('li[aria-label="Edit"]')).toBeFalsy();
+                cleanup();
+                createRightClickMenuWithContent(createMessageEventContent("hello"), { canSendMessages: true });
+                expect(document.querySelector('li[aria-label="Edit"]')).toBeTruthy();
+            } finally {
+                SdkConfig.reset();
+            }
+        });
+
+        describe("in a CIRQLE Messenger group of one Telegram number", () => {
+            const message = (sender: string): MatrixEvent =>
+                new MatrixEvent({
+                    type: EventType.RoomMessage,
+                    room_id: roomId,
+                    sender,
+                    event_id: "$" + sender,
+                    content: createMessageEventContent("hello"),
+                });
+            const chatOf = (connected: boolean): Room => {
+                const client = MatrixClientPeg.safeGet();
+                const state = (room: string, type: string, stateKey: string, content: object): MatrixEvent =>
+                    new MatrixEvent({
+                        type,
+                        state_key: stateKey,
+                        room_id: room,
+                        sender: "@telegrambot:example.com",
+                        content,
+                    });
+                const bridge = { bridgebot: "@telegrambot:example.com", protocol: { id: "telegram" } };
+                const chat = makeDefaultRoom();
+                chat.currentState.setStateEvents([
+                    state(roomId, "m.bridge", "telegram", { ...bridge, channel: { id: "-100123" } }),
+                ]);
+                vi.spyOn(chat.currentState, "maySendRedactionForEvent").mockReturnValue(true);
+                const spaceId = "!number:example.com";
+                const space = new Room(spaceId, client, "@user:example.com");
+                space.currentState.setStateEvents([
+                    state(spaceId, EventType.RoomCreate, "", { type: "m.space" }),
+                    state(spaceId, "m.bridge", "telegram", {
+                        ...bridge,
+                        "channel": { "id": "__personal_filtering_space__", "fi.mau.receiver": "8759317930" },
+                        "com.beeper.room_type.v2": "personal_filtering_space",
+                    }),
+                    state(spaceId, EventType.SpaceChild, roomId, { via: ["example.com"] }),
+                    state(spaceId, INBOX_STATE_EVENT, "", { connected }),
+                ]);
+                vi.spyOn(space, "getMyMembership").mockReturnValue(KnownMembership.Join);
+                client.getRooms = vi.fn().mockReturnValue([space, chat]);
+                return chat;
+            };
+            const deleteFor = (): { everyone: boolean; me: boolean } => ({
+                everyone: !!document.querySelector('li[aria-label="Delete for everyone"]'),
+                me: !!document.querySelector('li[aria-label="Delete"]'),
+            });
+
+            beforeEach(() => {
+                SdkConfig.put({ brand: CIRQLE_BRAND });
+            });
+
+            afterEach(() => {
+                SdkConfig.reset();
+            });
+
+            it("offers Delete for everyone only while the number is connected", () => {
+                createMenu(message("@user:example.com"), { rightClick: true }, {}, undefined, chatOf(false));
+                expect(deleteFor()).toEqual({ everyone: false, me: false });
+                cleanup();
+                createMenu(message("@user:example.com"), { rightClick: true }, {}, undefined, chatOf(true));
+                expect(deleteFor()).toEqual({ everyone: true, me: false });
+            });
+
+            it("deletes someone else's message only for me while the number is disconnected", () => {
+                createMenu(message("@telegram_1:example.com"), { rightClick: true }, {}, undefined, chatOf(false));
+                fireEvent.click(document.querySelector('li[aria-label="Delete"]')!);
+                expect(deleteSomeoneElsesMessage).toHaveBeenLastCalledWith(expect.anything(), expect.anything(), false);
+                cleanup();
+                createMenu(message("@telegram_1:example.com"), { rightClick: true }, {}, undefined, chatOf(true));
+                fireEvent.click(document.querySelector('li[aria-label="Delete"]')!);
+                expect(deleteSomeoneElsesMessage).toHaveBeenLastCalledWith(expect.anything(), expect.anything(), true);
+            });
+
+            it("offers Delete for everyone without a room context, as in the image viewer", () => {
+                const client = MatrixClientPeg.safeGet();
+                const chat = chatOf(true);
+                client.getUserId = vi.fn().mockReturnValue("@user:example.com");
+                client.getRoom = vi.fn().mockReturnValue(chat);
+                const mxEvent = message("@user:example.com");
+                mxEvent.setStatus(null);
+                render(<MessageContextMenu mxEvent={mxEvent} rightClick={true} onFinished={vi.fn()} />);
+                expect(deleteFor()).toEqual({ everyone: true, me: false });
+            });
         });
 
         it("does not show edit button when we cannot edit", () => {
