@@ -83,6 +83,38 @@ describe("theme", () => {
             expect(spyClassList).toHaveBeenCalledWith("cpd-theme-dark");
         });
 
+        it.each(["light", "dark"])("keeps the newer %s theme when an earlier load finishes late", async (theme) => {
+            const latestStyle = theme === "light" ? lightTheme : darkTheme;
+            const earlierStyle = theme === "light" ? darkTheme : lightTheme;
+            const earlier = setTheme(theme === "light" ? "dark" : "light");
+            const latest = setTheme(theme);
+
+            latestStyle.onload!({} as Event);
+            await latest;
+            earlierStyle.onload!({} as Event);
+            await earlier;
+
+            expect(latestStyle.disabled).toBe(false);
+            expect(earlierStyle.disabled).toBe(true);
+            expect(document.body.classList.contains(`cpd-theme-${theme}`)).toBe(true);
+        });
+
+        it("keeps the newer theme when an earlier load is detected by polling", async () => {
+            vi.useFakeTimers();
+            const earlier = setTheme("dark");
+            const latest = setTheme("light");
+
+            lightTheme.onload!({} as Event);
+            await latest;
+            vi.spyOn(document, "styleSheets", "get").mockReturnValue([darkTheme] as any);
+            vi.advanceTimersByTime(200);
+            await earlier;
+
+            expect(lightTheme.disabled).toBe(false);
+            expect(darkTheme.disabled).toBe(true);
+            expect(document.body.classList.contains("cpd-theme-light")).toBe(true);
+        });
+
         it("should reject promise on onerror call", () => {
             return expect(
                 new Promise((resolve) => {

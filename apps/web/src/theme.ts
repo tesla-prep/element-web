@@ -29,6 +29,7 @@ import ThemeWatcher from "./settings/watchers/ThemeWatcher";
 import { FontWatcher } from "./settings/watchers/FontWatcher";
 
 export const DEFAULT_THEME = "light";
+let themeRequestId = 0;
 const HIGH_CONTRAST_THEMES: Record<string, string> = {
     light: "light-high-contrast",
 };
@@ -360,6 +361,7 @@ export async function setTheme(theme?: string): Promise<void> {
     // having them interact badly... but this causes a flash of unstyled app
     // which is even uglier.  So we don't.
 
+    const requestId = ++themeRequestId;
     const styleSheet = styleElements.get(stylesheetName)!;
     styleSheet.disabled = false;
 
@@ -380,10 +382,11 @@ export async function setTheme(theme?: string): Promise<void> {
 
     return new Promise((resolve, reject) => {
         const switchTheme = function (): void {
-            // we re-enable our theme here just in case we raced with another
-            // theme set request as per https://github.com/vector-im/element-web/issues/5601.
-            // We could alternatively lock or similar to stop the race, but
-            // this is probably good enough for now.
+            // A slower stylesheet must not override a newer theme selection.
+            if (requestId !== themeRequestId) {
+                resolve();
+                return;
+            }
             styleSheet.disabled = false;
             styleElements.forEach((a) => {
                 if (a == styleSheet) return;
