@@ -29,6 +29,7 @@ import ThemeWatcher from "./settings/watchers/ThemeWatcher";
 import { FontWatcher } from "./settings/watchers/FontWatcher";
 
 export const DEFAULT_THEME = "light";
+let themeRequestId = 0;
 const HIGH_CONTRAST_THEMES: Record<string, string> = {
     light: "light-high-contrast",
 };
@@ -360,6 +361,7 @@ export async function setTheme(theme?: string): Promise<void> {
     // having them interact badly... but this causes a flash of unstyled app
     // which is even uglier.  So we don't.
 
+    const requestId = ++themeRequestId;
     const styleSheet = styleElements.get(stylesheetName)!;
     styleSheet.disabled = false;
 
@@ -378,15 +380,20 @@ export async function setTheme(theme?: string): Promise<void> {
 
     document.body.classList.add(compoundThemeClassName);
 
+    return loadTheme(styleSheet, styleElements, requestId);
+}
+
+function loadTheme(sheet: HTMLLinkElement, links: Map<string, HTMLLinkElement>, requestId: number): Promise<void> {
     return new Promise((resolve, reject) => {
         const switchTheme = function (): void {
-            // we re-enable our theme here just in case we raced with another
-            // theme set request as per https://github.com/vector-im/element-web/issues/5601.
-            // We could alternatively lock or similar to stop the race, but
-            // this is probably good enough for now.
-            styleSheet.disabled = false;
-            styleElements.forEach((a) => {
-                if (a == styleSheet) return;
+            // A slower stylesheet must not override a newer theme selection.
+            if (requestId !== themeRequestId) {
+                resolve();
+                return;
+            }
+            sheet.disabled = false;
+            links.forEach((a) => {
+                if (a == sheet) return;
                 a.disabled = true;
             });
             const bodyStyles = global.getComputedStyle(document.body);
@@ -398,47 +405,43 @@ export async function setTheme(theme?: string): Promise<void> {
         };
 
         const isStyleSheetLoaded = (): boolean =>
-            Boolean([...document.styleSheets].find((_styleSheet) => _styleSheet?.href === styleSheet.href));
+            Boolean([...document.styleSheets].find((_styleSheet) => _styleSheet?.href === sheet.href));
 
-        function waitForStyleSheetLoading(): void {
-            // turns out that Firefox preloads the CSS for link elements with
-            // the disabled attribute, but Chrome doesn't.
-            if (isStyleSheetLoaded()) {
-                switchTheme();
-                return;
-            }
-
-            let counter = 0;
-
-            // In case of theme toggling (white => black => white)
-            // Chrome doesn't fire the `load` event when the white theme is selected the second times
-            const intervalId = window.setInterval(() => {
-                if (isStyleSheetLoaded()) {
-                    clearInterval(intervalId);
-                    styleSheet.onload = null;
-                    styleSheet.onerror = null;
-                    switchTheme();
-                }
-
-                // Avoid to be stuck in an endless loop if there is an issue in the stylesheet loading
-                counter++;
-                if (counter === 10) {
-                    clearInterval(intervalId);
-                    reject();
-                }
-            }, 200);
-
-            styleSheet.onload = () => {
-                clearInterval(intervalId);
-                switchTheme();
-            };
-
-            styleSheet.onerror = (e) => {
-                clearInterval(intervalId);
-                reject(e);
-            };
+        // turns out that Firefox preloads the CSS for link elements with
+        // the disabled attribute, but Chrome doesn't.
+        if (isStyleSheetLoaded()) {
+            switchTheme();
+            return;
         }
 
-        waitForStyleSheetLoading();
+        let counter = 0;
+
+        // In case of theme toggling (white => black => white)
+        // Chrome doesn't fire the `load` event when the white theme is selected the second times
+        const intervalId = window.setInterval(() => {
+            if (isStyleSheetLoaded()) {
+                clearInterval(intervalId);
+                sheet.onload = null;
+                sheet.onerror = null;
+                switchTheme();
+            }
+
+            // Avoid to be stuck in an endless loop if there is an issue in the stylesheet loading
+            counter++;
+            if (counter === 10) {
+                clearInterval(intervalId);
+                reject();
+            }
+        }, 200);
+
+        sheet.onload = () => {
+            clearInterval(intervalId);
+            switchTheme();
+        };
+
+        sheet.onerror = (e) => {
+            clearInterval(intervalId);
+            reject(e);
+        };
     });
 }
